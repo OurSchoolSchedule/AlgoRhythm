@@ -47,6 +47,12 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+}
+
 input,
 textarea,
 button,
@@ -58,17 +64,19 @@ button {
   cursor: pointer;
 }
 
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+/* 스크롤은 가능, 스크롤바는 숨김 */
+html,
+body,
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #d3d1c7;
-  border-radius: 2px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #b4b2a9;
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+.hide-scrollbar::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+  background: transparent !important;
 }

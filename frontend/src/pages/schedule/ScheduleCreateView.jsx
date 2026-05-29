@@ -37,7 +37,7 @@ export default function ScheduleCreateView({ navigate }) {
   return (
     <div style={{ maxWidth: 780 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-        <button onClick={() => navigate("home")} style={{ background: "none", border: "none", cursor: "pointer", color: "#888", fontSize: 13, padding: 0 }}>← 뒤로</button>
+        <button onClick={() => navigate("admin")} style={{ background: "none", border: "none", cursor: "pointer", color: "#888", fontSize: 13, padding: 0 }}>← 뒤로</button>
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#2c2c2a", letterSpacing: "-0.5px" }}>시간표 생성</h1>
       </div>
 
@@ -296,7 +296,7 @@ function Step2({ form, generating, generated, handleGenerate, navigate }) {
             ))}
           </div>
           <button
-            onClick={() => navigate("home")}
+            onClick={() => navigate("admin")}
             style={{
               width: "100%", marginTop: 16, padding: "12px 0", borderRadius: 8,
               border: "none", background: "#1d9e75", color: "#fff", fontSize: 14, fontWeight: 500, cursor: "pointer",

@@ -80,6 +80,27 @@ export function AdminView({ navigate }) {
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#2c2c2a", letterSpacing: "-0.5px" }}>관리자 도구</h1>
       </div>
 
+      <div style={{
+        background: "#fff", borderRadius: 12, border: "0.5px solid #e8e6e0",
+        padding: "20px 24px", marginBottom: 16,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+      }}>
+        <div>
+          <p style={{ margin: "0 0 4px", fontSize: 15, fontWeight: 600, color: "#2c2c2a" }}>시간표 생성</p>
+          <p style={{ margin: 0, fontSize: 13, color: "#888" }}>AI 기반으로 새 학기 시간표를 생성합니다</p>
+        </div>
+        <button
+          onClick={() => navigate("schedule-create")}
+          style={{
+            padding: "10px 20px", borderRadius: 8, border: "none",
+            background: "#27a859", color: "#fff", fontSize: 14, fontWeight: 500, cursor: "pointer",
+            flexShrink: 0,
+          }}
+        >
+          시간표 생성
+        </button>
+      </div>
+
       <div style={{ display: "flex", gap: 0, marginBottom: 16, borderBottom: "0.5px solid #e8e6e0" }}>
         {tabs.map(t => (
           <button key={t} onClick={() => setTab(t)} style={{

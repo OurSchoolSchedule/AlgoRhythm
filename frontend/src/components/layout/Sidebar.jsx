@@ -1,9 +1,10 @@
 export const SIDEBAR_WIDTH = 220
+export const SIDEBAR_VERTICAL_INSET = 16
 
 export default function Sidebar({ open, navigate, currentView, userRole, setUserRole }) {
   const adminMainItems = [
     { id: 'home', label: '홈', icon: HomeIcon },
-    { id: 'schedule-create', label: '시간표', icon: CalendarIcon },
+    { id: 'timetable', label: '시간표', icon: CalendarIcon },
     { id: 'subject-manage', label: '과목·수업 관리', icon: BookIcon },
     { id: 'history', label: '내역', icon: HistoryIcon },
   ]
@@ -12,6 +13,7 @@ export default function Sidebar({ open, navigate, currentView, userRole, setUser
 
   const workerItems = [
     { id: 'home', label: '홈', icon: HomeIcon },
+    { id: 'timetable', label: '시간표', icon: CalendarIcon },
     { id: 'history', label: '내역', icon: HistoryIcon },
   ]
 
@@ -52,14 +54,15 @@ export default function Sidebar({ open, navigate, currentView, userRole, setUser
   return (
     <aside
       style={{
-        width: open ? SIDEBAR_WIDTH + 24 : 0,
-        minWidth: open ? SIDEBAR_WIDTH + 24 : 0,
+        width: open ? SIDEBAR_WIDTH : 0,
+        minWidth: open ? SIDEBAR_WIDTH : 0,
+        height: '100%',
         flexShrink: 0,
         overflow: 'hidden',
+        padding: open ? `${SIDEBAR_VERTICAL_INSET}px 0` : 0,
+        boxSizing: 'border-box',
         transition:
           'width 0.22s cubic-bezier(0.4,0,0.2,1), min-width 0.22s cubic-bezier(0.4,0,0.2,1)',
-        padding: open ? '16px 0 16px 16px' : 0,
-        boxSizing: 'border-box',
       }}
     >
       <div
@@ -68,57 +71,57 @@ export default function Sidebar({ open, navigate, currentView, userRole, setUser
           height: '100%',
           background: '#fff',
           borderRadius: '0 12px 12px 0',
-          boxShadow: '2px 0 12px rgba(0,0,0,0.06)',
+          boxShadow: '2px 0 12px rgba(0, 0, 0, 0.06)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
         }}
       >
-        <nav style={{ flex: 1, padding: '20px 12px', overflowY: 'auto' }}>
-          {mainItems.map(renderNavItem)}
+      <nav className="hide-scrollbar" style={{ flex: 1, padding: '20px 12px', overflowY: 'auto' }}>
+        {mainItems.map(renderNavItem)}
 
-          {bottomItems.length > 0 && (
-            <>
-              <div
-                style={{
-                  height: 1,
-                  background: '#e8e6e0',
-                  margin: '12px 8px',
-                }}
-              />
-              {bottomItems.map(renderNavItem)}
-            </>
-          )}
-        </nav>
+        {bottomItems.length > 0 && (
+          <>
+            <div
+              style={{
+                height: 1,
+                background: '#e8e6e0',
+                margin: '12px 8px',
+              }}
+            />
+            {bottomItems.map(renderNavItem)}
+          </>
+        )}
+      </nav>
 
-        <div style={{ padding: '12px 16px', borderTop: '0.5px solid #e8e6e0' }}>
-          <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
-            {['admin', 'worker'].map((role) => (
-              <button
-                key={role}
-                onClick={() => setUserRole(role)}
-                style={{
-                  flex: 1,
-                  padding: '5px 0',
-                  fontSize: 11,
-                  fontWeight: 500,
-                  border: '0.5px solid',
-                  cursor: 'pointer',
-                  borderRadius: 6,
-                  transition: 'all 0.15s',
-                  background: userRole === role ? '#27a859' : 'transparent',
-                  borderColor: userRole === role ? '#27a859' : '#d3d1c7',
-                  color: userRole === role ? '#fff' : '#5f5e5a',
-                }}
-              >
-                {role === 'admin' ? '관리자' : '일반'}
-              </button>
-            ))}
-          </div>
-          <p style={{ fontSize: 10, color: '#b4b2a9', margin: 0, textAlign: 'center' }}>
-            2026 Team AlgoRhythm
-          </p>
+      <div style={{ padding: '12px 16px', borderTop: '0.5px solid #e8e6e0' }}>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+          {['admin', 'worker'].map((role) => (
+            <button
+              key={role}
+              onClick={() => setUserRole(role)}
+              style={{
+                flex: 1,
+                padding: '5px 0',
+                fontSize: 11,
+                fontWeight: 500,
+                border: '0.5px solid',
+                cursor: 'pointer',
+                borderRadius: 6,
+                transition: 'all 0.15s',
+                background: userRole === role ? '#27a859' : 'transparent',
+                borderColor: userRole === role ? '#27a859' : '#d3d1c7',
+                color: userRole === role ? '#fff' : '#5f5e5a',
+              }}
+            >
+              {role === 'admin' ? '관리자' : '일반'}
+            </button>
+          ))}
         </div>
+        <p style={{ fontSize: 10, color: '#b4b2a9', margin: 0, textAlign: 'center' }}>
+          2026 Team AlgoRhythm
+        </p>
+      </div>
       </div>
     </aside>
   )

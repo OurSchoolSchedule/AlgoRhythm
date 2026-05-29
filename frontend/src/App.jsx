@@ -6,6 +6,7 @@ import AIFloatingChat from '@/components/common/AIFloatingChat'
 import HomeView from '@/pages/home/HomeView'
 import WorkerHomeView from '@/pages/home/WorkerHomeView'
 import ScheduleCreateView from '@/pages/schedule/ScheduleCreateView'
+import TimetableView from '@/pages/schedule/TimetableView'
 import SubjectManageView from '@/pages/store/SubjectManageView'
 import HistoryView, { AdminView } from '@/pages/history/HistoryView'
 
@@ -27,6 +28,8 @@ export default function App() {
         ) : (
           <WorkerHomeView navigate={navigate} />
         )
+      case 'timetable':
+        return <TimetableView />
       case 'schedule-create':
         return <ScheduleCreateView navigate={navigate} />
       case 'subject-manage':
@@ -114,6 +117,7 @@ export default function App() {
         style={{
           flex: 1,
           display: 'flex',
+          alignItems: 'stretch',
           overflow: 'hidden',
           minHeight: 0,
         }}
@@ -126,7 +130,7 @@ export default function App() {
           setUserRole={setUserRole}
         />
 
-        <main style={{ flex: 1, overflow: 'auto', padding: '28px 32px', minWidth: 0 }}>
+        <main className="hide-scrollbar" style={{ flex: 1, overflow: 'auto', padding: '28px 32px', minWidth: 0 }}>
           {renderView()}
         </main>
 

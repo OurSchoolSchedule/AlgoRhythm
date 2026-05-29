@@ -151,7 +151,7 @@ export default function HomeView({ navigate }) {
               ))}
             </div>
             <button
-              onClick={() => navigate("schedule-create")}
+              onClick={() => navigate("admin")}
               style={{
                 width: "100%", marginTop: 12, padding: "8px 0", borderRadius: 8,
                 border: "0.5px solid #27a859", background: "transparent",
