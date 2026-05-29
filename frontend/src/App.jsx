@@ -95,16 +95,22 @@ export default function App() {
               <line x1="3" y1="18" x2="21" y2="18" />
             </svg>
           </button>
-          <span
+          <button
+            type="button"
+            onClick={() => navigate('home')}
             style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
               fontWeight: 600,
               fontSize: 15,
               color: '#2c2c2a',
               letterSpacing: '-0.3px',
+              padding: 0,
             }}
           >
-            AlgoRhythm
-          </span>
+            우리학교 시간표
+          </button>
         </div>
         <HeaderUserMenu
           userRole={userRole}
