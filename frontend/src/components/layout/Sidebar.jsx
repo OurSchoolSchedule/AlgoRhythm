@@ -5,11 +5,13 @@ export default function Sidebar({ open, navigate, currentView, userRole, setUser
   const adminMainItems = [
     { id: 'home', label: '홈', icon: HomeIcon },
     { id: 'timetable', label: '시간표', icon: CalendarIcon },
-    { id: 'subject-manage', label: '과목·수업 관리', icon: BookIcon },
     { id: 'history', label: '내역', icon: HistoryIcon },
   ]
 
-  const adminBottomItems = [{ id: 'admin', label: '관리자 도구', icon: AdminIcon }]
+  const adminBottomItems = [
+    { id: 'subject-manage', label: '과목·수업 관리', icon: BookIcon },
+    { id: 'admin', label: '관리자 도구', icon: AdminIcon },
+  ]
 
   const workerItems = [
     { id: 'home', label: '홈', icon: HomeIcon },
