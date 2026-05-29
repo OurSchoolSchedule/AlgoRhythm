@@ -10,8 +10,8 @@ const historyData = [
   { id: 7, date: "2026.05.10", type: "보결", detail: "1교시 · 1-2반 · 수학 → 신청자 없음", status: "미처리" },
 ];
 
-const typeColor = { 보결: "#f09500", 변경: "#534ab7", 생성: "#1d9e75", 수정: "#185fa5", 교환: "#d85a30" };
-const typeBg = { 보결: "#faeeda", 변경: "#eeedfe", 생성: "#e1f5ee", 수정: "#e6f1fb", 교환: "#faece7" };
+const typeColor = { 보결: "#f09500", 변경: "#27a859", 생성: "#1d9e75", 수정: "#185fa5", 교환: "#d85a30" };
+const typeBg = { 보결: "#faeeda", 변경: "#e8f7ee", 생성: "#e1f5ee", 수정: "#e6f1fb", 교환: "#faece7" };
 const statusColor = { 완료: "#1d9e75", 미처리: "#d85a30" };
 
 export function HistoryView({ navigate }) {
@@ -31,8 +31,8 @@ export function HistoryView({ navigate }) {
           {types.map(t => (
             <button key={t} onClick={() => setFilter(t)} style={{
               padding: "5px 14px", borderRadius: 20, border: "0.5px solid", fontSize: 13, cursor: "pointer",
-              background: filter === t ? "#534ab7" : "transparent",
-              borderColor: filter === t ? "#534ab7" : "#d3d1c7",
+              background: filter === t ? "#27a859" : "transparent",
+              borderColor: filter === t ? "#27a859" : "#d3d1c7",
               color: filter === t ? "#fff" : "#5f5e5a",
             }}>{t}</button>
           ))}
@@ -84,8 +84,8 @@ export function AdminView({ navigate }) {
         {tabs.map(t => (
           <button key={t} onClick={() => setTab(t)} style={{
             padding: "10px 20px", border: "none", background: "none", cursor: "pointer", fontSize: 14,
-            color: tab === t ? "#534ab7" : "#888", fontWeight: tab === t ? 600 : 400,
-            borderBottom: tab === t ? "2px solid #534ab7" : "2px solid transparent",
+            color: tab === t ? "#27a859" : "#888", fontWeight: tab === t ? 600 : 400,
+            borderBottom: tab === t ? "2px solid #27a859" : "2px solid transparent",
           }}>{t}</button>
         ))}
       </div>
@@ -94,7 +94,7 @@ export function AdminView({ navigate }) {
         <div style={{ background: "#fff", borderRadius: 12, border: "0.5px solid #e8e6e0", padding: "20px 24px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
             <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#2c2c2a" }}>교사 목록</p>
-            <button style={{ padding: "7px 14px", borderRadius: 8, border: "none", background: "#534ab7", color: "#fff", fontSize: 13, cursor: "pointer" }}>+ 교사 추가</button>
+            <button style={{ padding: "7px 14px", borderRadius: 8, border: "none", background: "#27a859", color: "#fff", fontSize: 13, cursor: "pointer" }}>+ 교사 추가</button>
           </div>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
@@ -118,7 +118,7 @@ export function AdminView({ navigate }) {
                   </td>
                   <td style={{ padding: "10px 12px", color: "#888" }}>{t.homeroom}</td>
                   <td style={{ padding: "10px 12px" }}>
-                    <span style={{ background: "#eeedfe", color: "#534ab7", padding: "3px 10px", borderRadius: 12, fontSize: 12, fontWeight: 600 }}>{t.hours}시간</span>
+                    <span style={{ background: "#e8f7ee", color: "#27a859", padding: "3px 10px", borderRadius: 12, fontSize: 12, fontWeight: 600 }}>{t.hours}시간</span>
                   </td>
                   <td style={{ padding: "10px 12px" }}>
                     <span style={{
@@ -128,7 +128,7 @@ export function AdminView({ navigate }) {
                     }}>{t.status}</span>
                   </td>
                   <td style={{ padding: "10px 12px" }}>
-                    <button style={{ background: "none", border: "none", cursor: "pointer", color: "#534ab7", fontSize: 12 }}>수정</button>
+                    <button style={{ background: "none", border: "none", cursor: "pointer", color: "#27a859", fontSize: 12 }}>수정</button>
                   </td>
                 </tr>
               ))}
@@ -146,7 +146,7 @@ export function AdminView({ navigate }) {
                 {["1", "2", "3", "4"].map(cls => (
                   <div key={cls} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "0.5px solid #f1efe8" }}>
                     <span style={{ fontSize: 13, color: "#444" }}>{grade}-{cls}반</span>
-                    <span style={{ fontSize: 12, color: "#534ab7" }}>30명</span>
+                    <span style={{ fontSize: 12, color: "#27a859" }}>30명</span>
                   </div>
                 ))}
               </div>
@@ -173,7 +173,7 @@ export function AdminView({ navigate }) {
                 }} />
               </div>
             ))}
-            <button style={{ marginTop: 8, padding: "8px 24px", borderRadius: 8, border: "none", background: "#534ab7", color: "#fff", fontSize: 13, cursor: "pointer", alignSelf: "flex-start" }}>저장</button>
+            <button style={{ marginTop: 8, padding: "8px 24px", borderRadius: 8, border: "none", background: "#27a859", color: "#fff", fontSize: 13, cursor: "pointer", alignSelf: "flex-start" }}>저장</button>
           </div>
         </div>
       )}

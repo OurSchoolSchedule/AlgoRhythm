@@ -36,9 +36,9 @@ export default function HomeView({ navigate }) {
   const currentPeriod = 3;
   const currentClass = todaySchedule[today][currentPeriod];
 
-  const typeColor = { 보결: "#f09500", 변경: "#534ab7", 완료: "#1d9e75" };
-  const typeBg = { 보결: "#faeeda", 변경: "#eeedfe", 완료: "#e1f5ee" };
-  const priorityColor = { high: "#d85a30", medium: "#534ab7", low: "#888" };
+  const typeColor = { 보결: "#f09500", 변경: "#27a859", 완료: "#1d9e75" };
+  const typeBg = { 보결: "#faeeda", 변경: "#e8f7ee", 완료: "#e1f5ee" };
+  const priorityColor = { high: "#d85a30", medium: "#27a859", low: "#888" };
 
   return (
     <div>
@@ -50,7 +50,7 @@ export default function HomeView({ navigate }) {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 20 }}>
-        <StatCard label="오늘 수업" value={Object.values(todaySchedule[today]).filter(Boolean).length} unit="교시" color="#534ab7" />
+        <StatCard label="오늘 수업" value={Object.values(todaySchedule[today]).filter(Boolean).length} unit="교시" color="#27a859" />
         <StatCard label="이번 주 보결" value={2} unit="건" color="#f09500" />
         <StatCard label="등록 교사" value={42} unit="명" color="#1d9e75" />
       </div>
@@ -59,8 +59,8 @@ export default function HomeView({ navigate }) {
         <div>
           <Card title="현재 수업">
             {currentClass ? (
-              <div style={{ background: "#eeedfe", borderRadius: 8, padding: "10px 14px", marginBottom: 12 }}>
-                <span style={{ fontSize: 13, color: "#534ab7", fontWeight: 600 }}>
+              <div style={{ background: "#e8f7ee", borderRadius: 8, padding: "10px 14px", marginBottom: 12 }}>
+                <span style={{ fontSize: 13, color: "#27a859", fontWeight: 600 }}>
                   {currentPeriod}교시 · {currentClass.class} · {currentClass.subject}
                 </span>
               </div>
@@ -76,7 +76,7 @@ export default function HomeView({ navigate }) {
                   key={d}
                   style={{
                     width: 32, height: 32, borderRadius: "50%", border: "none",
-                    background: d === today ? "#534ab7" : "transparent",
+                    background: d === today ? "#27a859" : "transparent",
                     color: d === today ? "#fff" : "#5f5e5a",
                     fontWeight: d === today ? 600 : 400, fontSize: 13, cursor: "pointer",
                   }}
@@ -96,8 +96,8 @@ export default function HomeView({ navigate }) {
                     <span style={{ fontSize: 12, color: "#888", width: 32, flexShrink: 0 }}>{p}교시</span>
                     {s ? (
                       <span style={{
-                        flex: 1, background: isCurrent ? "#eeedfe" : "#f1efe8",
-                        color: isCurrent ? "#534ab7" : "#444",
+                        flex: 1, background: isCurrent ? "#e8f7ee" : "#f1efe8",
+                        color: isCurrent ? "#27a859" : "#444",
                         borderRadius: 6, padding: "5px 10px", fontSize: 13,
                         fontWeight: isCurrent ? 600 : 400,
                       }}>
@@ -137,7 +137,7 @@ export default function HomeView({ navigate }) {
                     type="checkbox"
                     checked={todoDone[i]}
                     onChange={() => setTodoDone(prev => prev.map((v, j) => j === i ? !v : v))}
-                    style={{ accentColor: "#534ab7", width: 15, height: 15 }}
+                    style={{ accentColor: "#27a859", width: 15, height: 15 }}
                   />
                   <span style={{
                     fontSize: 13, color: todoDone[i] ? "#b4b2a9" : "#2c2c2a",
@@ -154,8 +154,8 @@ export default function HomeView({ navigate }) {
               onClick={() => navigate("schedule-create")}
               style={{
                 width: "100%", marginTop: 12, padding: "8px 0", borderRadius: 8,
-                border: "0.5px solid #534ab7", background: "transparent",
-                color: "#534ab7", fontSize: 13, fontWeight: 500, cursor: "pointer",
+                border: "0.5px solid #27a859", background: "transparent",
+                color: "#27a859", fontSize: 13, fontWeight: 500, cursor: "pointer",
               }}
             >+ 시간표 생성하기</button>
           </Card>

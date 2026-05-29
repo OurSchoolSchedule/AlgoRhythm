@@ -1,19 +1,56 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css');
 
-*, *::before, *::after {
+:root {
+  /* Primary green scale (from design palette) */
+  --color-primary-50: #e8f7ee;
+  --color-primary-100: #c8ebd6;
+  --color-primary-200: #9dd9b8;
+  --color-primary-300: #6bc895;
+  --color-primary-400: #42b876;
+  --color-primary-500: #27a859;
+  --color-primary-600: #1f8f4a;
+  --color-primary-700: #18753c;
+  --color-primary-800: #125c2f;
+  --color-primary-900: #0b3f20;
+
+  /* Semantic aliases */
+  --color-primary: var(--color-primary-500);
+  --color-primary-light: var(--color-primary-50);
+  --color-primary-muted: var(--color-primary-100);
+  --color-primary-dark: var(--color-primary-600);
+
+  /* Accent red (from palette) */
+  --color-accent-red: #e5484d;
+  --color-accent-red-light: #fce8e8;
+
+  /* Neutrals */
+  --color-text: #2c2c2a;
+  --color-text-muted: #888;
+  --color-border: #e8e6e0;
+  --color-bg: #f8f8f6;
+  --color-surface: #fff;
+}
+
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
 body {
-  font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', -apple-system, sans-serif;
-  background: #f8f8f6;
-  color: #2c2c2a;
+  font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', -apple-system,
+    sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
   -webkit-font-smoothing: antialiased;
 }
 
-input, textarea, button, select {
+input,
+textarea,
+button,
+select {
   font-family: inherit;
 }
 

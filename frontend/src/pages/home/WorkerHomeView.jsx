@@ -27,8 +27,8 @@ export default function WorkerHomeView() {
   const currentPeriod = 3;
   const currentClass = mySchedule[today][currentPeriod];
 
-  const typeColor = { 보결: "#f09500", 변경: "#534ab7", 안내: "#1d9e75" };
-  const typeBg = { 보결: "#faeeda", 변경: "#eeedfe", 안내: "#e1f5ee" };
+  const typeColor = { 보결: "#f09500", 변경: "#27a859", 안내: "#1d9e75" };
+  const typeBg = { 보결: "#faeeda", 변경: "#e8f7ee", 안내: "#e1f5ee" };
 
   return (
     <div>
@@ -38,7 +38,7 @@ export default function WorkerHomeView() {
       </h1>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 20 }}>
-        <StatCard label="오늘 수업" value={todayClasses} unit="교시" color="#534ab7" />
+        <StatCard label="오늘 수업" value={todayClasses} unit="교시" color="#27a859" />
         <StatCard label="이번 주 수업" value={weekTotal} unit="시수" color="#1d9e75" />
         <StatCard label="미확인 알림" value={notices.filter(n => n.urgent).length} unit="건" color="#d85a30" />
       </div>
@@ -50,8 +50,8 @@ export default function WorkerHomeView() {
               {DAYS.map(d => (
                 <button key={d} onClick={() => setSelectedDay(d)} style={{
                   flex: 1, height: 30, borderRadius: 6, border: "none",
-                  background: d === selectedDay ? "#534ab7" : d === today ? "#eeedfe" : "#f1efe8",
-                  color: d === selectedDay ? "#fff" : d === today ? "#534ab7" : "#5f5e5a",
+                  background: d === selectedDay ? "#27a859" : d === today ? "#e8f7ee" : "#f1efe8",
+                  color: d === selectedDay ? "#fff" : d === today ? "#27a859" : "#5f5e5a",
                   fontWeight: d === selectedDay ? 600 : 400, fontSize: 13, cursor: "pointer",
                 }}>{d}</button>
               ))}
@@ -67,8 +67,8 @@ export default function WorkerHomeView() {
                   <span style={{ fontSize: 12, color: "#888", width: 32, flexShrink: 0 }}>{p}교시</span>
                   {s ? (
                     <span style={{
-                      flex: 1, background: isCurrent ? "#eeedfe" : "#f1efe8",
-                      color: isCurrent ? "#534ab7" : "#444",
+                      flex: 1, background: isCurrent ? "#e8f7ee" : "#f1efe8",
+                      color: isCurrent ? "#27a859" : "#444",
                       borderRadius: 6, padding: "5px 10px", fontSize: 13,
                       fontWeight: isCurrent ? 600 : 400,
                     }}>{s}</span>
@@ -84,9 +84,9 @@ export default function WorkerHomeView() {
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <Card title="현재 수업">
             {currentClass ? (
-              <div style={{ background: "#eeedfe", borderRadius: 8, padding: "12px 14px" }}>
-                <p style={{ margin: 0, fontSize: 12, color: "#534ab7" }}>{currentPeriod}교시 진행 중</p>
-                <p style={{ margin: "4px 0 0", fontSize: 15, fontWeight: 600, color: "#534ab7" }}>{currentClass}</p>
+              <div style={{ background: "#e8f7ee", borderRadius: 8, padding: "12px 14px" }}>
+                <p style={{ margin: 0, fontSize: 12, color: "#27a859" }}>{currentPeriod}교시 진행 중</p>
+                <p style={{ margin: "4px 0 0", fontSize: 15, fontWeight: 600, color: "#27a859" }}>{currentClass}</p>
               </div>
             ) : (
               <div style={{ background: "#f1efe8", borderRadius: 8, padding: "12px 14px" }}>
@@ -101,7 +101,7 @@ export default function WorkerHomeView() {
                 <span style={{ fontSize: 12, color: "#888" }}>/ 21 시간</span>
               </div>
               <div style={{ height: 6, background: "#e8e6e0", borderRadius: 4 }}>
-                <div style={{ height: "100%", width: `${(weekTotal / 21) * 100}%`, background: "#534ab7", borderRadius: 4, transition: "width 0.5s" }} />
+                <div style={{ height: "100%", width: `${(weekTotal / 21) * 100}%`, background: "#27a859", borderRadius: 4, transition: "width 0.5s" }} />
               </div>
             </div>
           </Card>
@@ -138,7 +138,7 @@ export default function WorkerHomeView() {
                 <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 600, color: "#f09500" }}>목요일 3교시 · 2-2반 보결</p>
                 <p style={{ margin: "0 0 10px", fontSize: 12, color: "#633806" }}>김민지 선생님 부재로 인한 보결 수업 요청입니다. 담당: 수학</p>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: "none", background: "#534ab7", color: "#fff", fontSize: 12, cursor: "pointer" }}>수락</button>
+                  <button style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: "none", background: "#27a859", color: "#fff", fontSize: 12, cursor: "pointer" }}>수락</button>
                   <button style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: "0.5px solid #d3d1c7", background: "#fff", color: "#888", fontSize: 12, cursor: "pointer" }}>거절</button>
                 </div>
               </div>

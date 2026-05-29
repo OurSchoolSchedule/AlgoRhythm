@@ -59,7 +59,7 @@ export default function SubjectManageView({ navigate }) {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
-        <StatCard label="등록 과목" value={subjects.length} unit="개" color="#534ab7" />
+        <StatCard label="등록 과목" value={subjects.length} unit="개" color="#27a859" />
         <StatCard label="총 주간 시수" value={totalHours} unit="시간" color="#1d9e75" />
         <StatCard label="담당 교사" value={teachers} unit="명" color="#f09500" />
         <StatCard label="학년 수" value={3} unit="개" color="#d85a30" />
@@ -72,8 +72,8 @@ export default function SubjectManageView({ navigate }) {
               <button key={g} onClick={() => setFilterGrade(g)} style={{
                 padding: "6px 14px", borderRadius: 20, fontSize: 13,
                 border: "0.5px solid", cursor: "pointer",
-                background: filterGrade === g ? "#534ab7" : "transparent",
-                borderColor: filterGrade === g ? "#534ab7" : "#d3d1c7",
+                background: filterGrade === g ? "#27a859" : "transparent",
+                borderColor: filterGrade === g ? "#27a859" : "#d3d1c7",
                 color: filterGrade === g ? "#fff" : "#5f5e5a",
               }}>{g}</button>
             ))}
@@ -86,13 +86,13 @@ export default function SubjectManageView({ navigate }) {
             }}>CSV 업로드</button>
             <button onClick={() => setShowAdd(v => !v)} style={{
               padding: "7px 16px", borderRadius: 8, border: "none",
-              background: "#534ab7", color: "#fff", fontSize: 13, cursor: "pointer",
+              background: "#27a859", color: "#fff", fontSize: 13, cursor: "pointer",
             }}>+ 직접 추가</button>
           </div>
         </div>
 
         {csvStatus === "loading" && (
-          <div style={{ padding: "10px 14px", background: "#eeedfe", borderRadius: 8, marginBottom: 12, fontSize: 13, color: "#534ab7" }}>
+          <div style={{ padding: "10px 14px", background: "#e8f7ee", borderRadius: 8, marginBottom: 12, fontSize: 13, color: "#27a859" }}>
             ⏳ CSV 파일 파싱 중...
           </div>
         )}
@@ -119,7 +119,7 @@ export default function SubjectManageView({ navigate }) {
                 />
               </div>
             ))}
-            <button onClick={handleAddRow} style={{ padding: "7px 0", borderRadius: 6, border: "none", background: "#534ab7", color: "#fff", fontSize: 13, cursor: "pointer", height: 32 }}>추가</button>
+            <button onClick={handleAddRow} style={{ padding: "7px 0", borderRadius: 6, border: "none", background: "#27a859", color: "#fff", fontSize: 13, cursor: "pointer", height: 32 }}>추가</button>
           </div>
         )}
 
@@ -139,7 +139,7 @@ export default function SubjectManageView({ navigate }) {
                   <td style={{ padding: "10px 12px", fontWeight: 600, color: "#2c2c2a" }}>{s.classNum}</td>
                   <td style={{ padding: "10px 12px", color: "#2c2c2a" }}>{s.subject}</td>
                   <td style={{ padding: "10px 12px" }}>
-                    <span style={{ background: "#eeedfe", color: "#534ab7", padding: "3px 10px", borderRadius: 12, fontSize: 12, fontWeight: 600 }}>
+                    <span style={{ background: "#e8f7ee", color: "#27a859", padding: "3px 10px", borderRadius: 12, fontSize: 12, fontWeight: 600 }}>
                       {s.hours}시간
                     </span>
                   </td>

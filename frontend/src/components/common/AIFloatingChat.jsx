@@ -55,7 +55,7 @@ export default function AIFloatingChat() {
         }}>
           <div style={{
             padding: "14px 18px", borderBottom: "0.5px solid #e8e6e0",
-            display: "flex", alignItems: "center", gap: 10, background: "#534ab7",
+            display: "flex", alignItems: "center", gap: 10, background: "#27a859",
           }}>
             <div style={{
               width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.2)",
@@ -75,7 +75,7 @@ export default function AIFloatingChat() {
               }}>
                 <div style={{
                   maxWidth: "82%", padding: "8px 12px", borderRadius: 10,
-                  background: m.role === "user" ? "#534ab7" : "#f1efe8",
+                  background: m.role === "user" ? "#27a859" : "#f1efe8",
                   color: m.role === "user" ? "#fff" : "#2c2c2a",
                   fontSize: 13, lineHeight: 1.55, whiteSpace: "pre-wrap",
                   borderBottomRightRadius: m.role === "user" ? 2 : 10,
@@ -91,7 +91,7 @@ export default function AIFloatingChat() {
                   <div style={{ display: "flex", gap: 4 }}>
                     {[0, 0.15, 0.3].map((d, i) => (
                       <span key={i} style={{
-                        width: 6, height: 6, borderRadius: "50%", background: "#534ab7",
+                        width: 6, height: 6, borderRadius: "50%", background: "#27a859",
                         animation: "pulse 1s ease-in-out infinite",
                         animationDelay: `${d}s`,
                       }} />
@@ -121,7 +121,7 @@ export default function AIFloatingChat() {
               disabled={loading || !input.trim()}
               style={{
                 width: 36, height: 36, borderRadius: 8, border: "none",
-                background: input.trim() && !loading ? "#534ab7" : "#e8e6e0",
+                background: input.trim() && !loading ? "#27a859" : "#e8e6e0",
                 color: "#fff", cursor: input.trim() && !loading ? "pointer" : "default",
                 display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                 alignSelf: "flex-end",
@@ -140,9 +140,9 @@ export default function AIFloatingChat() {
         style={{
           position: "fixed", bottom: 24, right: 24,
           width: 52, height: 52, borderRadius: "50%",
-          background: "#534ab7", border: "none", cursor: "pointer",
+          background: "#27a859", border: "none", cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 4px 16px rgba(83,74,183,0.35)", zIndex: 100,
+          boxShadow: "0 4px 16px rgba(39,168,89,0.35)", zIndex: 100,
           transition: "transform 0.18s, box-shadow 0.18s",
           color: "#fff", fontSize: 20,
         }}
