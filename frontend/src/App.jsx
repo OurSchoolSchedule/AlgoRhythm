@@ -1,121 +1,152 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import Sidebar from '@/components/layout/Sidebar'
+import HeaderUserMenu from '@/components/layout/HeaderUserMenu'
+import NotificationSidebar from '@/components/layout/NotificationSidebar'
+import AIFloatingChat from '@/components/common/AIFloatingChat'
+import HomeView from '@/pages/home/HomeView'
+import WorkerHomeView from '@/pages/home/WorkerHomeView'
+import ScheduleCreateView from '@/pages/schedule/ScheduleCreateView'
+import TimetableView from '@/pages/schedule/TimetableView'
+import SubjectManageView from '@/pages/store/SubjectManageView'
+import HistoryView, { AdminView } from '@/pages/history/HistoryView'
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [alarmOpen, setAlarmOpen] = useState(false)
+  const [currentView, setCurrentView] = useState('home')
+  const [userRole, setUserRole] = useState('admin') // "admin" | "worker"
+
+  const navigate = (view) => {
+    setCurrentView(view)
+  }
+
+  const renderView = () => {
+    switch (currentView) {
+      case 'home':
+        return userRole === 'admin' ? (
+          <HomeView navigate={navigate} />
+        ) : (
+          <WorkerHomeView navigate={navigate} />
+        )
+      case 'timetable':
+        return <TimetableView />
+      case 'schedule-create':
+        return <ScheduleCreateView navigate={navigate} />
+      case 'subject-manage':
+        return <SubjectManageView navigate={navigate} />
+      case 'history':
+        return <HistoryView navigate={navigate} />
+      case 'admin':
+        return <AdminView navigate={navigate} />
+      default:
+        return <HomeView navigate={navigate} />
+    }
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        background: '#f8f8f6',
+        fontFamily: "'Pretendard', 'Apple SD Gothic Neo', sans-serif",
+        overflow: 'hidden',
+      }}
+    >
+      <header
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 28px',
+          height: 56,
+          background: '#fff',
+          borderBottom: '0.5px solid #e8e6e0',
+          flexShrink: 0,
+          zIndex: 10,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
+            onClick={() => setSidebarOpen((open) => !open)}
+            aria-label={sidebarOpen ? '사이드바 닫기' : '사이드바 열기'}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 6,
+              borderRadius: 6,
+              display: 'flex',
+              alignItems: 'center',
+              color: '#444',
+            }}
+          >
+            <svg
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              viewBox="0 0 24 24"
+            >
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('home')}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 600,
+              fontSize: 15,
+              color: '#2c2c2a',
+              letterSpacing: '-0.3px',
+              padding: 0,
+            }}
+          >
+            우리학교 시간표
+          </button>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+        <HeaderUserMenu
+          userRole={userRole}
+          alarmOpen={alarmOpen}
+          onAlarmToggle={() => setAlarmOpen((open) => !open)}
+        />
+      </header>
 
-      <div className="ticks"></div>
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'stretch',
+          overflow: 'hidden',
+          minHeight: 0,
+        }}
+      >
+        <Sidebar
+          open={sidebarOpen}
+          navigate={navigate}
+          currentView={currentView}
+          userRole={userRole}
+          setUserRole={setUserRole}
+        />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+        <main className="hide-scrollbar" style={{ flex: 1, overflow: 'auto', padding: '28px 32px', minWidth: 0 }}>
+          {renderView()}
+        </main>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+        <NotificationSidebar
+          open={alarmOpen}
+          onClose={() => setAlarmOpen(false)}
+        />
+      </div>
+
+      <AIFloatingChat />
+    </div>
   )
 }
-
-export default App
