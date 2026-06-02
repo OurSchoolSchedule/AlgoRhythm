@@ -11,7 +11,7 @@ import {
 } from '@/hooks'
 
 const TODO_SECTIONS = [
-  { key: 'storeTodos', label: '매장 전체', type: 'STORE' },
+  { key: 'storeTodos', label: '전체 공지', type: 'STORE' },
   { key: 'handoverTodos', label: '인수인계', type: 'HANDOVER' },
   { key: 'personalTodos', label: '내 할 일', type: 'PERSONAL' },
 ]
@@ -19,7 +19,7 @@ const TODO_SECTIONS = [
 const CREATE_TYPE_OPTIONS = [
   { value: 'PERSONAL', label: '내 할 일' },
   { value: 'HANDOVER', label: '인수인계' },
-  { value: 'STORE', label: '매장 전체', ownerOnly: true },
+  { value: 'STORE', label: '전체 공지', ownerOnly: true },
 ]
 
 function canModifyTodo(todo, isOwner, userId) {
