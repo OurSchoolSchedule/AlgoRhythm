@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Sidebar from '@/components/layout/Sidebar'
 import HeaderUserMenu from '@/components/layout/HeaderUserMenu'
 import NotificationSidebar from '@/components/layout/NotificationSidebar'
@@ -9,12 +9,36 @@ import ScheduleCreateView from '@/pages/schedule/ScheduleCreateView'
 import TimetableView from '@/pages/schedule/TimetableView'
 import SubjectManageView from '@/pages/store/SubjectManageView'
 import HistoryView, { AdminView } from '@/pages/history/HistoryView'
+import { DevLoginView } from '@/pages/auth'
+import { getAccessToken, clearTokens, setOnAuthError } from '@/api'
+import { useLogout } from '@/hooks'
 
 export default function App() {
+  const [authed, setAuthed] = useState(() => Boolean(getAccessToken()))
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [alarmOpen, setAlarmOpen] = useState(false)
   const [currentView, setCurrentView] = useState('home')
   const [userRole, setUserRole] = useState('admin') // "admin" | "worker"
+  const logoutMutation = useLogout()
+
+  // 토큰 재발급 실패(인증 만료) 시 로그인 화면으로 복귀.
+  useEffect(() => {
+    setOnAuthError(() => setAuthed(false))
+    return () => setOnAuthError(null)
+  }, [])
+
+  const handleLogout = () => {
+    logoutMutation.mutate(undefined, {
+      onSettled: () => {
+        clearTokens()
+        setAuthed(false)
+      },
+    })
+  }
+
+  if (!authed) {
+    return <DevLoginView onSuccess={() => setAuthed(true)} />
+  }
 
   const navigate = (view) => {
     setCurrentView(view)
@@ -116,6 +140,7 @@ export default function App() {
           userRole={userRole}
           alarmOpen={alarmOpen}
           onAlarmToggle={() => setAlarmOpen((open) => !open)}
+          onLogout={handleLogout}
         />
       </header>
 

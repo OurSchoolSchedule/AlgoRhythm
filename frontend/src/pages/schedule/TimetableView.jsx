@@ -1,4 +1,6 @@
 import { Fragment, useState } from 'react'
+import { useTodos, useToggleTodo } from '@/hooks'
+import { toISODate } from '@/utils'
 
 const DAYS = ['월', '화', '수', '목', '금']
 const PERIODS = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -11,19 +13,14 @@ const weeklyGrid = {
   금: [1, 3, 5, 8],
 }
 
-const todos = [
-  { id: 1, done: false, text: '다음 주 시간표 초안 검토', priority: 'high' },
-  { id: 2, done: true, text: '3학년 수학 담당 배정 완료', priority: 'low' },
-  { id: 3, done: false, text: '신규 교사 과목 배정 설정', priority: 'medium' },
-  { id: 4, done: false, text: '보결 처리 내역 학교장 보고', priority: 'medium' },
-  { id: 5, done: false, text: '월요일 1교시 감독 일정 확인', priority: 'high' },
-]
-
-const priorityColor = { high: '#d85a30', medium: '#27a859', low: '#888' }
-
 export default function TimetableView() {
   const [tab, setTab] = useState('weekly')
-  const [todoDone, setTodoDone] = useState(todos.map((t) => t.done))
+  const todayDate = toISODate()
+  const { data: todoData, isLoading: todoLoading, isError: todoError } = useTodos(todayDate)
+  const toggleTodo = useToggleTodo()
+  const todoItems = todoData
+    ? [...todoData.storeTodos, ...todoData.handoverTodos, ...todoData.personalTodos]
+    : []
 
   const tabStyle = (active) => ({
     padding: '10px 28px',
@@ -128,7 +125,20 @@ export default function TimetableView() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {todos.map((t, i) => (
+              {todoLoading && (
+                <p style={{ margin: 0, fontSize: 14, color: '#888' }}>불러오는 중...</p>
+              )}
+              {todoError && (
+                <p style={{ margin: 0, fontSize: 14, color: '#d85a30' }}>
+                  할 일을 불러오지 못했습니다.
+                </p>
+              )}
+              {!todoLoading && !todoError && todoItems.length === 0 && (
+                <p style={{ margin: 0, fontSize: 14, color: '#b4b2a9' }}>
+                  오늘 등록된 할 일이 없습니다.
+                </p>
+              )}
+              {todoItems.map((t, i) => (
                 <label
                   key={t.id}
                   style={{
@@ -136,37 +146,27 @@ export default function TimetableView() {
                     alignItems: 'center',
                     gap: 12,
                     padding: '12px 4px',
-                    borderBottom: i < todos.length - 1 ? '0.5px solid #f1efe8' : 'none',
+                    borderBottom: i < todoItems.length - 1 ? '0.5px solid #f1efe8' : 'none',
                     cursor: 'pointer',
                   }}
                 >
                   <input
                     type="checkbox"
-                    checked={todoDone[i]}
-                    onChange={() =>
-                      setTodoDone((prev) => prev.map((v, j) => (j === i ? !v : v)))
-                    }
+                    checked={Boolean(t.completed)}
+                    disabled={toggleTodo.isPending}
+                    onChange={() => toggleTodo.mutate(t.id)}
                     style={{ accentColor: '#27a859', width: 16, height: 16 }}
                   />
                   <span
                     style={{
                       flex: 1,
                       fontSize: 14,
-                      color: todoDone[i] ? '#b4b2a9' : '#2c2c2a',
-                      textDecoration: todoDone[i] ? 'line-through' : 'none',
+                      color: t.completed ? '#b4b2a9' : '#2c2c2a',
+                      textDecoration: t.completed ? 'line-through' : 'none',
                     }}
                   >
-                    {t.text}
+                    {t.content}
                   </span>
-                  <span
-                    style={{
-                      width: 7,
-                      height: 7,
-                      borderRadius: '50%',
-                      flexShrink: 0,
-                      background: priorityColor[t.priority],
-                    }}
-                  />
                 </label>
               ))}
             </div>

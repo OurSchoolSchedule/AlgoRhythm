@@ -1,42 +1,45 @@
+import { useNotifications } from '@/hooks'
+
 export const NOTIFICATION_PANEL_WIDTH = 280
 const PANEL_VERTICAL_INSET = 16
 
-const NOTIFICATIONS = [
-  {
-    group: '오늘',
-    items: [
-      { title: '4월 9일 8교시 보결 요청', teacher: '조상은 선생님' },
-      { title: '4월 9일 8교시 보결 요청', teacher: '조상은 선생님' },
-      { title: '4월 9일 8교시 보결 요청', teacher: '김민지 선생님' },
-    ],
-  },
-  {
-    group: '이번주',
-    items: [
-      { title: '4월 12일 3교시 장소 변경 알림', teacher: '1-3반' },
-      { title: '4월 11일 시간표 확정 안내', teacher: '관리자' },
-      { title: '4월 10일 5교시 보결 요청', teacher: '이철수 선생님' },
-      { title: '4월 10일 2교시 시프트 교환', teacher: '박지은 선생님' },
-    ],
-  },
-  {
-    group: '이전',
-    items: [{ title: '3월 28일 시간표 생성 완료', teacher: '관리자' }],
-  },
-]
+const GROUP_ORDER = ['오늘', '이번주', '이전']
 
-function NotificationItem({ title, teacher }) {
+function groupNotifications(list) {
+  const now = new Date()
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const startOfWeek = new Date(startOfToday)
+  startOfWeek.setDate(startOfToday.getDate() - 7)
+
+  const groups = { 오늘: [], 이번주: [], 이전: [] }
+  for (const n of list) {
+    const t = n.createdAt ? new Date(n.createdAt) : null
+    if (t && t >= startOfToday) groups['오늘'].push(n)
+    else if (t && t >= startOfWeek) groups['이번주'].push(n)
+    else groups['이전'].push(n)
+  }
+  return groups
+}
+
+function NotificationItem({ message, storeName }) {
   return (
     <div style={{ marginBottom: 14 }}>
       <p style={{ margin: '0 0 4px', fontSize: 14, color: '#2c2c2a', lineHeight: 1.5 }}>
-        • {title}
+        • {message}
       </p>
-      <p style={{ margin: 0, fontSize: 13, color: '#888', paddingLeft: 12 }}>- {teacher}</p>
+      {storeName && (
+        <p style={{ margin: 0, fontSize: 13, color: '#888', paddingLeft: 12 }}>- {storeName}</p>
+      )}
     </div>
   )
 }
 
 export default function NotificationSidebar({ open, onClose }) {
+  const { data: notifications = [], isLoading, isError } = useNotifications({
+    enabled: open,
+  })
+  const grouped = groupNotifications(notifications)
+  const visibleGroups = GROUP_ORDER.filter((g) => grouped[g].length > 0)
   return (
     <aside
       style={{
@@ -113,8 +116,17 @@ export default function NotificationSidebar({ open, onClose }) {
       </div>
 
       <div className="hide-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 24px' }}>
-        {NOTIFICATIONS.map((section, index) => (
-          <div key={section.group}>
+        {isLoading && (
+          <p style={{ margin: 0, fontSize: 13, color: '#888' }}>불러오는 중...</p>
+        )}
+        {isError && (
+          <p style={{ margin: 0, fontSize: 13, color: '#d85a30' }}>알림을 불러오지 못했습니다.</p>
+        )}
+        {!isLoading && !isError && visibleGroups.length === 0 && (
+          <p style={{ margin: 0, fontSize: 13, color: '#b4b2a9' }}>새로운 알림이 없습니다.</p>
+        )}
+        {visibleGroups.map((group, index) => (
+          <div key={group}>
             {index > 0 && (
               <div
                 style={{
@@ -132,10 +144,14 @@ export default function NotificationSidebar({ open, onClose }) {
                 color: '#2c2c2a',
               }}
             >
-              {section.group}
+              {group}
             </p>
-            {section.items.map((item, i) => (
-              <NotificationItem key={`${section.group}-${i}`} {...item} />
+            {grouped[group].map((item, i) => (
+              <NotificationItem
+                key={`${group}-${i}`}
+                message={item.message}
+                storeName={item.storeName}
+              />
             ))}
           </div>
         ))}

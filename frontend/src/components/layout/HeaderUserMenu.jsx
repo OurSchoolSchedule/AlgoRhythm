@@ -58,7 +58,7 @@ const PROFILE = {
   },
 }
 
-export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle }) {
+export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onLogout }) {
   const [profileOpen, setProfileOpen] = useState(false)
   const menuRef = useRef(null)
   const profile = PROFILE[userRole] ?? PROFILE.worker
@@ -171,7 +171,7 @@ export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle }) {
             </p>
           </div>
 
-          <div style={{ borderTop: '0.5px solid #e8e6e0', padding: '16px 24px 20px' }}>
+          <div style={{ borderTop: '0.5px solid #e8e6e0', padding: '16px 24px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
             <button
               type="button"
               style={{
@@ -188,6 +188,28 @@ export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle }) {
             >
               시간대 선호도 제출
             </button>
+            {onLogout && (
+              <button
+                type="button"
+                onClick={() => {
+                  setProfileOpen(false)
+                  onLogout()
+                }}
+                style={{
+                  width: '100%',
+                  padding: '10px 0',
+                  borderRadius: 8,
+                  border: '0.5px solid #e3b9a8',
+                  background: '#fff',
+                  color: '#d85a30',
+                  fontSize: 14,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+              >
+                로그아웃
+              </button>
+            )}
           </div>
         </div>
       )}
