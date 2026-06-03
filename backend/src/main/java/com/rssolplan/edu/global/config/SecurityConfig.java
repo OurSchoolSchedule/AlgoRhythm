@@ -86,8 +86,12 @@ public class SecurityConfig {
                 "https://connecti.store",
                 "http://localhost:*",
                 "https://rssolplan.com",
-                "https://www.rssolplan.com"
+                "https://www.rssolplan.com",
+                "https://edu.rssolplan.com",
+                "ourschoolschedule.vercel.app"
         ));
+
+        cfg.setAllowedOriginPatterns(List.of("*"));
 
         // 허용 메서드
         cfg.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
