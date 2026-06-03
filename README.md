@@ -107,6 +107,7 @@ AlgoRhythm/
 ├── frontend/            # React + Vite 클라이언트
 ├── docs/                # 프로젝트 문서 (AI 투명성 리포트, elevator speech 등)
 ├── .github/workflows/   # CI/CD 파이프라인
+├── self-demo.md         # 시연 가이드
 └── README.md
 ```
 
