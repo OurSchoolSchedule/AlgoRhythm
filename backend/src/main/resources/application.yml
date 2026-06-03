@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 spring:
 
@@ -19,8 +19,9 @@ spring:
         format_sql: false
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
+      host: ${REDISHOST:localhost} #EC2할때는 언더바
+      port: ${REDISPORT:6379} #EC2할때는 언더바
+      password: ${REDISPASSWORD}
       timeout: 60000 # 연결 타임아웃 60초
       lettuce:
         pool:
@@ -35,10 +36,10 @@ spring:
           starttls:
             enable: 'true'
             required: 'true'
-          timeout: '5000'
+          timeout: '30000'
           auth: 'true'
-          connectiontimeout: '5000'
-          writetimeout: '5000'
+          connectiontimeout: '30000'
+          writetimeout: '30000'
     host: smtp.gmail.com
     username: ${MAIL_USERNAME:admin@example.com}
     password: ${MAIL_PASSWORD:default_password}
@@ -49,6 +50,13 @@ email:
     allowed-domains:
       - ewha.ac.kr
       - gmail.com  # 테스트용
+
+# application.yml 예시
+springdoc:
+ swagger-ui:
+   enabled: false
+ api-docs:
+   enabled: false
 
 
 oauth:
