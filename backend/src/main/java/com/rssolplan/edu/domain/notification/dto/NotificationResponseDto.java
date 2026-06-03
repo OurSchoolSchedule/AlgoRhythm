@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 @Builder
 public class NotificationResponseDto {
 
+    private Long id;
     private String storeName;
     private String profileImageUrl;
 
@@ -21,6 +22,9 @@ public class NotificationResponseDto {
     private String message;
 
     private LocalDateTime createdAt;
+
+    private Notification.TargetType targetType;
+    private Long targetId;
 
     // ===== 요청 ID =====
     private Long shiftSwapRequestId;
