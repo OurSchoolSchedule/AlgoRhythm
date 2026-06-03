@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://api.rssolplan.com/api/:path*"
+      "destination": "https://edu.rssolplan.com/api/:path*"
     },
     {
       "source": "/oauth2/:path*",
-      "destination": "https://api.rssolplan.com/oauth2/:path*"
+      "destination": "https://edu.rssolplan.com/oauth2/:path*"
     }
   ]
 }
