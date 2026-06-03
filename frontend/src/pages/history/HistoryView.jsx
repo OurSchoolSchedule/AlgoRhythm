@@ -1,4 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import {
+  useStoreStaffSummary,
+  useStoreSetting,
+  useUpdateStoreSetting,
+} from "@/hooks";
 
 const historyData = [
   { id: 1, date: "2026.05.28", type: "보결", detail: "3교시 · 2-3반 · 수학 → 김민지 선생님 보결 처리", status: "완료" },
@@ -62,16 +67,67 @@ export function HistoryView({ navigate }) {
   );
 }
 
-const teachers = [
-  { id: 1, name: "김민지", subject: "수학", classes: ["1-3", "1-4", "3-2"], hours: 14, isHomeroom: true, homeroom: "1-4", status: "정상" },
-  { id: 2, name: "이철수", subject: "수학", classes: ["1-2", "3-1", "3-3"], hours: 12, isHomeroom: false, homeroom: "-", status: "정상" },
-  { id: 3, name: "박지은", subject: "수학", classes: ["1-3", "2-3"], hours: 10, isHomeroom: true, homeroom: "2-3", status: "부재" },
-  { id: 4, name: "최영호", subject: "수학", classes: ["2-1", "2-2", "3-3"], hours: 13, isHomeroom: false, homeroom: "-", status: "정상" },
-];
+const STATUS_LABEL = { HIRED: "재직", ON_LEAVE: "휴직", RESIGNED: "퇴직" };
+const STATUS_STYLE = {
+  HIRED: { bg: "#e1f5ee", color: "#0f6e56" },
+  ON_LEAVE: { bg: "#faeeda", color: "#f09500" },
+  RESIGNED: { bg: "#f1efe8", color: "#888" },
+};
+// 매장 API(OWNER/STAFF)를 학교 도메인 라벨로 매핑
+const ROLE_LABEL = { OWNER: "관리자", STAFF: "교사" };
+
+// "HH:mm:ss" -> "HH:mm" (input[type=time]), 빈 값 안전 처리
+function toInputTime(t) {
+  return t ? t.slice(0, 5) : "";
+}
+// "HH:mm" -> "HH:mm:ss" (API 전송용)
+function toApiTime(t) {
+  return t && t.length === 5 ? `${t}:00` : t;
+}
 
 export function AdminView({ navigate }) {
   const [tab, setTab] = useState("교사");
   const tabs = ["교사", "학급", "설정"];
+
+  const {
+    data: staffSummary,
+    isLoading: staffLoading,
+    isError: staffError,
+  } = useStoreStaffSummary();
+  const staffList = staffSummary?.staffList ?? [];
+
+  const {
+    data: setting,
+    isLoading: settingLoading,
+    isError: settingError,
+  } = useStoreSetting();
+  const updateSetting = useUpdateStoreSetting();
+  const [form, setForm] = useState(null);
+
+  useEffect(() => {
+    if (!setting) return;
+    setForm({
+      openTime: toInputTime(setting.openTime),
+      closeTime: toInputTime(setting.closeTime),
+      hasBreakTime: Boolean(setting.hasBreakTime),
+      breakStartTime: toInputTime(setting.breakStartTime),
+      breakEndTime: toInputTime(setting.breakEndTime),
+      useSegments: Boolean(setting.useSegments),
+    });
+  }, [setting]);
+
+  const handleSaveSetting = () => {
+    if (!form) return;
+    updateSetting.mutate({
+      openTime: toApiTime(form.openTime),
+      closeTime: toApiTime(form.closeTime),
+      useSegments: form.useSegments,
+      segments: setting?.segments ?? [],
+      hasBreakTime: form.hasBreakTime,
+      breakStartTime: form.hasBreakTime ? toApiTime(form.breakStartTime) : null,
+      breakEndTime: form.hasBreakTime ? toApiTime(form.breakEndTime) : null,
+    });
+  };
 
   return (
     <div>
@@ -114,47 +170,62 @@ export function AdminView({ navigate }) {
       {tab === "교사" && (
         <div style={{ background: "#fff", borderRadius: 12, border: "0.5px solid #e8e6e0", padding: "20px 24px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#2c2c2a" }}>교사 목록</p>
-            <button style={{ padding: "7px 14px", borderRadius: 8, border: "none", background: "#27a859", color: "#fff", fontSize: 13, cursor: "pointer" }}>+ 교사 추가</button>
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#2c2c2a" }}>
+              교사 목록{staffSummary ? ` · 총 ${staffSummary.totalStaffCount}명` : ""}
+            </p>
+            {staffSummary?.storeName && (
+              <span style={{ fontSize: 12, color: "#888" }}>
+                {staffSummary.storeName} · {staffSummary.year}년 {staffSummary.month}월
+              </span>
+            )}
           </div>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-            <thead>
-              <tr style={{ borderBottom: "0.5px solid #e8e6e0" }}>
-                {["이름", "담당 과목", "담임 여부", "담임 학반", "주간 시수", "상태", ""].map(h => (
-                  <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "#888" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {teachers.map(t => (
-                <tr key={t.id} style={{ borderBottom: "0.5px solid #f1efe8" }}>
-                  <td style={{ padding: "10px 12px", fontWeight: 600, color: "#2c2c2a" }}>{t.name}</td>
-                  <td style={{ padding: "10px 12px", color: "#444" }}>{t.subject}</td>
-                  <td style={{ padding: "10px 12px" }}>
-                    <span style={{
-                      padding: "2px 8px", borderRadius: 12, fontSize: 12,
-                      background: t.isHomeroom ? "#e1f5ee" : "#f1efe8",
-                      color: t.isHomeroom ? "#0f6e56" : "#888",
-                    }}>{t.isHomeroom ? "담임" : "비담임"}</span>
-                  </td>
-                  <td style={{ padding: "10px 12px", color: "#888" }}>{t.homeroom}</td>
-                  <td style={{ padding: "10px 12px" }}>
-                    <span style={{ background: "#e8f7ee", color: "#27a859", padding: "3px 10px", borderRadius: 12, fontSize: 12, fontWeight: 600 }}>{t.hours}시간</span>
-                  </td>
-                  <td style={{ padding: "10px 12px" }}>
-                    <span style={{
-                      padding: "2px 8px", borderRadius: 12, fontSize: 12,
-                      background: t.status === "정상" ? "#e1f5ee" : "#faeeda",
-                      color: t.status === "정상" ? "#0f6e56" : "#f09500",
-                    }}>{t.status}</span>
-                  </td>
-                  <td style={{ padding: "10px 12px" }}>
-                    <button style={{ background: "none", border: "none", cursor: "pointer", color: "#27a859", fontSize: 12 }}>수정</button>
-                  </td>
+
+          {staffLoading && (
+            <p style={{ margin: 0, fontSize: 13, color: "#888" }}>불러오는 중...</p>
+          )}
+          {staffError && (
+            <p style={{ margin: 0, fontSize: 13, color: "#d85a30" }}>
+              교사 목록을 불러오지 못했습니다. (관리자 권한이 필요할 수 있습니다)
+            </p>
+          )}
+          {!staffLoading && !staffError && staffList.length === 0 && (
+            <p style={{ margin: 0, fontSize: 13, color: "#b4b2a9" }}>등록된 교사가 없습니다.</p>
+          )}
+
+          {!staffLoading && !staffError && staffList.length > 0 && (
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr style={{ borderBottom: "0.5px solid #e8e6e0" }}>
+                  {["이름", "역할", "재직상태", "지각", "결근", "총 수업"].map(h => (
+                    <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "#888" }}>{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {staffList.map(s => {
+                  const st = STATUS_STYLE[s.employmentStatus] ?? { bg: "#f1efe8", color: "#888" };
+                  return (
+                    <tr key={s.userStoreId} style={{ borderBottom: "0.5px solid #f1efe8" }}>
+                      <td style={{ padding: "10px 12px", fontWeight: 600, color: "#2c2c2a" }}>{s.username}</td>
+                      <td style={{ padding: "10px 12px", color: "#444" }}>{ROLE_LABEL[s.role] ?? s.role}</td>
+                      <td style={{ padding: "10px 12px" }}>
+                        <span style={{ padding: "2px 8px", borderRadius: 12, fontSize: 12, background: st.bg, color: st.color }}>
+                          {STATUS_LABEL[s.employmentStatus] ?? s.employmentStatus}
+                        </span>
+                      </td>
+                      <td style={{ padding: "10px 12px", color: s.lateCount > 0 ? "#f09500" : "#888" }}>{s.lateCount ?? 0}</td>
+                      <td style={{ padding: "10px 12px", color: s.absenceCount > 0 ? "#d85a30" : "#888" }}>{s.absenceCount ?? 0}</td>
+                      <td style={{ padding: "10px 12px" }}>
+                        <span style={{ background: "#e8f7ee", color: "#27a859", padding: "3px 10px", borderRadius: 12, fontSize: 12, fontWeight: 600 }}>
+                          {s.totalShiftCount ?? 0}회
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 
@@ -178,26 +249,86 @@ export function AdminView({ navigate }) {
 
       {tab === "설정" && (
         <div style={{ background: "#fff", borderRadius: 12, border: "0.5px solid #e8e6e0", padding: "20px 24px" }}>
-          <p style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: "#2c2c2a" }}>시스템 설정</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {[
-              { label: "학교명", value: "AlgoRhythm 고등학교" },
-              { label: "교시 수", value: "8교시" },
-              { label: "학기 시작 시간", value: "08:30" },
-              { label: "교시당 수업 시간", value: "50분" },
-            ].map(s => (
-              <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <label style={{ fontSize: 13, color: "#888", width: 120 }}>{s.label}</label>
-                <input defaultValue={s.value} style={{
-                  flex: 1, maxWidth: 240, padding: "7px 12px", borderRadius: 8,
-                  border: "0.5px solid #d3d1c7", fontSize: 13, color: "#2c2c2a",
-                }} />
-              </div>
-            ))}
-            <button style={{ marginTop: 8, padding: "8px 24px", borderRadius: 8, border: "none", background: "#27a859", color: "#fff", fontSize: 13, cursor: "pointer", alignSelf: "flex-start" }}>저장</button>
-          </div>
+          <p style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: "#2c2c2a" }}>학교 운영 설정</p>
+
+          {settingLoading && (
+            <p style={{ margin: 0, fontSize: 13, color: "#888" }}>불러오는 중...</p>
+          )}
+          {settingError && (
+            <p style={{ margin: 0, fontSize: 13, color: "#d85a30" }}>설정을 불러오지 못했습니다.</p>
+          )}
+
+          {!settingLoading && !settingError && form && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <SettingField label="운영 시작 시간">
+                <input type="time" value={form.openTime}
+                  onChange={e => setForm(f => ({ ...f, openTime: e.target.value }))}
+                  style={settingInputStyle} />
+              </SettingField>
+              <SettingField label="운영 종료 시간">
+                <input type="time" value={form.closeTime}
+                  onChange={e => setForm(f => ({ ...f, closeTime: e.target.value }))}
+                  style={settingInputStyle} />
+              </SettingField>
+
+              <SettingField label="휴게시간 사용">
+                <input type="checkbox" checked={form.hasBreakTime}
+                  onChange={e => setForm(f => ({ ...f, hasBreakTime: e.target.checked }))}
+                  style={{ accentColor: "#27a859", width: 16, height: 16 }} />
+              </SettingField>
+              {form.hasBreakTime && (
+                <>
+                  <SettingField label="휴게 시작 시간">
+                    <input type="time" value={form.breakStartTime}
+                      onChange={e => setForm(f => ({ ...f, breakStartTime: e.target.value }))}
+                      style={settingInputStyle} />
+                  </SettingField>
+                  <SettingField label="휴게 종료 시간">
+                    <input type="time" value={form.breakEndTime}
+                      onChange={e => setForm(f => ({ ...f, breakEndTime: e.target.value }))}
+                      style={settingInputStyle} />
+                  </SettingField>
+                </>
+              )}
+
+              {updateSetting.isError && (
+                <p style={{ margin: 0, fontSize: 12, color: "#d85a30" }}>저장에 실패했습니다.</p>
+              )}
+              {updateSetting.isSuccess && (
+                <p style={{ margin: 0, fontSize: 12, color: "#1d9e75" }}>저장되었습니다.</p>
+              )}
+
+              <button onClick={handleSaveSetting} disabled={updateSetting.isPending}
+                style={{
+                  marginTop: 8, padding: "8px 24px", borderRadius: 8, border: "none",
+                  background: updateSetting.isPending ? "#bfe3cd" : "#27a859", color: "#fff",
+                  fontSize: 13, cursor: updateSetting.isPending ? "default" : "pointer", alignSelf: "flex-start",
+                }}>
+                {updateSetting.isPending ? "저장 중..." : "저장"}
+              </button>
+            </div>
+          )}
         </div>
       )}
+    </div>
+  );
+}
+
+const settingInputStyle = {
+  flex: 1,
+  maxWidth: 240,
+  padding: "7px 12px",
+  borderRadius: 8,
+  border: "0.5px solid #d3d1c7",
+  fontSize: 13,
+  color: "#2c2c2a",
+};
+
+function SettingField({ label, children }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <label style={{ fontSize: 13, color: "#888", width: 120 }}>{label}</label>
+      {children}
     </div>
   );
 }

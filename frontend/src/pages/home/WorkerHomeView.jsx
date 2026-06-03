@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNotifications } from "@/hooks";
 
 const DAYS = ["월", "화", "수", "목", "금"];
 const PERIODS = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -11,24 +12,33 @@ const mySchedule = {
   금: { 1: "2-3 | 확통 | 확률", 3: "1-3 | 미적분 1", 5: "2-4 | 기하", 7: "3-2 | 수학Ⅱ" },
 };
 
-const notices = [
-  { id: 1, type: "보결", text: "목요일 3교시 · 2-2반 보결 요청이 도착했습니다.", time: "오늘 08:12", urgent: true },
-  { id: 2, type: "안내", text: "다음 주 시간표가 확정되었습니다.", time: "어제 17:40", urgent: false },
-  { id: 3, type: "변경", text: "오늘 5교시 장소: 시청각실로 변경되었습니다.", time: "오늘 07:55", urgent: false },
-];
+function formatNotiTime(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString("ko-KR", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 export default function WorkerHomeView() {
   const today = "수";
   const [selectedDay, setSelectedDay] = useState(today);
   const [showRequest, setShowRequest] = useState(false);
+  const {
+    data: notifications = [],
+    isLoading: notiLoading,
+    isError: notiError,
+  } = useNotifications();
 
   const todayClasses = Object.values(mySchedule[today]).filter(Boolean).length;
   const weekTotal = Object.values(mySchedule).reduce((sum, day) => sum + Object.keys(day).length, 0);
   const currentPeriod = 3;
   const currentClass = mySchedule[today][currentPeriod];
-
-  const typeColor = { 보결: "#f09500", 변경: "#27a859", 안내: "#1d9e75" };
-  const typeBg = { 보결: "#faeeda", 변경: "#e8f7ee", 안내: "#e1f5ee" };
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return (
     <div>
@@ -40,7 +50,7 @@ export default function WorkerHomeView() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 20 }}>
         <StatCard label="오늘 수업" value={todayClasses} unit="교시" color="#27a859" />
         <StatCard label="이번 주 수업" value={weekTotal} unit="시수" color="#1d9e75" />
-        <StatCard label="미확인 알림" value={notices.filter(n => n.urgent).length} unit="건" color="#d85a30" />
+        <StatCard label="미확인 알림" value={unreadCount} unit="건" color="#d85a30" />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 16 }}>
@@ -107,20 +117,31 @@ export default function WorkerHomeView() {
           </Card>
 
           <Card title="알림">
-            {notices.map(n => (
-              <div key={n.id} style={{
+            {notiLoading && (
+              <p style={{ margin: 0, fontSize: 12, color: "#888" }}>불러오는 중...</p>
+            )}
+            {notiError && (
+              <p style={{ margin: 0, fontSize: 12, color: "#d85a30" }}>알림을 불러오지 못했습니다.</p>
+            )}
+            {!notiLoading && !notiError && notifications.length === 0 && (
+              <p style={{ margin: 0, fontSize: 12, color: "#b4b2a9" }}>새로운 알림이 없습니다.</p>
+            )}
+            {notifications.map((n, i) => (
+              <div key={i} style={{
                 padding: "8px 0", borderBottom: "0.5px solid #e8e6e0",
                 display: "flex", flexDirection: "column", gap: 4,
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{
-                    fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 4,
-                    background: typeBg[n.type], color: typeColor[n.type],
-                  }}>{n.type}</span>
-                  {n.urgent && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#d85a30" }} />}
+                  {n.type && (
+                    <span style={{
+                      fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 4,
+                      background: "#e8f7ee", color: "#1d9e75",
+                    }}>{n.type}</span>
+                  )}
+                  {!n.isRead && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#d85a30" }} />}
                 </div>
-                <p style={{ margin: 0, fontSize: 12, color: "#444", lineHeight: 1.5 }}>{n.text}</p>
-                <p style={{ margin: 0, fontSize: 11, color: "#b4b2a9" }}>{n.time}</p>
+                <p style={{ margin: 0, fontSize: 12, color: "#444", lineHeight: 1.5 }}>{n.message}</p>
+                <p style={{ margin: 0, fontSize: 11, color: "#b4b2a9" }}>{formatNotiTime(n.createdAt)}</p>
               </div>
             ))}
 

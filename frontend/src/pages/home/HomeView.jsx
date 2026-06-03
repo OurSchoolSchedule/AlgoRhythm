@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useTodos, useToggleTodo } from "@/hooks";
+import { toISODate } from "@/utils";
 
 const DAYS = ["월", "화", "수", "목", "금"];
 const PERIODS = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -22,23 +23,20 @@ const briefs = [
   { time: "11:30", type: "완료", text: "오늘 시간표 최종 확정 완료" },
 ];
 
-const todos = [
-  { id: 1, done: false, text: "다음 주 시간표 초안 검토", priority: "high" },
-  { id: 2, done: true, text: "3학년 수학 담당 배정 완료", priority: "low" },
-  { id: 3, done: false, text: "신규 교사 과목 배정 설정", priority: "medium" },
-  { id: 4, done: false, text: "보결 처리 내역 학교장 보고", priority: "medium" },
-];
-
 export default function HomeView({ navigate }) {
   const today = "수";
-  const [todoDone, setTodoDone] = useState(todos.map(t => t.done));
+  const todayDate = toISODate();
+  const { data: todoData, isLoading: todoLoading, isError: todoError } = useTodos(todayDate);
+  const toggleTodo = useToggleTodo();
+  const todoItems = todoData
+    ? [...todoData.storeTodos, ...todoData.handoverTodos, ...todoData.personalTodos]
+    : [];
 
   const currentPeriod = 3;
   const currentClass = todaySchedule[today][currentPeriod];
 
   const typeColor = { 보결: "#f09500", 변경: "#27a859", 완료: "#1d9e75" };
   const typeBg = { 보결: "#faeeda", 변경: "#e8f7ee", 완료: "#e1f5ee" };
-  const priorityColor = { high: "#d85a30", medium: "#27a859", low: "#888" };
 
   return (
     <div>
@@ -131,22 +129,28 @@ export default function HomeView({ navigate }) {
 
           <Card title="할 일">
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {todos.map((t, i) => (
+              {todoLoading && (
+                <p style={{ margin: 0, fontSize: 13, color: "#888" }}>불러오는 중...</p>
+              )}
+              {todoError && (
+                <p style={{ margin: 0, fontSize: 13, color: "#d85a30" }}>할 일을 불러오지 못했습니다.</p>
+              )}
+              {!todoLoading && !todoError && todoItems.length === 0 && (
+                <p style={{ margin: 0, fontSize: 13, color: "#b4b2a9" }}>오늘 등록된 할 일이 없습니다.</p>
+              )}
+              {todoItems.map((t) => (
                 <label key={t.id} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
                   <input
                     type="checkbox"
-                    checked={todoDone[i]}
-                    onChange={() => setTodoDone(prev => prev.map((v, j) => j === i ? !v : v))}
+                    checked={Boolean(t.completed)}
+                    disabled={toggleTodo.isPending}
+                    onChange={() => toggleTodo.mutate(t.id)}
                     style={{ accentColor: "#27a859", width: 15, height: 15 }}
                   />
                   <span style={{
-                    fontSize: 13, color: todoDone[i] ? "#b4b2a9" : "#2c2c2a",
-                    textDecoration: todoDone[i] ? "line-through" : "none", flex: 1,
-                  }}>{t.text}</span>
-                  <span style={{
-                    width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
-                    background: priorityColor[t.priority],
-                  }} />
+                    fontSize: 13, color: t.completed ? "#b4b2a9" : "#2c2c2a",
+                    textDecoration: t.completed ? "line-through" : "none", flex: 1,
+                  }}>{t.content}</span>
                 </label>
               ))}
             </div>
