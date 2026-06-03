@@ -4,7 +4,10 @@
 
 /**
  * @typedef {Object} NotificationResponseDto
+ * @property {number} [id]
  * @property {string} storeName
+ * @property {string|null} targetType
+ * @property {number|null} targetId
  * @property {string} profileImageUrl
  * @property {string} category 백엔드 Notification.Category
  * @property {string} type 백엔드 Notification.Type

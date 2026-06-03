@@ -1,5 +1,6 @@
 // 알림(Notification) API
 import client from './client.js'
+import { normalizeNotification } from '@/utils/normalizeNotification.js'
 
 /**
  * 내 알림 목록 조회 (GET /api/notifications).
@@ -7,5 +8,5 @@ import client from './client.js'
  */
 export async function getNotifications() {
   const { data } = await client.get('/api/notifications')
-  return data
+  return (data ?? []).map(normalizeNotification)
 }

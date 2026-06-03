@@ -93,6 +93,7 @@ public class NotificationService {
             }
 
             NotificationResponseDto dto = NotificationResponseDto.builder()
+                    .id(n.getId())
                     .profileImageUrl(
                             n.getRequester() != null
                                     ? n.getRequester().getProfileImageUrl()
@@ -103,6 +104,8 @@ public class NotificationService {
                     .type(n.getType())
                     .message(n.getMessage())
                     .createdAt(n.getCreatedAt())
+                    .targetType(n.getTargetType())
+                    .targetId(n.getTargetId())
 
                     // 요청 id 추가
                     .shiftSwapRequestId(n.getShiftSwapRequestId())
