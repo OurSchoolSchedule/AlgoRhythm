@@ -8,6 +8,7 @@ export function formatDate(date) {
  * @returns {string}
  */
 export { getSchoolWeekRange } from './weekRange.js'
+export { buildSchoolTimetable, getKoreanWeekdayKey, getPeriodFromDatetime } from './schoolTimetable.js'
 export { formatShiftDatetime, formatShiftRange } from './formatShift.js'
 export {
   getNotificationAction,

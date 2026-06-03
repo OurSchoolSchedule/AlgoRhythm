@@ -1,28 +1,14 @@
 import { useMemo, useState } from "react";
-import { useTodos, useToggleTodo, useNotifications } from "@/hooks";
+import { useTodos, useToggleTodo, useNotifications, useSchoolTimetable } from "@/hooks";
 import CreateShiftSwapForm from "@/components/schedule/CreateShiftSwapForm.jsx";
+import DayTimetableList from "@/components/schedule/DayTimetableList.jsx";
 import { toISODate } from "@/utils";
+import { getTimetableErrorMessage } from "@/utils/timetableErrors.js";
 import { DOMAIN, localizeNotificationMessage, categoryLabel } from "@/constants/domainLabels.js";
 import {
   filterBriefingNotifications,
   filterTeacherBriefingNotifications,
 } from "@/utils/notificationActions.js";
-
-const DAYS = ["월", "화", "수", "목", "금"];
-const PERIODS = [1, 2, 3, 4, 5, 6, 7, 8];
-
-const todaySchedule = {
-  수: {
-    1: { class: "1-4", subject: "미적분 | 도함수" },
-    2: { class: "2-1", subject: "확률과 통계 | 조합" },
-    3: { class: "1-3", subject: "미적분 1" },
-    4: null,
-    5: { class: "3-2", subject: "수학 Ⅱ | 수열" },
-    6: null,
-    7: null,
-    8: { class: "2-4", subject: "기하 | 벡터" },
-  },
-};
 
 const adminBriefs = [
   { time: "08:40", type: "보결", text: "2교시 · 2-3반 박철수 선생님 부재 → 김민지 선생님 대체 예정" },
@@ -70,7 +56,12 @@ function buildBriefingItems(notifications, isAdmin) {
  */
 export default function HomeView({ navigate, userRole = "admin" }) {
   const isAdmin = userRole === "admin";
-  const todayKey = "수";
+  const {
+    timetable,
+    isLoading: timetableLoading,
+    isError: timetableError,
+    error: timetableErr,
+  } = useSchoolTimetable();
   const displayDate = new Date().toLocaleDateString("ko-KR", {
     year: "numeric",
     month: "2-digit",
@@ -94,13 +85,12 @@ export default function HomeView({ navigate, userRole = "admin" }) {
     : [];
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
-  const todayClassCount = Object.values(todaySchedule[todayKey]).filter(Boolean).length;
+  const todayClassCount = timetable.todayClassCount;
+  const weekClassCount = timetable.weekClassCount;
   const substituteCount = isAdmin
     ? notifications.filter((n) => n.category === "SHIFT_SWAP").length
     : 0;
 
-  const currentPeriod = 3;
-  const currentClass = todaySchedule[todayKey][currentPeriod];
   const typeColor = { 보결: "#f09500", 변경: "#27a859", 완료: "#1d9e75", 안내: "#185fa5" };
   const typeBg = { 보결: "#faeeda", 변경: "#e8f7ee", 완료: "#e1f5ee", 안내: "#e6f1fb" };
 
@@ -129,7 +119,7 @@ export default function HomeView({ navigate, userRole = "admin" }) {
         )}
         <StatCard
           label={isAdmin ? "등록 교사" : "이번 주 수업"}
-          value={isAdmin ? 42 : todayClassCount}
+          value={isAdmin ? 42 : weekClassCount}
           unit={isAdmin ? "명" : "시수"}
           color="#1d9e75"
         />
@@ -141,81 +131,22 @@ export default function HomeView({ navigate, userRole = "admin" }) {
           onTabChange={setLeftPanelTab}
           timetableContent={
             <>
-              {currentClass ? (
-                <div style={{ background: "#e8f7ee", borderRadius: 8, padding: "10px 14px", marginBottom: 12 }}>
-                  <span style={{ fontSize: 13, color: "#27a859", fontWeight: 600 }}>
-                    {currentPeriod}교시 · {currentClass.class} · {currentClass.subject}
-                  </span>
-                </div>
-              ) : (
-                <div style={{ background: "#f1efe8", borderRadius: 8, padding: "10px 14px", marginBottom: 12 }}>
-                  <span style={{ fontSize: 13, color: "#888" }}>현재 공강 시간입니다</span>
-                </div>
+              {timetableLoading && (
+                <p style={{ margin: 0, fontSize: 13, color: "#888" }}>시간표 불러오는 중...</p>
               )}
-
-              <div style={{ display: "flex", gap: 8, marginBottom: 10, alignItems: "center" }}>
-                {DAYS.map((d) => (
-                  <button
-                    key={d}
-                    type="button"
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: "50%",
-                      border: "none",
-                      background: d === todayKey ? "#27a859" : "transparent",
-                      color: d === todayKey ? "#fff" : "#5f5e5a",
-                      fontWeight: d === todayKey ? 600 : 400,
-                      fontSize: 13,
-                      cursor: "default",
-                    }}
-                  >
-                    {d}
-                  </button>
-                ))}
-              </div>
-
-              <div style={{ overflowY: "auto", maxHeight: 320 }}>
-                {PERIODS.map((p) => {
-                  const s = todaySchedule[todayKey][p];
-                  const isCurrent = p === currentPeriod;
-                  return (
-                    <div
-                      key={p}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        padding: "7px 0",
-                        borderBottom: "0.5px solid #e8e6e0",
-                      }}
-                    >
-                      <span style={{ fontSize: 12, color: "#888", width: 32, flexShrink: 0 }}>
-                        {p}교시
-                      </span>
-                      {s ? (
-                        <span
-                          style={{
-                            flex: 1,
-                            background: isCurrent ? "#e8f7ee" : "#f1efe8",
-                            color: isCurrent ? "#27a859" : "#444",
-                            borderRadius: 6,
-                            padding: "5px 10px",
-                            fontSize: 13,
-                            fontWeight: isCurrent ? 600 : 400,
-                          }}
-                        >
-                          {s.class} | {s.subject}
-                        </span>
-                      ) : (
-                        <span style={{ flex: 1, color: "#d3d1c7", fontSize: 13, paddingLeft: 10 }}>
-                          —
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+              {timetableError && (
+                <p style={{ margin: 0, fontSize: 13, color: "#d85a30" }}>
+                  {getTimetableErrorMessage(timetableErr)}
+                </p>
+              )}
+              {!timetableLoading && !timetableError && timetable.weekClassCount === 0 && (
+                <p style={{ margin: 0, fontSize: 13, color: "#b4b2a9" }}>
+                  이번 주 등록된 수업이 없습니다.
+                </p>
+              )}
+              {!timetableLoading && !timetableError && timetable.weekClassCount > 0 && (
+                <DayTimetableList timetable={timetable} />
+              )}
             </>
           }
           todoContent={

@@ -5,6 +5,7 @@ import {
   setAccessToken,
   clearTokens,
 } from './tokenStorage.js'
+import { shouldForceReLogin } from '@/utils/authToken.js'
 
 // 빈 문자열이면 상대 경로(같은 origin). 로컬 dev는 .env의 절대 URL, 배포는 .env.production의 빈 값.
 export const API_BASE_URL =
@@ -58,7 +59,21 @@ client.interceptors.response.use(
   async (error) => {
     const { response, config } = error
 
-    if (!response || response.status !== 401 || config?._retried) {
+    if (!response) {
+      return Promise.reject(error)
+    }
+
+    // Spring Security 미인증 403 / 401 → dev-token만으로는 refresh 불가
+    if (
+      shouldForceReLogin(response) &&
+      !config?.url?.includes('/api/auth/dev-token')
+    ) {
+      clearTokens()
+      onAuthError?.()
+      return Promise.reject(error)
+    }
+
+    if (response.status !== 401 || config?._retried) {
       return Promise.reject(error)
     }
 
