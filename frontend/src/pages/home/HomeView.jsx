@@ -84,6 +84,7 @@ export default function HomeView({ navigate, userRole = "admin" }) {
     [notifications, isAdmin],
   );
   const [showSwapForm, setShowSwapForm] = useState(false);
+  const [leftPanelTab, setLeftPanelTab] = useState("timetable");
 
   const todayDateStr = toISODate();
   const { data: todoData, isLoading: todoLoading, isError: todoError } = useTodos(todayDateStr);
@@ -135,87 +136,90 @@ export default function HomeView({ navigate, userRole = "admin" }) {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 16, alignItems: "start" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <Card title="오늘 시간표">
-            {currentClass ? (
-              <div style={{ background: "#e8f7ee", borderRadius: 8, padding: "10px 14px", marginBottom: 12 }}>
-                <span style={{ fontSize: 13, color: "#27a859", fontWeight: 600 }}>
-                  {currentPeriod}교시 · {currentClass.class} · {currentClass.subject}
-                </span>
-              </div>
-            ) : (
-              <div style={{ background: "#f1efe8", borderRadius: 8, padding: "10px 14px", marginBottom: 12 }}>
-                <span style={{ fontSize: 13, color: "#888" }}>현재 공강 시간입니다</span>
-              </div>
-            )}
+        <HomeTimetableTodoPanel
+          activeTab={leftPanelTab}
+          onTabChange={setLeftPanelTab}
+          timetableContent={
+            <>
+              {currentClass ? (
+                <div style={{ background: "#e8f7ee", borderRadius: 8, padding: "10px 14px", marginBottom: 12 }}>
+                  <span style={{ fontSize: 13, color: "#27a859", fontWeight: 600 }}>
+                    {currentPeriod}교시 · {currentClass.class} · {currentClass.subject}
+                  </span>
+                </div>
+              ) : (
+                <div style={{ background: "#f1efe8", borderRadius: 8, padding: "10px 14px", marginBottom: 12 }}>
+                  <span style={{ fontSize: 13, color: "#888" }}>현재 공강 시간입니다</span>
+                </div>
+              )}
 
-            <div style={{ display: "flex", gap: 8, marginBottom: 10, alignItems: "center" }}>
-              {DAYS.map((d) => (
-                <button
-                  key={d}
-                  type="button"
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: "50%",
-                    border: "none",
-                    background: d === todayKey ? "#27a859" : "transparent",
-                    color: d === todayKey ? "#fff" : "#5f5e5a",
-                    fontWeight: d === todayKey ? 600 : 400,
-                    fontSize: 13,
-                    cursor: "default",
-                  }}
-                >
-                  {d}
-                </button>
-              ))}
-            </div>
-
-            <div style={{ overflowY: "auto", maxHeight: 280 }}>
-              {PERIODS.map((p) => {
-                const s = todaySchedule[todayKey][p];
-                const isCurrent = p === currentPeriod;
-                return (
-                  <div
-                    key={p}
+              <div style={{ display: "flex", gap: 8, marginBottom: 10, alignItems: "center" }}>
+                {DAYS.map((d) => (
+                  <button
+                    key={d}
+                    type="button"
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      padding: "7px 0",
-                      borderBottom: "0.5px solid #e8e6e0",
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      border: "none",
+                      background: d === todayKey ? "#27a859" : "transparent",
+                      color: d === todayKey ? "#fff" : "#5f5e5a",
+                      fontWeight: d === todayKey ? 600 : 400,
+                      fontSize: 13,
+                      cursor: "default",
                     }}
                   >
-                    <span style={{ fontSize: 12, color: "#888", width: 32, flexShrink: 0 }}>
-                      {p}교시
-                    </span>
-                    {s ? (
-                      <span
-                        style={{
-                          flex: 1,
-                          background: isCurrent ? "#e8f7ee" : "#f1efe8",
-                          color: isCurrent ? "#27a859" : "#444",
-                          borderRadius: 6,
-                          padding: "5px 10px",
-                          fontSize: 13,
-                          fontWeight: isCurrent ? 600 : 400,
-                        }}
-                      >
-                        {s.class} | {s.subject}
-                      </span>
-                    ) : (
-                      <span style={{ flex: 1, color: "#d3d1c7", fontSize: 13, paddingLeft: 10 }}>
-                        —
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
+                    {d}
+                  </button>
+                ))}
+              </div>
 
-          <Card title="할 일">
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ overflowY: "auto", maxHeight: 320 }}>
+                {PERIODS.map((p) => {
+                  const s = todaySchedule[todayKey][p];
+                  const isCurrent = p === currentPeriod;
+                  return (
+                    <div
+                      key={p}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        padding: "7px 0",
+                        borderBottom: "0.5px solid #e8e6e0",
+                      }}
+                    >
+                      <span style={{ fontSize: 12, color: "#888", width: 32, flexShrink: 0 }}>
+                        {p}교시
+                      </span>
+                      {s ? (
+                        <span
+                          style={{
+                            flex: 1,
+                            background: isCurrent ? "#e8f7ee" : "#f1efe8",
+                            color: isCurrent ? "#27a859" : "#444",
+                            borderRadius: 6,
+                            padding: "5px 10px",
+                            fontSize: 13,
+                            fontWeight: isCurrent ? 600 : 400,
+                          }}
+                        >
+                          {s.class} | {s.subject}
+                        </span>
+                      ) : (
+                        <span style={{ flex: 1, color: "#d3d1c7", fontSize: 13, paddingLeft: 10 }}>
+                          —
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          }
+          todoContent={
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, minHeight: 280 }}>
               {todoLoading && (
                 <p style={{ margin: 0, fontSize: 13, color: "#888" }}>불러오는 중...</p>
               )}
@@ -247,8 +251,8 @@ export default function HomeView({ navigate, userRole = "admin" }) {
                 </label>
               ))}
             </div>
-          </Card>
-        </div>
+          }
+        />
 
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {isAdmin && (
@@ -337,6 +341,65 @@ export default function HomeView({ navigate, userRole = "admin" }) {
             )}
           </Card>
         </div>
+      </div>
+    </div>
+  );
+}
+
+const PANEL_BORDER = "#e8e6e0";
+const TAB_INACTIVE_BG = "#f1efe8";
+
+const LEFT_PANEL_TABS = [
+  { id: "timetable", label: "시간표" },
+  { id: "todo", label: "투두" },
+];
+
+function HomeTimetableTodoPanel({ activeTab, onTabChange, timetableContent, todoContent }) {
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 0, paddingLeft: 2 }}>
+        {LEFT_PANEL_TABS.map((tab) => {
+          const active = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => onTabChange(tab.id)}
+              style={{
+                position: "relative",
+                zIndex: active ? 2 : 1,
+                marginBottom: active ? -1 : 0,
+                padding: "10px 28px",
+                borderTop: `0.5px solid ${PANEL_BORDER}`,
+                borderLeft: `0.5px solid ${PANEL_BORDER}`,
+                borderRight: `0.5px solid ${PANEL_BORDER}`,
+                borderBottom: active ? "1px solid #fff" : `0.5px solid ${PANEL_BORDER}`,
+                borderRadius: "10px 10px 0 0",
+                background: active ? "#fff" : TAB_INACTIVE_BG,
+                color: active ? "#2c2c2a" : "#888",
+                fontWeight: active ? 700 : 500,
+                fontSize: 15,
+                cursor: "pointer",
+                lineHeight: 1.2,
+              }}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          background: "#fff",
+          border: `0.5px solid ${PANEL_BORDER}`,
+          borderRadius: "0 12px 12px 12px",
+          padding: "16px 18px",
+        }}
+      >
+        {activeTab === "timetable" ? timetableContent : todoContent}
       </div>
     </div>
   );
