@@ -6,8 +6,11 @@ import {
   clearTokens,
 } from './tokenStorage.js'
 
+// 빈 문자열이면 상대 경로(같은 origin). 로컬 dev는 .env의 절대 URL, 배포는 .env.production의 빈 값.
 export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+  import.meta.env.VITE_API_BASE_URL !== undefined
+    ? import.meta.env.VITE_API_BASE_URL
+    : 'http://localhost:8080'
 
 const client = axios.create({
   baseURL: API_BASE_URL,
