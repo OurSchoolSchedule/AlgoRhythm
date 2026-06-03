@@ -80,12 +80,11 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
 
-        // 허용할 프론트 개발 도메인
-        cfg.setAllowedOrigins(List.of(
+        // 허용 Origin (Vercel 배포·로컬 dev 포함)
+        cfg.setAllowedOriginPatterns(List.of(
+                "https://*.vercel.app",
                 "https://connecti.store",
-                "http://localhost:3000",
-                "http://localhost:5173",
-                "http://localhost:8080",
+                "http://localhost:*",
                 "https://rssolplan.com",
                 "https://www.rssolplan.com"
         ));
