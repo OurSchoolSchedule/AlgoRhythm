@@ -116,7 +116,7 @@ export default function Sidebar({ open, navigate, currentView, userRole, setUser
                 color: userRole === role ? '#fff' : '#5f5e5a',
               }}
             >
-              {role === 'admin' ? '관리자' : '일반'}
+              {role === 'admin' ? '관리자' : '교사'}
             </button>
           ))}
         </div>

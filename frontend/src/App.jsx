@@ -4,14 +4,14 @@ import HeaderUserMenu from '@/components/layout/HeaderUserMenu'
 import NotificationSidebar from '@/components/layout/NotificationSidebar'
 import AIFloatingChat from '@/components/common/AIFloatingChat'
 import HomeView from '@/pages/home/HomeView'
-import WorkerHomeView from '@/pages/home/WorkerHomeView'
 import ScheduleCreateView from '@/pages/schedule/ScheduleCreateView'
 import TimetableView from '@/pages/schedule/TimetableView'
 import SubjectManageView from '@/pages/store/SubjectManageView'
 import HistoryView, { AdminView } from '@/pages/history/HistoryView'
 import { DevLoginView } from '@/pages/auth'
 import { getAccessToken, clearTokens, setOnAuthError } from '@/api'
-import { useLogout } from '@/hooks'
+import { useLogout, useActiveStore } from '@/hooks'
+import { positionToUserRole } from '@/constants/domainLabels.js'
 
 export default function App() {
   const [authed, setAuthed] = useState(() => Boolean(getAccessToken()))
@@ -20,6 +20,13 @@ export default function App() {
   const [currentView, setCurrentView] = useState('home')
   const [userRole, setUserRole] = useState('admin') // "admin" | "worker"
   const logoutMutation = useLogout()
+  const { data: activeStore } = useActiveStore({ enabled: authed })
+
+  useEffect(() => {
+    if (activeStore?.position) {
+      setUserRole(positionToUserRole(activeStore.position))
+    }
+  }, [activeStore?.position])
 
   // 토큰 재발급 실패(인증 만료) 시 로그인 화면으로 복귀.
   useEffect(() => {
@@ -47,11 +54,7 @@ export default function App() {
   const renderView = () => {
     switch (currentView) {
       case 'home':
-        return userRole === 'admin' ? (
-          <HomeView navigate={navigate} />
-        ) : (
-          <WorkerHomeView navigate={navigate} />
-        )
+        return <HomeView navigate={navigate} userRole={userRole} />
       case 'timetable':
         return <TimetableView />
       case 'schedule-create':
@@ -63,7 +66,7 @@ export default function App() {
       case 'admin':
         return <AdminView navigate={navigate} />
       default:
-        return <HomeView navigate={navigate} />
+        return <HomeView navigate={navigate} userRole={userRole} />
     }
   }
 
