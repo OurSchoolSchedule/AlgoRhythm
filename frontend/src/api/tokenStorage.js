@@ -21,7 +21,12 @@ export function setTokens({ accessToken, refreshToken, userId } = {}) {
 }
 
 export function setAccessToken(accessToken) {
-  if (accessToken != null) localStorage.setItem(ACCESS_TOKEN_KEY, accessToken)
+  if (accessToken == null) return
+  const token =
+    typeof accessToken === 'string'
+      ? accessToken.trim().replace(/^"|"$/g, '')
+      : String(accessToken)
+  localStorage.setItem(ACCESS_TOKEN_KEY, token)
 }
 
 export function clearTokens() {

@@ -5,6 +5,7 @@ import {
   clearTokens,
   getRefreshToken,
 } from './tokenStorage.js'
+import { normalizeAccessToken, parseUserIdFromToken } from '@/utils/authToken.js'
 
 /**
  * 카카오 로그인 시작 페이지로 이동한다.
@@ -73,7 +74,19 @@ export async function logout() {
  */
 export async function issueDevToken(email) {
   const { data } = await client.post('/api/auth/dev-token', { email })
-  return data
+  const accessToken = normalizeAccessToken(data)
+  if (!accessToken) {
+    throw new Error('INVALID_DEV_TOKEN_RESPONSE')
+  }
+  return accessToken
+}
+
+/** dev-token 성공 후 accessToken + userId 저장 */
+export function saveDevLoginTokens(accessToken) {
+  const token = normalizeAccessToken(accessToken)
+  const userId = parseUserIdFromToken(token)
+  setTokens({ accessToken: token, userId: userId ?? undefined })
+  return token
 }
 
 /**

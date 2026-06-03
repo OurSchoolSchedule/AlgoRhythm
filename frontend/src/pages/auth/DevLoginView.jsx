@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useDevToken } from '@/hooks'
-import { setAccessToken } from '@/api'
+import { saveDevLoginTokens } from '@/api'
 
 /**
  * 개발용 로그인 화면.
@@ -16,7 +16,7 @@ export default function DevLoginView({ onSuccess }) {
     if (!email.trim()) return
     devToken.mutate(email.trim(), {
       onSuccess: (accessToken) => {
-        setAccessToken(accessToken)
+        saveDevLoginTokens(accessToken)
         onSuccess?.()
       },
     })
