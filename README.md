@@ -14,7 +14,8 @@
 [![Redis](https://img.shields.io/badge/Redis-Cache-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io)
 ![SMTP](https://img.shields.io/badge/SMTP-Google_Mail-EA4335?style=flat-square&logo=gmail&logoColor=white)
 [![Docker](https://img.shields.io/badge/Docker-Infra-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com)
-[![OpenAI](https://img.shields.io/badge/OpenAI-LLM_API-412991?style=flat-square&logo=openai&logoColor=white)](https://openai.com)
+[![Claude](https://img.shields.io/badge/Claude-Anthropic_API-D97757?style=flat-square&logo=anthropic&logoColor=white)](https://www.anthropic.com)
+[![OpenAI](https://img.shields.io/badge/OpenAI-LLM_API_(예정)-412991?style=flat-square&logo=openai&logoColor=white)](https://openai.com)
 
 <br/>
 
@@ -43,7 +44,57 @@ AlgoRhythm은 이러한 문제를 해결하기 위해 데이터와 다중 제약
 - **시간표 대안 제시**: 단일안이 아닌 복수의 시간표 대안을 생성해 관리자의 선택권 보장
 - **인터랙티브 캘린더 관리**: 통합 캘린더를 통한 직관적인 스케줄 조회 및 드래그 앤 드롭 형태의 수정 기능 지원
 - **긴급 대타 매칭 및 교환**: 결원 발생 시 가용 인원 데이터를 분석하여 최적의 대리 근무자를 추천 및 연결
+- **AI 어시스턴트 챗봇**: Anthropic Claude 기반 인앱 챗봇으로 보결 처리·시간표 최적화·제약 조건 설정 등을 자연어로 안내 (※ 자연어 제약조건 자동 파싱은 도입 예정)
 - **보안 검증 및 계정 관리**: Google SMTP를 활용한 이메일 인증 및 Redis TTL 기반의 안전한 인증 코드 관리 (※ 현재 무료 배포 환경에서는 SMTP 발송이 제한되며, 로컬/유료 환경에서 동작)
+
+<br/>
+
+## 📸 Screenshots
+
+> 실제 서비스 화면입니다. 더 자세한 흐름은 **[🌍 Live Demo](https://ourschoolschedule.vercel.app/)** 에서 확인할 수 있습니다.
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/assets/1_login.png" width="100%"/><br/><sub><b>로그인</b></sub></td>
+    <td align="center" width="33%"><img src="docs/assets/2_home.png" width="100%"/><br/><sub><b>홈 대시보드</b></sub></td>
+    <td align="center" width="33%"><img src="docs/assets/9_ai_ui.png" width="100%"/><br/><sub><b>AI 어시스턴트 (Claude)</b></sub></td>
+  </tr>
+</table>
+
+**🗓️ 스케줄 생성 플로우**
+
+<table>
+  <tr>
+    <td align="center" width="25%"><img src="docs/assets/3_schedule_step1.png" width="100%"/><br/><sub>① 기본 설정</sub></td>
+    <td align="center" width="25%"><img src="docs/assets/3_schedule_step2.png" width="100%"/><br/><sub>② 제약 조건</sub></td>
+    <td align="center" width="25%"><img src="docs/assets/3_schedule_step3.png" width="100%"/><br/><sub>③ 전략 선택</sub></td>
+    <td align="center" width="25%"><img src="docs/assets/4_schedule_result.png" width="100%"/><br/><sub>④ 생성 결과</sub></td>
+  </tr>
+</table>
+
+**🔁 대타(보결) 요청 → 수락 → 최종 승인**
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/assets/6_substitute_request.png" width="100%"/><br/><sub>대타 요청</sub></td>
+    <td align="center" width="33%"><img src="docs/assets/7_substitute_accept.png" width="100%"/><br/><sub>대타 수락</sub></td>
+    <td align="center" width="33%"><img src="docs/assets/8_substitute_finalapproval.png" width="100%"/><br/><sub>관리자 최종 승인</sub></td>
+  </tr>
+</table>
+
+<details>
+<summary>📂 더 많은 화면 보기 (알림 · 이력 · 관리 · 할 일)</summary>
+
+<table>
+  <tr>
+    <td align="center" width="25%"><img src="docs/assets/5_notifications.png" width="100%"/><br/><sub>알림</sub></td>
+    <td align="center" width="25%"><img src="docs/assets/9_history.png" width="100%"/><br/><sub>이력</sub></td>
+    <td align="center" width="25%"><img src="docs/assets/9_management.png" width="100%"/><br/><sub>관리</sub></td>
+    <td align="center" width="25%"><img src="docs/assets/9_todo.png" width="100%"/><br/><sub>할 일</sub></td>
+  </tr>
+</table>
+
+</details>
 
 <br/>
 
@@ -52,20 +103,31 @@ AlgoRhythm은 이러한 문제를 해결하기 위해 데이터와 다중 제약
 ```text
 ┌──────────────────────────────────────────────────────────────┐
 │              Frontend (React + Vite) — Vercel 배포             │
-│    인터랙티브 캘린더 UI · 시간표 확인/수정 · 보결/교환 요청 UX        │
-└───────────────────────────────┬──────────────────────────────┘
-                                │  HTTPS REST API
-┌───────────────────────────────▼──────────────────────────────┐
+│   인터랙티브 캘린더 UI · 시간표 확인/수정 · 보결/교환 요청 UX        │
+│   AI 어시스턴트 챗봇(✦) ──────────────┐ (현재: 클라이언트 직접 호출) │
+└──────────────────┬───────────────────┼───────────────────────┘
+                   │ HTTPS REST API     │
+                   │                    ▼
+                   │          ┌────────────────────┐
+                   │          │  Anthropic Claude   │
+                   │          │  AI 어시스턴트 응답   │
+                   │          │ (claude-sonnet-4)   │
+                   │          └────────────────────┘
+┌──────────────────▼───────────────────────────────────────────┐
 │           Backend (Spring Boot 3 + Spring Data JPA)           │
 │     인력/스케줄 비즈니스 로직 · 다중 제약조건 검증 · 인증/인가         │
 └───────┬───────────────────┬───────────────────────┬──────────┘
-        │                   │                        │
+        │                   │                        │ (도입 예정)
 ┌───────▼───────┐   ┌───────▼───────┐       ┌────────▼────────┐
 │     MySQL     │   │ Redis (Cache) │       │   OpenAI API    │
-│ 인력/스케줄 데이터 │   │ 상태·인증코드 캐싱 │     │  자연어 제약조건   │
-│                │   │  (TTL 관리)    │       │  파싱 / 매칭 추천  │
+│ 인력/스케줄 데이터 │   │ 상태·인증코드 캐싱 │     │ 자연어 제약조건 파싱│
+│                │   │  (TTL 관리)    │       │    (도입 예정)    │
 └───────────────┘   └───────────────┘       └─────────────────┘
 ```
+
+> **AI 통합 현황 (솔직한 표기)**
+> - **AI 어시스턴트 챗봇**은 현재 프론트엔드에서 **Anthropic Claude API를 직접 호출**합니다. 빠른 프로토타이핑을 위한 구조이며, API Key 보호를 위해 **백엔드 프록시 경유로 이전 예정**입니다([Roadmap](#-roadmap-진행--예정)).
+> - **OpenAI 기반 자연어 제약조건 파싱**은 백엔드 연동으로 **도입 예정** 단계입니다(상세: [AI 투명성 리포트](docs/AI_TRANSPARENCY.md)).
 
 <br/>
 
@@ -78,7 +140,7 @@ AlgoRhythm은 이러한 문제를 해결하기 위해 데이터와 다중 제약
 | **Frontend** | React 19, Vite, React Router, TanStack Query, Axios |
 | **Backend** | Spring Boot 3, Spring Data JPA, Spring Security, JWT, JavaMailSender |
 | **Database / Cache** | MySQL (인력/스케줄 데이터), Redis (상태 · 인증코드 캐싱, TTL 관리) |
-| **AI / LLM** | OpenAI API (자연어 요구사항 파싱) |
+| **AI / LLM** | Anthropic Claude API (AI 어시스턴트 챗봇, 프론트 연동 · 동작 중) · OpenAI API (자연어 제약조건 파싱 · 도입 예정) |
 | **Infra / DevOps** | Docker, GitHub Actions (CI/CD), Vercel(FE), AWS EC2·ECR(BE 이전 예정) |
 | **API Docs / Test** | Swagger(Springdoc), JUnit5, Vitest, k6(부하 테스트) |
 
