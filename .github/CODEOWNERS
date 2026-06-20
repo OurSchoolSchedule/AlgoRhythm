@@ -1,0 +1,19 @@
+# CODEOWNERS
+# 각 경로의 변경 PR이 열리면 해당 오너가 자동으로 리뷰어로 지정됩니다.
+# ⚠️ 아래 핸들은 git 커밋 author 기준 추정값입니다. 실제 GitHub username과
+#    다르면 수정해주세요. (Settings → Manage access 에서 정확한 핸들 확인 가능)
+
+# 기본 오너 (지정되지 않은 모든 경로)
+*           @sangeuncho
+
+# 백엔드 (Spring Boot)
+/backend/   @sihyes
+
+# 프론트엔드 (React + Vite)
+/frontend/  @zieyou52
+
+# 문서
+/docs/      @sangeuncho
+
+# CI/CD · 저장소 설정
+/.github/   @sihyes
