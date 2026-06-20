@@ -69,13 +69,21 @@ AlgoRhythm은 이러한 문제를 해결하기 위해 데이터와 다중 제약
 
 <br/>
 
-## 🛠️ Tech Stack & Decisions
+## 🛠️ Tech Stack
 
-* **Frontend**: React, Vite — Vercel 배포
-* **Backend**: Spring Boot 3, Spring Data JPA, JavaMailSender (Google SMTP 기반 이메일 인증)
-* **Database / Cache**: MySQL (인력/스케줄 데이터), Redis (상태 및 인증코드 캐싱)
-* **LLM API**: OpenAI API (자연어 요구사항 파싱용)
-* **API Docs**: Swagger (Springdoc)
+영역별 기술 스택입니다.
+
+| 영역 | 기술 |
+| --- | --- |
+| **Frontend** | React 19, Vite, React Router, TanStack Query, Axios |
+| **Backend** | Spring Boot 3, Spring Data JPA, Spring Security, JWT, JavaMailSender |
+| **Database / Cache** | MySQL (인력/스케줄 데이터), Redis (상태 · 인증코드 캐싱, TTL 관리) |
+| **AI / LLM** | OpenAI API (자연어 요구사항 파싱) |
+| **Infra / DevOps** | Docker, GitHub Actions (CI/CD), Vercel(FE), AWS EC2·ECR(BE 이전 예정) |
+| **API Docs / Test** | Swagger(Springdoc), JUnit5, Vitest, k6(부하 테스트) |
+
+### 기술 의사결정 (Decisions)
+
 * **Infra / Deployment**: Docker 컨테이너화 · Frontend는 **Vercel** 배포 · Backend는 현재 **Railway(무료 요금제)에 한시적 배포**. 2025년 7~8월 이후 MVP 고도화와 함께 **AWS(EC2/ECR) 환경으로 이전 예정** (CI/CD 워크플로 `.github/workflows/deploy.yml`은 향후 AWS 배포용으로 구성됨)
 * ⚠️ *현재 배포 한계:* Railway 무료 요금제 정책상 **SMTP(이메일 인증) 발송이 제한**되어, 배포 데모에서는 이메일 인증 기능이 정상 동작하지 않을 수 있습니다(로컬/유료 환경에서는 동작).
 * 💡 *Tech Point:* 무료 호스팅 환경의 Out Of Memory(OOM)를 방지하기 위해, 애플리케이션에 Swagger UI를 포함하지 않고 OpenAPI JSON 명세만 추출하여 **GitHub Pages로 정적 분리 배포**하는 리소스 최적화 전략을 채택했습니다.
@@ -99,6 +107,29 @@ cd ../backend
 
 <br/>
 
+## 🧪 Testing
+
+PR마다 GitHub Actions(`.github/workflows/ci.yml`)에서 BE/FE 테스트가 자동 실행됩니다. (배포 워크플로와 분리)
+
+```bash
+# Backend — JUnit5 (인메모리 H2 기반 컨텍스트 검증)
+cd backend
+./gradlew test
+
+# Frontend — Vitest (시간표 변환 로직 등 단위 테스트)
+cd frontend
+npm install
+npm test
+```
+
+* **부하 테스트(k6)**: `backend/load-test/` 에 출퇴근·프로필 조회 시나리오 스크립트가 있습니다.
+  ```bash
+  k6 run backend/load-test/owner-view-attendance.js
+  ```
+* 핵심 도메인(스케줄링 알고리즘) 단위 테스트는 [Roadmap](#-roadmap-진행--예정)에 따라 확대 예정입니다.
+
+<br/>
+
 ## 📁 Repository Structure
 
 ```text
@@ -106,27 +137,36 @@ AlgoRhythm/
 ├── backend/             # Spring Boot 3 (Gradle) REST API
 ├── frontend/            # React + Vite 클라이언트
 ├── docs/                # 프로젝트 문서 (AI 투명성 리포트, elevator speech 등)
-├── .github/workflows/   # CI/CD 파이프라인
+├── .github/             # PR/이슈 템플릿, CODEOWNERS, CI 워크플로
+├── CONTRIBUTING.md      # 브랜치·커밋·리뷰 협업 규칙
 ├── self-demo.md         # 시연 가이드
 └── README.md
 ```
 
 <br/>
 
-## 📝 Team & Collaboration
-
-* **2376273 조상은** (PM)
-* **2466044 이시은** (BE, AI)
-* **2416023 정지유** (Design, FE)
-* **협업 방식**: Notion 기반 팀 그라운드 룰 제정, GitHub Issue로 작업 트래킹, 모든 기능은 **Pull Request 단위로 개발하고 팀원 상호 코드 리뷰 후 머지**
-
-<br/>
-
-## 🚀 Future Scope (진행 예정)
+## 🚀 Roadmap (진행 · 예정)
 
 * **AI 알고리즘 고도화**: 현재의 전략/규칙 기반 연산을 넘어 유전 알고리즘(GA) 등 휴리스틱 기법을 도입한 스케줄링 로직 강화
 * **자연어 파싱 연동 완료**: LLM을 활용해 텍스트로 입력된 근무자 요구사항을 하드 제약조건으로 자동 변환
-* **테스트 커버리지 확보**: JUnit5, Mockito를 활용한 스케줄링 핵심 도메인 로직 테스트 코드 작성
+* **테스트 커버리지 확보**: JUnit5·Mockito를 활용한 스케줄링 핵심 도메인 로직 테스트 코드 작성 (현재 컨텍스트/유틸 단위 테스트 → 도메인 로직으로 확대)
+* **AWS 이전**: Railway 한시 배포 → AWS(EC2/ECR) 운영 환경 이전
+
+<br/>
+
+## 📝 Team & Collaboration
+
+| 학번 | 이름 | 역할 |
+| --- | --- | --- |
+| 2376273 | 조상은 | PM |
+| 2466044 | 이시은 | Backend, AI |
+| 2416023 | 정지유 | Design, Frontend |
+
+**협업 방식**
+
+* Notion 기반 팀 그라운드 룰을 제정하고, GitHub Issue로 작업을 트래킹합니다.
+* 협업 규칙(브랜치 전략·커밋/PR 컨벤션·리뷰 정책)은 [CONTRIBUTING.md](CONTRIBUTING.md)에 정리되어 있습니다.
+* PR 템플릿 · 이슈 템플릿 · `CODEOWNERS`를 도입했으며, **Issue → 브랜치 → PR → 1인 이상 리뷰 → merge** 흐름으로 전환 중입니다. (초기 개발은 Notion 중심으로 진행되어, PR 기반 협업 이력은 현재 누적 단계입니다.)
 
 <br/>
 
