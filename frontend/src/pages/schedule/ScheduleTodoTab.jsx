@@ -11,7 +11,7 @@ import {
 } from '@/hooks'
 
 const TODO_SECTIONS = [
-  { key: 'storeTodos', label: '전체 공지', type: 'STORE' },
+  { key: 'storeTodos', label: '전체 공지', type: 'SCHOOL' },
   { key: 'handoverTodos', label: '인수인계', type: 'HANDOVER' },
   { key: 'personalTodos', label: '내 할 일', type: 'PERSONAL' },
 ]
@@ -19,20 +19,20 @@ const TODO_SECTIONS = [
 const CREATE_TYPE_OPTIONS = [
   { value: 'PERSONAL', label: '내 할 일' },
   { value: 'HANDOVER', label: '인수인계' },
-  { value: 'STORE', label: '전체 공지', ownerOnly: true },
+  { value: 'SCHOOL', label: '전체 공지', ownerOnly: true },
 ]
 
-function canModifyTodo(todo, isOwner, userId) {
-  if (todo.todoType === 'STORE') return isOwner
-  if (todo.todoType === 'HANDOVER') return isOwner || todo.authorId === userId
+function canModifyTodo(todo, isAdmin, userId) {
+  if (todo.todoType === 'SCHOOL') return isAdmin
+  if (todo.todoType === 'HANDOVER') return isAdmin || todo.authorId === userId
   if (todo.todoType === 'PERSONAL') return todo.authorId === userId
   return false
 }
 
-function TodoRow({ todo, isOwner, userId, toggleTodo, updateTodo, deleteTodo }) {
+function TodoRow({ todo, isAdmin, userId, toggleTodo, updateTodo, deleteTodo }) {
   const [editing, setEditing] = useState(false)
   const [editContent, setEditContent] = useState(todo.content)
-  const canModify = canModifyTodo(todo, isOwner, userId)
+  const canModify = canModifyTodo(todo, isAdmin, userId)
   const isBusy = toggleTodo.isPending || updateTodo.isPending || deleteTodo.isPending
 
   const saveEdit = () => {
@@ -175,12 +175,12 @@ export default function ScheduleTodoTab({ date }) {
   const [todoType, setTodoType] = useState('PERSONAL')
 
   const { data: activeStore } = useActiveStore()
-  const isOwner = activeStore?.position === 'OWNER'
-  const { data: ownerProfile } = useOwnerProfile({ enabled: isOwner })
+  const isAdmin = activeStore?.position === 'ADMIN'
+  const { data: ownerProfile } = useOwnerProfile({ enabled: isAdmin })
   const { data: staffProfile } = useStaffProfile({
-    enabled: Boolean(activeStore) && !isOwner,
+    enabled: Boolean(activeStore) && !isAdmin,
   })
-  const userId = isOwner ? ownerProfile?.userId : staffProfile?.userId
+  const userId = isAdmin ? ownerProfile?.userId : staffProfile?.userId
 
   const { data: todoData, isLoading, isError } = useTodos(date)
   const createTodo = useCreateTodo()
@@ -188,7 +188,7 @@ export default function ScheduleTodoTab({ date }) {
   const deleteTodo = useDeleteTodo()
   const toggleTodo = useToggleTodo()
 
-  const availableTypes = CREATE_TYPE_OPTIONS.filter((opt) => !opt.ownerOnly || isOwner)
+  const availableTypes = CREATE_TYPE_OPTIONS.filter((opt) => !opt.ownerOnly || isAdmin)
 
   const handleCreate = (e) => {
     e.preventDefault()
@@ -307,7 +307,7 @@ export default function ScheduleTodoTab({ date }) {
                     <TodoRow
                       key={todo.id}
                       todo={todo}
-                      isOwner={isOwner}
+                      isAdmin={isAdmin}
                       userId={userId}
                       toggleTodo={toggleTodo}
                       updateTodo={updateTodo}

@@ -3,13 +3,13 @@
  */
 
 /**
+ * 활성 학교 (GET /api/mypage/active-school).
  * @typedef {Object} ActiveStoreResponse
- * @property {number} storeId
- * @property {string} storeCode
+ * @property {number} schoolId
+ * @property {string} schoolCode
  * @property {string} name
  * @property {string} address
  * @property {string} phoneNumber
- * @property {string} businessRegistrationNumber
  * @property {import('./common.js').Position} position
  * @property {import('./common.js').EmploymentStatus} employmentStatus
  */

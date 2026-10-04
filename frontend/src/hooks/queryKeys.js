@@ -13,7 +13,7 @@ export const queryKeys = {
   },
   store: {
     staff: () => ['store', 'staff'],
-    staffSummary: (params) => ['store', 'staff', 'summary', params ?? {}],
+    staffSummary: () => ['store', 'teachers'],
   },
   storeSettings: {
     detail: () => ['store-settings'],
@@ -26,6 +26,10 @@ export const queryKeys = {
   schedule: {
     submissionStatus: (storeId) => ['schedule', 'submission-status', storeId],
     candidates: (key) => ['schedule', 'candidates', key],
+  },
+  timetable: {
+    mine: () => ['timetable', 'me'],
+    school: () => ['timetable', 'school'],
   },
   workShift: {
     all: () => ['work-shift', 'all'],

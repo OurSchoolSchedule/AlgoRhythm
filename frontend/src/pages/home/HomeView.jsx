@@ -88,7 +88,7 @@ export default function HomeView({ navigate, userRole = "admin" }) {
   const todayClassCount = timetable.todayClassCount;
   const weekClassCount = timetable.weekClassCount;
   const substituteCount = isAdmin
-    ? notifications.filter((n) => n.category === "SHIFT_SWAP").length
+    ? notifications.filter((n) => n.category === "SUBSTITUTE").length
     : 0;
 
   const typeColor = { 보결: "#f09500", 변경: "#27a859", 완료: "#1d9e75", 안내: "#185fa5" };
@@ -223,7 +223,7 @@ export default function HomeView({ navigate, userRole = "admin" }) {
                   cursor: "pointer",
                 }}
               >
-                {showSwapForm ? `${DOMAIN.substitute} 요청 닫기` : `${DOMAIN.substitute} 요청하기`}
+                {showSwapForm ? "수업 교환 요청 닫기" : "수업 교환 요청하기"}
               </button>
               {showSwapForm && (
                 <div

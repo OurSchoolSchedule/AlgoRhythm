@@ -17,14 +17,15 @@ function mapStoreShiftForTimetable(shift) {
 
 /**
  * 이번 주 시간표 (홈·시간표 페이지 공통).
- * - 교사(STAFF): GET /api/schedules/me/week
- * - 관리자(OWNER): GET /api/schedules/store/week (학교 전체)
+ * 역할만 ADMIN/TEACHER로 구분한다. 주간 데이터는 아직 근무표 API를 쓴다.
+ * - 교사(TEACHER): GET /api/schedules/me/week
+ * - 관리자(ADMIN): GET /api/schedules/store/week
  * @param {Date} [referenceDate]
  */
 export function useSchoolTimetable(referenceDate = new Date()) {
   const week = useMemo(() => getSchoolWeekRange(referenceDate), [referenceDate.getTime()])
   const { data: activeStore, isLoading: activeStoreLoading } = useActiveStore()
-  const isOwner = activeStore?.position === 'OWNER'
+  const isOwner = activeStore?.position === 'ADMIN'
 
   const myQuery = useMyWeekShifts(week, { enabled: !activeStoreLoading && !isOwner })
   const storeQuery = useStoreWeekShifts(week, { enabled: !activeStoreLoading && isOwner })
