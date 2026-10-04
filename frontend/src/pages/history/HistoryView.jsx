@@ -73,8 +73,7 @@ const STATUS_STYLE = {
   ON_LEAVE: { bg: "#faeeda", color: "#f09500" },
   RESIGNED: { bg: "#f1efe8", color: "#888" },
 };
-// 매장 API(OWNER/STAFF)를 학교 도메인 라벨로 매핑
-const ROLE_LABEL = { OWNER: "관리자", STAFF: "교사" };
+const ROLE_LABEL = { ADMIN: "관리자", TEACHER: "교사" };
 
 // "HH:mm:ss" -> "HH:mm" (input[type=time]), 빈 값 안전 처리
 function toInputTime(t) {
@@ -174,9 +173,7 @@ export function AdminView({ navigate }) {
               교사 목록{staffSummary ? ` · 총 ${staffSummary.totalStaffCount}명` : ""}
             </p>
             {staffSummary?.storeName && (
-              <span style={{ fontSize: 12, color: "#888" }}>
-                {staffSummary.storeName} · {staffSummary.year}년 {staffSummary.month}월
-              </span>
+              <span style={{ fontSize: 12, color: "#888" }}>{staffSummary.storeName}</span>
             )}
           </div>
 
@@ -196,7 +193,7 @@ export function AdminView({ navigate }) {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr style={{ borderBottom: "0.5px solid #e8e6e0" }}>
-                  {["이름", "역할", "재직상태", "지각", "결근", "총 수업"].map(h => (
+                  {["이름", "역할", "재직상태"].map(h => (
                     <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "#888" }}>{h}</th>
                   ))}
                 </tr>
@@ -211,13 +208,6 @@ export function AdminView({ navigate }) {
                       <td style={{ padding: "10px 12px" }}>
                         <span style={{ padding: "2px 8px", borderRadius: 12, fontSize: 12, background: st.bg, color: st.color }}>
                           {STATUS_LABEL[s.employmentStatus] ?? s.employmentStatus}
-                        </span>
-                      </td>
-                      <td style={{ padding: "10px 12px", color: s.lateCount > 0 ? "#f09500" : "#888" }}>{s.lateCount ?? 0}</td>
-                      <td style={{ padding: "10px 12px", color: s.absenceCount > 0 ? "#d85a30" : "#888" }}>{s.absenceCount ?? 0}</td>
-                      <td style={{ padding: "10px 12px" }}>
-                        <span style={{ background: "#e8f7ee", color: "#27a859", padding: "3px 10px", borderRadius: 12, fontSize: 12, fontWeight: 600 }}>
-                          {s.totalShiftCount ?? 0}회
                         </span>
                       </td>
                     </tr>

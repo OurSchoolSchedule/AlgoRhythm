@@ -3,20 +3,23 @@
  */
 
 /**
- * 대타 요청 생성 (POST /api/shift-swap/requests).
+ * 수업 교환 요청 생성 (POST /api/timetable-swap/requests).
  * @typedef {Object} ShiftSwapRequestCreateDto
- * @property {number} shiftId
+ * @property {number} requesterTimetableId
+ * @property {string} requesterDate "YYYY-MM-DD"
+ * @property {number} receiverTimetableId
+ * @property {string} receiverDate "YYYY-MM-DD"
  * @property {string} reason
  */
 
 /**
- * 수신자 1차 응답 (PATCH /api/shift-swap/requests/{id}/respond).
+ * 수신자 응답 (POST /api/timetable-swap/requests/{id}/respond).
  * @typedef {Object} ShiftSwapRespondDto
  * @property {'ACCEPT'|'REJECT'} action
  */
 
 /**
- * 사장 최종 승인 (PATCH /api/shift-swap/requests/{id}/manager-approval).
+ * 관리자 승인 (POST /api/timetable-swap/requests/{id}/approve).
  * @typedef {Object} ShiftSwapManagerApprovalDto
  * @property {'APPROVE'|'REJECT'} action
  */

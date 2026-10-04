@@ -10,13 +10,10 @@ export function useStoreStaff(options = {}) {
   })
 }
 
-/**
- * @param {import('@/types/payroll.js').PayrollPeriodParams} [params]
- */
-export function useStoreStaffSummary(params = {}, options = {}) {
+export function useStoreStaffSummary(options = {}) {
   return useQuery({
-    queryKey: queryKeys.store.staffSummary(params),
-    queryFn: () => getStoreStaffSummary(params),
+    queryKey: queryKeys.store.staffSummary(),
+    queryFn: getStoreStaffSummary,
     ...options,
   })
 }
