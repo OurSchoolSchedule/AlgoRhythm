@@ -401,6 +401,77 @@ body {
   background: var(--color-danger);
 }
 
+.theme-switch {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-hover);
+  flex-shrink: 0;
+}
+
+.theme-switch-thumb {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc((100% - 4px) / 3);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  transition: transform 180ms ease-out;
+}
+
+.theme-switch[data-value='light'] .theme-switch-thumb {
+  transform: translateX(100%);
+}
+
+.theme-switch[data-value='dark'] .theme-switch-thumb {
+  transform: translateX(200%);
+}
+
+.theme-switch button {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 32px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.theme-switch button[aria-checked='true'] {
+  color: var(--color-primary);
+}
+
+.theme-switch-label {
+  display: none;
+  font-size: var(--font-micro);
+  font-weight: 500;
+  line-height: 1;
+}
+
+@media (min-width: 1024px) {
+  .theme-switch button {
+    width: auto;
+    padding: 0 10px;
+  }
+
+  .theme-switch-label {
+    display: inline;
+  }
+}
+
 .dropdown-panel {
   position: absolute;
   z-index: 40;
@@ -1010,6 +1081,11 @@ body {
   .home-create-button,
   .ai-assistant-panel button {
     min-height: 44px;
+  }
+
+  .theme-switch button {
+    min-height: 0;
+    min-width: 0;
   }
 
   .menu-item,
