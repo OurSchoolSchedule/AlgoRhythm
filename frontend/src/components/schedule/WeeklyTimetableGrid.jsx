@@ -6,89 +6,140 @@ import { TIMETABLE_DAYS } from '@/constants/schoolTimetable.js'
  * @param {ReturnType<import('@/utils/schoolTimetable.js').buildSchoolTimetable>} props.timetable
  */
 export default function WeeklyTimetableGrid({ timetable }) {
-  const { byDay, periods } = timetable
+  const { byDay, periods, todayKey } = timetable
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '72px repeat(5, 1fr)',
-        gap: '10px 12px',
-        alignItems: 'stretch',
-      }}
-    >
-      <div />
-      {TIMETABLE_DAYS.map((day) => (
-        <div
-          key={day}
-          style={{
-            textAlign: 'center',
-            fontSize: 14,
-            fontWeight: 600,
-            color: '#2c2c2a',
-            paddingBottom: 4,
-          }}
-        >
-          {day}
-        </div>
-      ))}
+    <div className="show-scrollbar" style={{ overflow: 'auto' }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '72px repeat(5, minmax(120px, 1fr))',
+          gap: '8px 8px',
+          alignItems: 'stretch',
+          minWidth: 760,
+        }}
+      >
+        <div />
+        {TIMETABLE_DAYS.map((day) => {
+          const isToday = day === todayKey
+          return (
+            <div
+              key={day}
+              style={{
+                position: 'sticky',
+                top: 0,
+                zIndex: 1,
+                textAlign: 'center',
+                fontSize: 'var(--font-caption)',
+                lineHeight: '20px',
+                fontWeight: 500,
+                color: 'var(--color-text-subtle)',
+                background: isToday ? 'var(--color-primary-50)' : 'var(--color-border-light)',
+                borderRadius: 'var(--radius-sm)',
+                padding: '8px 0',
+              }}
+            >
+              {isToday && (
+                <span
+                  aria-hidden
+                  style={{
+                    display: 'inline-block',
+                    width: 6,
+                    height: 6,
+                    marginRight: 6,
+                    borderRadius: 'var(--radius-full)',
+                    background: 'var(--color-primary-500)',
+                    verticalAlign: 'middle',
+                  }}
+                />
+              )}
+              {day}
+            </div>
+          )
+        })}
 
-      {periods.map((period) => (
-        <Fragment key={period}>
-          <div
-            style={{
-              fontSize: 13,
-              color: '#888',
-              textAlign: 'right',
-              paddingRight: 8,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-            }}
-          >
-            {period}교시
-          </div>
-          {TIMETABLE_DAYS.map((day) => {
-            const cell = byDay[day][period]
-            return (
-              <div
-                key={`${day}-${period}`}
-                style={{
-                  minHeight: 52,
-                  borderRadius: 10,
-                  background: cell ? '#eceae4' : '#fff',
-                  border: cell ? 'none' : '0.5px solid #eceae4',
-                  padding: cell ? '6px 8px' : 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  gap: 2,
-                }}
-              >
-                {cell ? (
-                  <>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: '#2c2c2a',
-                        lineHeight: 1.3,
-                        wordBreak: 'break-all',
-                      }}
-                    >
-                      {cell.class}
-                    </span>
-                    <span style={{ fontSize: 10, color: '#666', lineHeight: 1.2 }}>
-                      {cell.subject}
-                      {cell.teacher ? ` · ${cell.teacher}` : ''}
-                    </span>
-                  </>
-                ) : null}
-              </div>
-            )
-          })}
-        </Fragment>
-      ))}
+        {periods.map((period) => (
+          <Fragment key={period}>
+            <div
+              style={{
+                position: 'sticky',
+                left: 0,
+                zIndex: 1,
+                fontSize: 'var(--font-caption)',
+                lineHeight: '20px',
+                fontWeight: 500,
+                color: 'var(--color-text-subtle)',
+                background: 'var(--color-border-light)',
+                borderRadius: 'var(--radius-sm)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                padding: '0 8px',
+              }}
+            >
+              {period}교시
+            </div>
+            {TIMETABLE_DAYS.map((day) => {
+              const cell = byDay[day][period]
+              const isToday = day === todayKey
+              const title = cell?.teacher || cell?.class || ''
+              const detail = [cell?.teacher ? cell.class : '', cell?.subject].filter(Boolean).join(' ')
+              return (
+                <div
+                  key={`${day}-${period}`}
+                  style={{
+                    minHeight: 56,
+                    borderRadius: 'var(--radius-sm)',
+                    background: isToday ? 'var(--color-primary-50)' : 'var(--color-surface)',
+                    border: cell
+                      ? '1px solid var(--color-border)'
+                      : '1px dashed var(--color-border-input)',
+                    padding: '6px 8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    gap: 2,
+                    overflow: 'hidden',
+                  }}
+                >
+                  {cell ? (
+                    <>
+                      <span
+                        style={{
+                          fontSize: 'var(--font-micro)',
+                          lineHeight: '16px',
+                          fontWeight: 600,
+                          color: 'var(--color-text)',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {title}
+                      </span>
+                      {detail ? (
+                        <span
+                          style={{
+                            fontSize: 'var(--font-micro)',
+                            lineHeight: '16px',
+                            fontWeight: 500,
+                            color: 'var(--color-text-subtle)',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          {detail}
+                        </span>
+                      ) : null}
+                    </>
+                  ) : null}
+                </div>
+              )
+            })}
+          </Fragment>
+        ))}
+      </div>
     </div>
   )
 }

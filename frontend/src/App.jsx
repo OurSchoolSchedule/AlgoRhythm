@@ -15,7 +15,7 @@ import { positionToUserRole } from '@/constants/domainLabels.js'
 
 export default function App() {
   const [authed, setAuthed] = useState(() => Boolean(getAccessToken() || getPreviewUserRole()))
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.matchMedia('(min-width: 1280px)').matches)
   const [alarmOpen, setAlarmOpen] = useState(false)
   const [currentView, setCurrentView] = useState('home')
   const [userRole, setUserRole] = useState(() => getPreviewUserRole() ?? 'admin')
@@ -33,6 +33,16 @@ export default function App() {
   useEffect(() => {
     setOnAuthError(() => setAuthed(false))
     return () => setOnAuthError(null)
+  }, [])
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 1279px)')
+    const sync = () => {
+      if (media.matches) setSidebarOpen(false)
+    }
+    sync()
+    media.addEventListener('change', sync)
+    return () => media.removeEventListener('change', sync)
   }, [])
 
   const handleLogout = () => {
@@ -85,8 +95,8 @@ export default function App() {
         display: 'flex',
         flexDirection: 'column',
         height: '100vh',
-        background: '#f8f8f6',
-        fontFamily: "'Pretendard', 'Apple SD Gothic Neo', sans-serif",
+        background: 'var(--color-bg)',
+        fontFamily: "'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', sans-serif",
         overflow: 'hidden',
       }}
     >
@@ -95,10 +105,10 @@ export default function App() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '0 28px',
-          height: 56,
-          background: '#fff',
-          borderBottom: '0.5px solid #e8e6e0',
+          padding: '0 var(--space-8)',
+          height: 64,
+          background: 'var(--color-surface)',
+          borderBottom: '1px solid var(--color-border)',
           flexShrink: 0,
           zIndex: 10,
         }}
@@ -112,10 +122,10 @@ export default function App() {
               border: 'none',
               cursor: 'pointer',
               padding: 6,
-              borderRadius: 6,
+              borderRadius: 'var(--radius-sm)',
               display: 'flex',
               alignItems: 'center',
-              color: '#444',
+              color: 'var(--color-text-secondary)',
             }}
           >
             <svg
@@ -139,8 +149,8 @@ export default function App() {
               border: 'none',
               cursor: 'pointer',
               fontWeight: 600,
-              fontSize: 15,
-              color: '#2c2c2a',
+              fontSize: 'var(--font-body)',
+              color: 'var(--color-text)',
               letterSpacing: '-0.3px',
               padding: 0,
             }}
@@ -173,8 +183,10 @@ export default function App() {
           setUserRole={setUserRole}
         />
 
-        <main className="hide-scrollbar" style={{ flex: 1, overflow: 'auto', padding: '28px 32px', minWidth: 0 }}>
-          {renderView()}
+        <main className="hide-scrollbar" style={{ flex: 1, overflow: 'auto', padding: 'var(--space-8)', minWidth: 0 }}>
+          <div style={{ maxWidth: currentView === 'timetable' ? 'none' : 1200 }}>
+            {renderView()}
+          </div>
         </main>
 
         <NotificationSidebar

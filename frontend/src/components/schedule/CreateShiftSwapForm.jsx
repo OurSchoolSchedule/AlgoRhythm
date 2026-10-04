@@ -175,12 +175,13 @@ export default function CreateShiftSwapForm() {
             disabled={!canSubmit}
             style={{
               width: '100%',
-              padding: '8px 0',
-              borderRadius: 6,
+              height: 40,
+              padding: '10px 16px',
+              borderRadius: 'var(--radius-md)',
               border: 'none',
-              background: createSwap.isPending ? '#bfe3cd' : '#f09500',
-              color: '#fff',
-              fontSize: 12,
+              background: canSubmit ? 'var(--color-primary-500)' : 'var(--color-primary-100)',
+              color: 'var(--color-surface)',
+              fontSize: 'var(--font-body)',
               fontWeight: 600,
               cursor: canSubmit ? 'pointer' : 'default',
             }}

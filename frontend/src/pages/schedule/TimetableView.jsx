@@ -28,13 +28,14 @@ export default function TimetableView() {
   })
 
   return (
-    <div style={{ maxWidth: 900 }}>
+    <div>
       <h1
         style={{
           margin: '0 0 24px',
-          fontSize: 22,
+          fontSize: 'var(--font-display)',
+          lineHeight: '32px',
           fontWeight: 700,
-          color: '#2c2c2a',
+          color: 'var(--color-text)',
           letterSpacing: '-0.5px',
         }}
       >

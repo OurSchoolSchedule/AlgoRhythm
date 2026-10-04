@@ -48,10 +48,10 @@ export default function AIFloatingChat() {
     <>
       {open && (
         <div style={{
-          position: "fixed", bottom: 80, right: 24, width: 340, height: 480,
-          background: "#fff", borderRadius: 16, border: "0.5px solid #e8e6e0",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.12)", display: "flex", flexDirection: "column",
-          zIndex: 100, overflow: "hidden",
+          position: "fixed", bottom: 96, right: 24, width: 400, height: 600,
+          background: "var(--color-surface)", borderRadius: "var(--radius-xl)",
+          boxShadow: "var(--shadow-lg)", display: "flex", flexDirection: "column",
+          zIndex: 20, overflow: "hidden",
         }}>
           <div style={{
             padding: "14px 18px", borderBottom: "0.5px solid #e8e6e0",
@@ -63,7 +63,7 @@ export default function AIFloatingChat() {
             }}>✦</div>
             <div>
               <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#fff" }}>AI 어시스턴트</p>
-              <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.7)" }}>AlgoRhythm 시간표 AI</p>
+              <p style={{ margin: 0, fontSize: "var(--font-micro)", lineHeight: "16px", color: "rgba(255,255,255,0.7)" }}>AlgoRhythm 시간표 AI</p>
             </div>
             <button onClick={() => setOpen(false)} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.7)", fontSize: 18, lineHeight: 1 }}>×</button>
           </div>
@@ -74,12 +74,10 @@ export default function AIFloatingChat() {
                 display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start",
               }}>
                 <div style={{
-                  maxWidth: "82%", padding: "8px 12px", borderRadius: 10,
-                  background: m.role === "user" ? "#27a859" : "#f1efe8",
-                  color: m.role === "user" ? "#fff" : "#2c2c2a",
-                  fontSize: 13, lineHeight: 1.55, whiteSpace: "pre-wrap",
-                  borderBottomRightRadius: m.role === "user" ? 2 : 10,
-                  borderBottomLeftRadius: m.role === "assistant" ? 2 : 10,
+                  maxWidth: "82%", padding: "10px 14px", borderRadius: "var(--radius-lg)",
+                  background: m.role === "user" ? "var(--color-primary-500)" : "var(--color-border-light)",
+                  color: m.role === "user" ? "var(--color-surface)" : "var(--color-text)",
+                  fontSize: "var(--font-body)", lineHeight: "22px", whiteSpace: "pre-wrap",
                 }}>
                   {m.content}
                 </div>
@@ -103,7 +101,28 @@ export default function AIFloatingChat() {
             <div ref={bottomRef} />
           </div>
 
-          <div style={{ padding: "10px 12px", borderTop: "0.5px solid #e8e6e0", display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", padding: "12px 12px 0" }}>
+            {["내일 3교시 보결 처리", "이번 주 공강 알려줘", "시간표 충돌 확인해줘"].map((chip) => (
+              <button
+                key={chip}
+                type="button"
+                onClick={() => setInput(chip)}
+                style={{
+                  border: "1px solid var(--color-border-input)",
+                  background: "var(--color-surface)",
+                  color: "var(--color-text-secondary)",
+                  borderRadius: "var(--radius-full)",
+                  padding: "4px 10px",
+                  fontSize: "var(--font-micro)",
+                  lineHeight: "16px",
+                  cursor: "pointer",
+                }}
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
+          <div style={{ padding: "10px 12px", borderTop: "1px solid var(--color-border)", display: "flex", gap: 8 }}>
             <textarea
               value={input}
               onChange={e => setInput(e.target.value)}
@@ -139,10 +158,10 @@ export default function AIFloatingChat() {
         onClick={() => setOpen(v => !v)}
         style={{
           position: "fixed", bottom: 24, right: 24,
-          width: 52, height: 52, borderRadius: "50%",
-          background: "#27a859", border: "none", cursor: "pointer",
+          width: 56, height: 56, borderRadius: "var(--radius-full)",
+          background: "var(--color-primary-500)", border: "none", cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 4px 16px rgba(39,168,89,0.35)", zIndex: 100,
+          boxShadow: "var(--shadow-md)", zIndex: 20,
           transition: "transform 0.18s, box-shadow 0.18s",
           color: "#fff", fontSize: 20,
         }}

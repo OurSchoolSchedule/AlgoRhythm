@@ -11,7 +11,7 @@ import {
   resolvePosition,
 } from '@/utils/notificationActions.js'
 
-export const NOTIFICATION_PANEL_WIDTH = 280
+export const NOTIFICATION_PANEL_WIDTH = 360
 const PANEL_VERTICAL_INSET = 16
 
 const GROUP_ORDER = ['오늘', '이번주', '이전']
@@ -41,12 +41,13 @@ function NotificationItem({ notification, position }) {
       {tag && (
         <span
           style={{
-            fontSize: 10,
-            fontWeight: 600,
-            padding: '2px 6px',
-            borderRadius: 4,
-            background: '#faeeda',
-            color: '#f09500',
+            fontSize: 'var(--font-micro)',
+            lineHeight: '16px',
+            fontWeight: 500,
+            padding: '2px 8px',
+            borderRadius: 'var(--radius-sm)',
+            background: 'var(--color-warning-light)',
+            color: 'var(--color-warning)',
             marginBottom: 6,
             display: 'inline-block',
           }}

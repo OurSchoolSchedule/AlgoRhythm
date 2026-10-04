@@ -195,12 +195,13 @@ export default function HomeView({ navigate, userRole = "admin" }) {
               onClick={() => navigate("schedule-create")}
               style={{
                 width: "100%",
-                padding: "10px 0",
-                borderRadius: 8,
-                border: "0.5px solid #27a859",
-                background: "#fff",
-                color: "#27a859",
-                fontSize: 14,
+                height: 40,
+                padding: "10px 16px",
+                borderRadius: "var(--radius-md)",
+                border: "none",
+                background: "var(--color-primary-500)",
+                color: "var(--color-surface)",
+                fontSize: "var(--font-body)",
                 fontWeight: 600,
                 cursor: "pointer",
               }}
@@ -216,12 +217,13 @@ export default function HomeView({ navigate, userRole = "admin" }) {
                 onClick={() => setShowSwapForm((v) => !v)}
                 style={{
                   width: "100%",
-                  padding: "10px 0",
-                  borderRadius: 8,
-                  border: "0.5px solid #f09500",
-                  background: "#fff",
-                  color: "#f09500",
-                  fontSize: 14,
+                  height: 40,
+                  padding: "10px 16px",
+                  borderRadius: "var(--radius-md)",
+                  border: "none",
+                  background: "var(--color-primary-500)",
+                  color: "var(--color-surface)",
+                  fontSize: "var(--font-body)",
                   fontWeight: 600,
                   cursor: "pointer",
                 }}

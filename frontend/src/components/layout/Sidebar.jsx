@@ -38,12 +38,12 @@ export default function Sidebar({ open, navigate, currentView, userRole, setUser
           borderRadius: 8,
           border: 'none',
           cursor: 'pointer',
-          marginBottom: 4,
+          marginBottom: 'var(--space-1)',
           textAlign: 'left',
-          background: active ? '#e8f7ee' : 'transparent',
-          color: active ? '#27a859' : '#444441',
+          background: active ? 'var(--color-primary-50)' : 'transparent',
+          color: active ? 'var(--color-primary-500)' : 'var(--color-text-secondary)',
           fontWeight: active ? 600 : 400,
-          fontSize: 15,
+          fontSize: 'var(--font-body)',
           transition: 'background 0.12s',
         }}
       >
@@ -71,9 +71,9 @@ export default function Sidebar({ open, navigate, currentView, userRole, setUser
         style={{
           width: SIDEBAR_WIDTH,
           height: '100%',
-          background: '#fff',
-          borderRadius: '0 12px 12px 0',
-          boxShadow: '2px 0 12px rgba(0, 0, 0, 0.06)',
+          background: 'var(--color-surface)',
+          borderRadius: '0 var(--radius-lg) var(--radius-lg) 0',
+          boxShadow: 'var(--shadow-sm)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -87,7 +87,7 @@ export default function Sidebar({ open, navigate, currentView, userRole, setUser
             <div
               style={{
                 height: 1,
-                background: '#e8e6e0',
+                background: 'var(--color-border)',
                 margin: '12px 8px',
               }}
             />
@@ -96,31 +96,31 @@ export default function Sidebar({ open, navigate, currentView, userRole, setUser
         )}
       </nav>
 
-      <div style={{ padding: '12px 16px', borderTop: '0.5px solid #e8e6e0' }}>
-        <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--color-border)' }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
           {['admin', 'worker'].map((role) => (
             <button
               key={role}
               onClick={() => setUserRole(role)}
               style={{
                 flex: 1,
-                padding: '5px 0',
-                fontSize: 11,
+                padding: '6px 12px',
+                fontSize: 'var(--font-micro)',
+                lineHeight: '16px',
                 fontWeight: 500,
-                border: '0.5px solid',
+                border: '1px solid',
                 cursor: 'pointer',
-                borderRadius: 6,
-                transition: 'all 0.15s',
-                background: userRole === role ? '#27a859' : 'transparent',
-                borderColor: userRole === role ? '#27a859' : '#d3d1c7',
-                color: userRole === role ? '#fff' : '#5f5e5a',
+                borderRadius: 'var(--radius-sm)',
+                background: userRole === role ? 'var(--color-primary-500)' : 'transparent',
+                borderColor: userRole === role ? 'var(--color-primary-500)' : 'var(--color-border-input)',
+                color: userRole === role ? 'var(--color-surface)' : 'var(--color-text-subtle)',
               }}
             >
               {role === 'admin' ? '관리자' : '교사'}
             </button>
           ))}
         </div>
-        <p style={{ fontSize: 10, color: '#b4b2a9', margin: 0, textAlign: 'center' }}>
+        <p style={{ fontSize: 'var(--font-micro)', lineHeight: '16px', color: 'var(--color-text-muted)', margin: 0, textAlign: 'center' }}>
           2026 Team AlgoRhythm
         </p>
       </div>
@@ -135,7 +135,7 @@ function HomeIcon({ size = 18, active }) {
       width={size}
       height={size}
       fill="none"
-      stroke={active ? '#27a859' : '#888'}
+      stroke="currentColor"
       strokeWidth="1.8"
       viewBox="0 0 24 24"
     >
@@ -151,7 +151,7 @@ function CalendarIcon({ size = 18, active }) {
       width={size}
       height={size}
       fill="none"
-      stroke={active ? '#27a859' : '#888'}
+      stroke="currentColor"
       strokeWidth="1.8"
       viewBox="0 0 24 24"
     >
@@ -169,7 +169,7 @@ function BookIcon({ size = 18, active }) {
       width={size}
       height={size}
       fill="none"
-      stroke={active ? '#27a859' : '#888'}
+      stroke="currentColor"
       strokeWidth="1.8"
       viewBox="0 0 24 24"
     >
@@ -185,7 +185,7 @@ function HistoryIcon({ size = 18, active }) {
       width={size}
       height={size}
       fill="none"
-      stroke={active ? '#27a859' : '#888'}
+      stroke="currentColor"
       strokeWidth="1.8"
       viewBox="0 0 24 24"
     >
@@ -202,13 +202,13 @@ function AdminIcon({ size = 18, active }) {
       width={size}
       height={size}
       fill="none"
-      stroke={active ? '#27a859' : '#888'}
+      stroke="currentColor"
       strokeWidth="1.8"
       viewBox="0 0 24 24"
     >
       <circle cx="12" cy="8" r="4" />
       <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-      <circle cx="18" cy="8" r="1.5" fill={active ? '#27a859' : '#888'} stroke="none" />
+      <circle cx="18" cy="8" r="1.5" fill="currentColor" stroke="none" />
     </svg>
   )
 }
