@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   useAddPeriodSetting,
   useDeletePeriodSetting,
@@ -50,8 +50,10 @@ export default function SchoolSettingPanel() {
   const [form, setForm] = useState(null)
   const [rows, setRows] = useState([])
   const [draft, setDraft] = useState({ periodNumber: '', startTime: '', endTime: '' })
-
-  useEffect(() => {
+  const settingSource = missing ? 'missing' : (settingQuery.data ?? null)
+  const [seenSetting, setSeenSetting] = useState(settingSource)
+  if (settingSource !== seenSetting) {
+    setSeenSetting(settingSource)
     if (missing) {
       setForm({
         periodDuration: '',
@@ -59,29 +61,32 @@ export default function SchoolSettingPanel() {
         lunchStartTime: '',
         lunchEndTime: '',
       })
-      return
+    } else if (settingQuery.data) {
+      const setting = settingQuery.data
+      setForm({
+        periodDuration: setting.periodDuration ?? '',
+        breakDuration: setting.breakDuration ?? '',
+        lunchStartTime: toInputTime(setting.lunchStartTime),
+        lunchEndTime: toInputTime(setting.lunchEndTime),
+      })
     }
-    if (!settingQuery.data) return
-    const setting = settingQuery.data
-    setForm({
-      periodDuration: setting.periodDuration ?? '',
-      breakDuration: setting.breakDuration ?? '',
-      lunchStartTime: toInputTime(setting.lunchStartTime),
-      lunchEndTime: toInputTime(setting.lunchEndTime),
-    })
-  }, [settingQuery.data, missing])
+  }
 
-  useEffect(() => {
-    if (!periodsQuery.data) return
-    setRows(
-      periodsQuery.data.map((period) => ({
-        id: period.id,
-        periodNumber: String(period.periodNumber ?? ''),
-        startTime: toInputTime(period.startTime),
-        endTime: toInputTime(period.endTime),
-      })),
-    )
-  }, [periodsQuery.data])
+  const periods = periodsQuery.data ?? null
+  const [seenPeriods, setSeenPeriods] = useState(periods)
+  if (periods !== seenPeriods) {
+    setSeenPeriods(periods)
+    if (periods) {
+      setRows(
+        periods.map((period) => ({
+          id: period.id,
+          periodNumber: String(period.periodNumber ?? ''),
+          startTime: toInputTime(period.startTime),
+          endTime: toInputTime(period.endTime),
+        })),
+      )
+    }
+  }
 
   const handleSaveSetting = () => {
     if (!form) return

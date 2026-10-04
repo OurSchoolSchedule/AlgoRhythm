@@ -47,17 +47,12 @@ export default function AIFloatingChat() {
   return (
     <>
       {open && (
-        <div style={{
-          position: "fixed", bottom: 96, right: 24, width: 400, height: 600,
-          background: "var(--color-surface)", borderRadius: "var(--radius-xl)",
-          boxShadow: "var(--shadow-lg)", display: "flex", flexDirection: "column",
-          zIndex: 20, overflow: "hidden",
-        }}>
+        <div className="ai-assistant-panel" role="dialog" aria-label="AI 도우미">
           <div style={{
             padding: "14px 18px", borderBottom: "1px solid var(--color-border)",
             display: "flex", alignItems: "center", gap: 8, background: "var(--color-surface)",
           }}>
-            <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: "var(--color-text)" }}>질문</p>
+            <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: "var(--color-text)" }}>AI 도우미</p>
             <button onClick={() => setOpen(false)} aria-label="질문 닫기" style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "var(--color-text-muted)", padding: 4, display: "flex" }}>
               <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -143,29 +138,16 @@ export default function AIFloatingChat() {
         </div>
       )}
 
-      <button
-        onClick={() => setOpen(v => !v)}
-        style={{
-          position: "fixed", bottom: 24, right: 24,
-          width: 48, height: 48, borderRadius: "var(--radius-xl)",
-          background: "var(--color-primary-500)", border: "none", cursor: "pointer",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "var(--shadow-md)", zIndex: 20,
-          color: "var(--color-surface)",
-        }}
-        title="질문"
-        aria-label={open ? "질문 닫기" : "질문 열기"}
-      >
-        {open ? (
-          <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        ) : (
-          <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-        )}
-      </button>
+      {!open && (
+        <button
+          type="button"
+          className="ai-assistant-button"
+          onClick={() => setOpen(true)}
+          aria-label="AI 도우미 열기"
+        >
+          ✦ AI 도우미
+        </button>
+      )}
     </>
   );
 }

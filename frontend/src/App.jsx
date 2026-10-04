@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import Sidebar from '@/components/layout/Sidebar'
-import HeaderUserMenu from '@/components/layout/HeaderUserMenu'
+import TopNav from '@/components/layout/TopNav'
 import NotificationSidebar from '@/components/layout/NotificationSidebar'
 import AIFloatingChat from '@/components/common/AIFloatingChat'
 import HomeView from '@/pages/home/HomeView'
@@ -15,34 +14,21 @@ import { positionToUserRole } from '@/constants/domainLabels.js'
 
 export default function App() {
   const [authed, setAuthed] = useState(() => Boolean(getAccessToken() || getPreviewUserRole()))
-  const [sidebarOpen, setSidebarOpen] = useState(() => window.matchMedia('(min-width: 1280px)').matches)
   const [alarmOpen, setAlarmOpen] = useState(false)
   const [currentView, setCurrentView] = useState('home')
   const [userRole, setUserRole] = useState(() => getPreviewUserRole() ?? 'admin')
   const logoutMutation = useLogout()
   const { data: activeStore } = useActiveStore({ enabled: authed && Boolean(getAccessToken()) })
+  const storeRole = activeStore?.position ? positionToUserRole(activeStore.position) : null
+  const [appliedStoreRole, setAppliedStoreRole] = useState(null)
+  if (!getPreviewUserRole() && storeRole && storeRole !== appliedStoreRole) {
+    setAppliedStoreRole(storeRole)
+    setUserRole(storeRole)
+  }
 
-  useEffect(() => {
-    if (getPreviewUserRole()) return
-    if (activeStore?.position) {
-      setUserRole(positionToUserRole(activeStore.position))
-    }
-  }, [activeStore?.position])
-
-  // 토큰 재발급 실패(인증 만료) 시 로그인 화면으로 복귀.
   useEffect(() => {
     setOnAuthError(() => setAuthed(false))
     return () => setOnAuthError(null)
-  }, [])
-
-  useEffect(() => {
-    const media = window.matchMedia('(max-width: 1279px)')
-    const sync = () => {
-      if (media.matches) setSidebarOpen(false)
-    }
-    sync()
-    media.addEventListener('change', sync)
-    return () => media.removeEventListener('change', sync)
   }, [])
 
   const handleLogout = () => {
@@ -100,70 +86,15 @@ export default function App() {
         overflow: 'hidden',
       }}
     >
-      <header
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 var(--space-8)',
-          height: 64,
-          background: 'var(--color-surface)',
-          borderBottom: '1px solid var(--color-border)',
-          flexShrink: 0,
-          zIndex: 10,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button
-            onClick={() => setSidebarOpen((open) => !open)}
-            aria-label={sidebarOpen ? '사이드바 닫기' : '사이드바 열기'}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 6,
-              borderRadius: 'var(--radius-sm)',
-              display: 'flex',
-              alignItems: 'center',
-              color: 'var(--color-text-secondary)',
-            }}
-          >
-            <svg
-              width="20"
-              height="20"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              viewBox="0 0 24 24"
-            >
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('home')}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: 'var(--font-body)',
-              color: 'var(--color-text)',
-              padding: 0,
-            }}
-          >
-            우리학교 시간표
-          </button>
-        </div>
-        <HeaderUserMenu
-          userRole={userRole}
-          alarmOpen={alarmOpen}
-          onAlarmToggle={() => setAlarmOpen((open) => !open)}
-          onLogout={handleLogout}
-        />
-      </header>
+      <TopNav
+        navigate={navigate}
+        currentView={currentView}
+        userRole={userRole}
+        setUserRole={setUserRole}
+        alarmOpen={alarmOpen}
+        onAlarmToggle={() => setAlarmOpen((open) => !open)}
+        onLogout={handleLogout}
+      />
 
       <div
         style={{
@@ -174,16 +105,8 @@ export default function App() {
           minHeight: 0,
         }}
       >
-        <Sidebar
-          open={sidebarOpen}
-          navigate={navigate}
-          currentView={currentView}
-          userRole={userRole}
-          setUserRole={setUserRole}
-        />
-
-        <main className="hide-scrollbar" style={{ flex: 1, overflow: 'auto', padding: 'var(--space-8)', minWidth: 0 }}>
-          <div style={{ maxWidth: currentView === 'timetable' ? 'none' : 1200 }}>
+        <main className={`hide-scrollbar app-main`}>
+          <div className={currentView === 'timetable' ? 'app-content app-content-wide' : 'app-content'}>
             {renderView()}
           </div>
         </main>

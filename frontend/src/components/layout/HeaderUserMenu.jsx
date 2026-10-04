@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 
 function UserIcon({ dark = false }) {
   return (
@@ -58,23 +58,72 @@ const PROFILE = {
   },
 }
 
-export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onLogout }) {
+function showDevRoleSwitch() {
+  if (import.meta.env.DEV) return true
+  if (typeof window === 'undefined') return false
+  return new URLSearchParams(window.location.search).get('dev') === '1'
+}
+
+function moveMenuFocus(menu, direction) {
+  const items = [...menu.querySelectorAll('[role="menuitem"]')]
+  if (items.length === 0) return
+  const current = items.indexOf(document.activeElement)
+  const next = direction === 'first'
+    ? 0
+    : direction === 'last'
+      ? items.length - 1
+      : (current + direction + items.length) % items.length
+  items[next]?.focus()
+}
+
+export default function HeaderUserMenu({ userRole, setUserRole, alarmOpen, onAlarmToggle, onLogout }) {
   const [profileOpen, setProfileOpen] = useState(false)
   const menuRef = useRef(null)
+  const triggerRef = useRef(null)
+  const panelRef = useRef(null)
+  const menuId = useId()
   const profile = PROFILE[userRole] ?? PROFILE.worker
+  const devRoleSwitch = showDevRoleSwitch()
 
   useEffect(() => {
-    if (!profileOpen) return
+    if (!profileOpen) return undefined
 
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setProfileOpen(false)
       }
     }
+    const handleKey = (event) => {
+      if (event.key === 'Escape') {
+        setProfileOpen(false)
+        triggerRef.current?.focus()
+      }
+    }
 
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKey)
+    }
   }, [profileOpen])
+
+  const onPanelKeyDown = (event) => {
+    if (!panelRef.current) return
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      moveMenuFocus(panelRef.current, 1)
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      moveMenuFocus(panelRef.current, -1)
+    } else if (event.key === 'Home') {
+      event.preventDefault()
+      moveMenuFocus(panelRef.current, 'first')
+    } else if (event.key === 'End') {
+      event.preventDefault()
+      moveMenuFocus(panelRef.current, 'last')
+    }
+  }
 
   return (
     <div
@@ -96,7 +145,7 @@ export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onL
           border: 'none',
           cursor: 'pointer',
           padding: 6,
-          borderRadius: 8,
+          borderRadius: 'var(--radius-md)',
           display: 'flex',
           alignItems: 'center',
           color: alarmOpen ? 'var(--color-primary-500)' : 'var(--color-text-secondary)',
@@ -106,10 +155,21 @@ export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onL
       </button>
 
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setProfileOpen((open) => !open)}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowDown') {
+            event.preventDefault()
+            setProfileOpen(true)
+            requestAnimationFrame(() => {
+              panelRef.current?.querySelector('[role="menuitem"]')?.focus()
+            })
+          }
+        }}
         aria-expanded={profileOpen}
-        aria-haspopup="true"
+        aria-haspopup="menu"
+        aria-controls={menuId}
         style={{
           background: 'none',
           border: 'none',
@@ -128,42 +188,30 @@ export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onL
 
       {profileOpen && (
         <div
-          role="dialog"
+          ref={panelRef}
+          id={menuId}
+          role="menu"
           aria-label="사용자 정보"
+          onKeyDown={onPanelKeyDown}
           style={{
             position: 'absolute',
-            top: 'calc(100% + 12px)',
+            top: 'calc(100% + 8px)',
             right: 0,
             width: 280,
             background: 'var(--color-surface)',
             border: '1px solid var(--color-border)',
-            borderRadius: 12,
+            borderRadius: 'var(--radius-md)',
             boxShadow: 'var(--shadow-md)',
             zIndex: 60,
             overflow: 'hidden',
+            padding: '4px 0',
           }}
         >
-          <div
-            style={{
-              padding: '28px 24px 20px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              textAlign: 'center',
-            }}
-          >
-            <UserIcon dark />
-            <p
-              style={{
-                margin: '14px 0 16px',
-                fontSize: 14,
-                fontWeight: 600,
-                color: 'var(--color-text)',
-              }}
-            >
+          <div style={{ padding: '12px 12px 8px' }}>
+            <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>
               {profile.name}
             </p>
-            <p style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--color-text-subtle)', lineHeight: 1.5 }}>
+            <p style={{ margin: '0 0 4px', fontSize: 13, color: 'var(--color-text-subtle)', lineHeight: 1.5 }}>
               담당 과목 | {profile.subjects}
             </p>
             <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-subtle)', lineHeight: 1.5 }}>
@@ -171,46 +219,55 @@ export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onL
             </p>
           </div>
 
-          <div style={{ borderTop: '1px solid var(--color-border)', padding: '16px 24px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <button
-              type="button"
-              style={{
-                width: '100%',
-                padding: '10px 0',
-                borderRadius: 8,
-                border: '1px solid var(--color-border-input)',
-                background: 'var(--color-surface)',
-                color: 'var(--color-text)',
-                fontSize: 14,
-                fontWeight: 500,
-                cursor: 'pointer',
-              }}
-            >
-              시간대 선호도 제출
-            </button>
-            {onLogout && (
+          <div style={{ height: 1, background: 'var(--color-border)', margin: '8px 0' }} />
+
+          <button type="button" role="menuitem" className="menu-item">
+            시간대 선호도 제출
+          </button>
+
+          {devRoleSwitch && setUserRole && (
+            <>
               <button
                 type="button"
+                role="menuitem"
+                className="menu-item"
                 onClick={() => {
+                  setUserRole('admin')
                   setProfileOpen(false)
-                  onLogout()
                 }}
-                style={{
-                  width: '100%',
-                  padding: '10px 0',
-                  borderRadius: 8,
-                  border: '1px solid var(--color-danger)',
-                  background: 'var(--color-surface)',
-                  color: 'var(--color-danger)',
-                  fontSize: 14,
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                }}
+                style={{ fontWeight: userRole === 'admin' ? 600 : 400, color: userRole === 'admin' ? 'var(--color-primary-500)' : 'var(--color-text)' }}
               >
-                로그아웃
+                관리자 화면
               </button>
-            )}
-          </div>
+              <button
+                type="button"
+                role="menuitem"
+                className="menu-item"
+                onClick={() => {
+                  setUserRole('worker')
+                  setProfileOpen(false)
+                }}
+                style={{ fontWeight: userRole === 'worker' ? 600 : 400, color: userRole === 'worker' ? 'var(--color-primary-500)' : 'var(--color-text)' }}
+              >
+                교사 화면
+              </button>
+            </>
+          )}
+
+          {onLogout && (
+            <button
+              type="button"
+              role="menuitem"
+              className="menu-item"
+              onClick={() => {
+                setProfileOpen(false)
+                onLogout()
+              }}
+              style={{ color: 'var(--color-danger)' }}
+            >
+              로그아웃
+            </button>
+          )}
         </div>
       )}
     </div>

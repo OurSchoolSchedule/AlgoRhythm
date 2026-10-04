@@ -1,15 +1,18 @@
-import { useMemo, useState } from "react";
-import { useTodos, useToggleTodo, useNotifications, useSchoolTimetable, useStoreStaffSummary } from "@/hooks";
-import CreateShiftSwapForm from "@/components/schedule/CreateShiftSwapForm.jsx";
+import { useMemo } from "react";
+import { useTodos, useToggleTodo, useNotifications, useSchoolTimetable } from "@/hooks";
 import DayTimetableList from "@/components/schedule/DayTimetableList.jsx";
+import NotificationActionButtons from "@/components/schedule/NotificationActionButtons.jsx";
 import { getAccessToken } from "@/api";
 import { toISODate } from "@/utils";
 import { getTimetableErrorMessage } from "@/utils/timetableErrors.js";
 import { DOMAIN, localizeNotificationMessage, categoryLabel } from "@/constants/domainLabels.js";
 import {
+  filterActionableNotifications,
   filterBriefingNotifications,
   filterTeacherBriefingNotifications,
 } from "@/utils/notificationActions.js";
+
+const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 
 const adminBriefs = [
   { time: "08:40", type: "보결", text: "2교시 · 2-3반 박철수 선생님 부재 → 김민지 선생님 대체 예정" },
@@ -50,6 +53,30 @@ function buildBriefingItems(notifications, isAdmin) {
   return fromNoti;
 }
 
+const typeColor = {
+  보결: "var(--color-warning)",
+  변경: "var(--color-info)",
+  완료: "var(--color-success)",
+  안내: "var(--color-text-subtle)",
+  "추가 근무": "var(--color-info)",
+};
+const typeBg = {
+  보결: "var(--color-warning-light)",
+  변경: "var(--color-info-light)",
+  완료: "var(--color-success-light)",
+  안내: "var(--color-border-light)",
+  "추가 근무": "var(--color-info-light)",
+};
+
+function sectionTitleStyle() {
+  return {
+    margin: "0 0 12px",
+    fontSize: "var(--font-heading)",
+    fontWeight: 600,
+    color: "var(--color-text)",
+  };
+}
+
 /**
  * @param {Object} props
  * @param {(view: string) => void} props.navigate
@@ -57,13 +84,17 @@ function buildBriefingItems(notifications, isAdmin) {
  */
 export default function HomeView({ navigate, userRole = "admin" }) {
   const isAdmin = userRole === "admin";
+  const position = isAdmin ? "ADMIN" : "TEACHER";
   const {
     timetable,
     isLoading: timetableLoading,
     isError: timetableError,
     error: timetableErr,
   } = useSchoolTimetable();
-  const displayDate = new Date().toLocaleDateString("ko-KR", {
+  const now = new Date();
+  const weekdayLabel = WEEKDAY_LABELS[now.getDay()];
+  const isWeekend = !timetable.todayKey;
+  const displayDate = now.toLocaleDateString("ko-KR", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -75,8 +106,10 @@ export default function HomeView({ navigate, userRole = "admin" }) {
     () => buildBriefingItems(notifications, isAdmin),
     [notifications, isAdmin],
   );
-  const [showSwapForm, setShowSwapForm] = useState(false);
-  const [leftPanelTab, setLeftPanelTab] = useState("timetable");
+  const actionable = useMemo(
+    () => filterActionableNotifications(notifications, position),
+    [notifications, position],
+  );
 
   const todayDateStr = toISODate();
   const { data: todoData, isLoading: todoLoading, isError: todoError } = useTodos(todayDateStr);
@@ -85,289 +118,230 @@ export default function HomeView({ navigate, userRole = "admin" }) {
     ? [...todoData.storeTodos, ...todoData.handoverTodos, ...todoData.personalTodos]
     : [];
 
-  const { data: staffSummary } = useStoreStaffSummary({ enabled: isAdmin });
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
   const previewOnly = !getAccessToken();
   const todayClassCount = timetable.todayClassCount;
-  const weekClassCount = timetable.weekClassCount;
+  const hasClass = todayClassCount > 0;
   const substituteCount = isAdmin
     ? notifications.filter((n) => n.category === "SUBSTITUTE").length
     : 0;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
-  const typeColor = { 보결: "var(--color-warning)", 변경: "var(--color-info)", 완료: "var(--color-success)", 안내: "var(--color-text-subtle)" };
-  const typeBg = { 보결: "var(--color-warning-light)", 변경: "var(--color-info-light)", 완료: "var(--color-success-light)", 안내: "var(--color-border-light)" };
+  const showTimetableError = timetableError && !previewOnly;
+  const showEmptyNote = !timetableLoading && !showTimetableError && !hasClass;
 
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 24 }}>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--color-text)" }}>오늘</h1>
-        <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)", fontVariantNumeric: "tabular-nums" }}>{displayDate}</p>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
-        <StatCard label="오늘 수업" value={todayClassCount} unit="교시" />
-        {isAdmin ? (
-          <StatCard
-            label={`이번 주 ${DOMAIN.substitute}`}
-            value={substituteCount}
-            unit="건"
-          />
-        ) : (
-          <StatCard label="미확인 알림" value={unreadCount} unit="건" />
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 16,
+          flexWrap: "wrap",
+          marginBottom: 32,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "baseline", gap: 12, minWidth: 0 }}>
+          <h1 style={{ margin: 0, fontSize: "var(--font-display)", fontWeight: 700, color: "var(--color-text)" }}>
+            오늘
+          </h1>
+          <p style={{ margin: 0, fontSize: "var(--font-caption)", color: "var(--color-text-muted)", fontVariantNumeric: "tabular-nums" }}>
+            {displayDate}
+          </p>
+        </div>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => navigate("schedule-create")}
+            style={{
+              height: 36,
+              padding: "0 16px",
+              borderRadius: "var(--radius-md)",
+              border: "none",
+              background: "var(--color-primary-500)",
+              color: "var(--color-surface)",
+              fontSize: "var(--font-body)",
+              fontWeight: 600,
+              flexShrink: 0,
+            }}
+          >
+            시간표 생성
+          </button>
         )}
-        <StatCard
-          label={isAdmin ? "등록 교사" : "등록 수업"}
-          value={isAdmin ? (staffSummary?.totalStaffCount ?? 0) : weekClassCount}
-          unit={isAdmin ? "명" : "시수"}
-        />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 24, alignItems: "start" }}>
-        <HomeTimetableTodoPanel
-          activeTab={leftPanelTab}
-          onTabChange={setLeftPanelTab}
-          timetableContent={
-            <>
-              {timetableLoading && (
-                <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>시간표 불러오는 중...</p>
-              )}
-              {timetableError && !previewOnly && (
-                <p style={{ margin: 0, fontSize: 13, color: "var(--color-danger)" }}>
-                  {getTimetableErrorMessage(timetableErr)}
-                </p>
-              )}
-              {!timetableLoading && (previewOnly || !timetableError) && timetable.weekClassCount === 0 && (
-                <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>
-                  등록된 수업이 없습니다. 시간표를 만들면 여기에 표시됩니다.
-                </p>
-              )}
-              {!timetableLoading && !timetableError && timetable.weekClassCount > 0 && (
-                <DayTimetableList timetable={timetable} />
-              )}
-            </>
-          }
-          todoContent={
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, minHeight: 280 }}>
-              {todoLoading && (
-                <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>불러오는 중...</p>
-              )}
-              {todoError && (
-                <p style={{ margin: 0, fontSize: 13, color: "var(--color-danger)" }}>할 일을 불러오지 못했습니다. 새로고침 후 다시 확인하세요.</p>
-              )}
-              {!todoLoading && !todoError && todoItems.length === 0 && (
-                <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>오늘 할 일이 없습니다. 투두 탭에서 추가하세요.</p>
-              )}
-              {todoItems.map((t) => (
-                <label key={t.id} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(t.completed)}
-                    disabled={toggleTodo.isPending}
-                    onChange={() => toggleTodo.mutate(t.id)}
-                    style={{ accentColor: "var(--color-primary-500)", width: 15, height: 15 }}
-                  />
-                  <span
+      <p style={{ margin: "0 0 32px", fontSize: "var(--font-body)", color: "var(--color-text-secondary)" }}>
+        오늘 수업{" "}
+        <span style={{ fontWeight: 600, color: "var(--color-text)", fontVariantNumeric: "tabular-nums" }}>
+          {todayClassCount}
+        </span>
+        교시 · {isAdmin ? `이번 주 ${DOMAIN.substitute}` : "미확인 알림"}{" "}
+        <span style={{ fontWeight: 600, color: "var(--color-text)", fontVariantNumeric: "tabular-nums" }}>
+          {isAdmin ? substituteCount : unreadCount}
+        </span>
+        건
+      </p>
+
+      <div className="home-columns">
+        <section style={{ minWidth: 0 }}>
+          <h2 style={sectionTitleStyle()}>오늘 시간표</h2>
+          {timetableLoading && (
+            <p style={{ margin: "0 0 12px", fontSize: "var(--font-caption)", color: "var(--color-text-muted)" }}>
+              시간표 불러오는 중
+            </p>
+          )}
+          {showTimetableError && (
+            <p style={{ margin: "0 0 12px", fontSize: "var(--font-caption)", color: "var(--color-danger)" }}>
+              {getTimetableErrorMessage(timetableErr)}
+            </p>
+          )}
+          {showEmptyNote && isWeekend && (
+            <p style={{ margin: "0 0 12px", fontSize: "var(--font-caption)", color: "var(--color-text-muted)" }}>
+              오늘({weekdayLabel})은 수업이 없는 날입니다
+            </p>
+          )}
+          {showEmptyNote && !isWeekend && (
+            <p style={{ margin: "0 0 12px", fontSize: "var(--font-caption)", color: "var(--color-text-muted)" }}>
+              오늘 등록된 수업이 없습니다
+              {isAdmin && (
+                <>
+                  {" "}
+                  <button
+                    type="button"
+                    onClick={() => navigate("schedule-create")}
                     style={{
-                      fontSize: 13,
-                      color: t.completed ? "var(--color-text-muted)" : "var(--color-text)",
-                      textDecoration: t.completed ? "line-through" : "none",
-                      flex: 1,
+                      padding: 0,
+                      border: "none",
+                      background: "none",
+                      color: "var(--color-primary-500)",
+                      fontSize: "var(--font-caption)",
+                      fontWeight: 600,
                     }}
                   >
-                    {t.content}
-                  </span>
-                </label>
-              ))}
-            </div>
-          }
-        />
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {isAdmin && (
-            <button
-              type="button"
-              onClick={() => navigate("schedule-create")}
-              style={{
-                width: "100%",
-                height: 40,
-                padding: "10px 16px",
-                borderRadius: "var(--radius-md)",
-                border: "none",
-                background: "var(--color-primary-500)",
-                color: "var(--color-surface)",
-                fontSize: "var(--font-body)",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              시간표 생성
-            </button>
+                    시간표 생성
+                  </button>
+                </>
+              )}
+            </p>
           )}
+          <DayTimetableList timetable={timetable} />
+        </section>
 
-          {!isAdmin && (
-            <>
-              <button
-                type="button"
-                onClick={() => setShowSwapForm((v) => !v)}
+        <div style={{ display: "flex", flexDirection: "column", gap: 32, minWidth: 0 }}>
+          <section>
+            <h2 style={sectionTitleStyle()}>처리할 일</h2>
+            {todoLoading && (
+              <p style={{ margin: 0, fontSize: "var(--font-caption)", color: "var(--color-text-muted)" }}>불러오는 중</p>
+            )}
+            {todoError && (
+              <p style={{ margin: 0, fontSize: "var(--font-caption)", color: "var(--color-danger)" }}>
+                할 일을 불러오지 못했습니다. 새로고침 후 다시 확인하세요.
+              </p>
+            )}
+            {!todoLoading && !todoError && actionable.length === 0 && todoItems.length === 0 && (
+              <p style={{ margin: 0, fontSize: "var(--font-caption)", color: "var(--color-text-muted)" }}>
+                {isAdmin ? "승인할 대타 요청이 없습니다." : "수락할 대타 요청이 없습니다."}
+              </p>
+            )}
+            {actionable.map((item) => (
+              <div
+                key={item.id ?? item.createdAt}
                 style={{
-                  width: "100%",
-                  height: 40,
-                  padding: "10px 16px",
-                  borderRadius: "var(--radius-md)",
-                  border: "none",
-                  background: "var(--color-primary-500)",
-                  color: "var(--color-surface)",
-                  fontSize: "var(--font-body)",
-                  fontWeight: 600,
+                  padding: "12px 0",
+                  borderBottom: "1px solid var(--color-border-light)",
+                }}
+              >
+                <p style={{ margin: 0, fontSize: "var(--font-body)", color: "var(--color-text)", lineHeight: "22px" }}>
+                  {localizeNotificationMessage(item.message)}
+                </p>
+                <NotificationActionButtons notification={item} position={position} />
+              </div>
+            ))}
+            {todoItems.map((todo) => (
+              <label
+                key={todo.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "12px 0",
+                  borderBottom: "1px solid var(--color-border-light)",
                   cursor: "pointer",
                 }}
               >
-                {showSwapForm ? "닫기" : "교환 요청하기"}
-              </button>
-              {showSwapForm && (
-                <div
+                <input
+                  type="checkbox"
+                  checked={Boolean(todo.completed)}
+                  disabled={toggleTodo.isPending}
+                  onChange={() => toggleTodo.mutate(todo.id)}
+                  style={{ accentColor: "var(--color-primary-500)", width: 16, height: 16 }}
+                />
+                <span
                   style={{
-                    background: "var(--color-surface)",
-                    borderRadius: 12,
-                    border: "1px solid var(--color-border)",
-                    padding: "16px 18px",
+                    fontSize: "var(--font-body)",
+                    color: todo.completed ? "var(--color-text-muted)" : "var(--color-text)",
+                    textDecoration: todo.completed ? "line-through" : "none",
                   }}
                 >
-                  <CreateShiftSwapForm />
-                </div>
-              )}
-            </>
-          )}
+                  {todo.content}
+                </span>
+              </label>
+            ))}
+          </section>
 
-          <Card title="오늘 변동">
+          <section>
+            <h2 style={sectionTitleStyle()}>오늘 변동</h2>
             {briefs.length === 0 ? (
-              <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-muted)" }}>
+              <p style={{ margin: 0, fontSize: "var(--font-caption)", color: "var(--color-text-muted)" }}>
                 {isAdmin
                   ? "오늘 변동이 없습니다. 보결이나 변경이 생기면 여기에 표시됩니다."
                   : "오늘 변동이 없습니다. 내 수업과 관련된 변경이 생기면 여기에 표시됩니다."}
               </p>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {briefs.slice(0, 8).map((b) => (
-                  <div key={b.key} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-                    <span style={{ fontSize: 12, color: "var(--color-text-muted)", flexShrink: 0, paddingTop: 2 }}>
-                      {b.time}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 600,
-                        padding: "2px 7px",
-                        borderRadius: 6,
-                        background: typeBg[b.type] || "var(--color-border-light)",
-                        color: typeColor[b.type] || "var(--color-text-muted)",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {b.type}
-                    </span>
-                    <span style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.5 }}>{b.text}</span>
-                  </div>
-                ))}
-              </div>
+              briefs.slice(0, 8).map((item) => (
+                <div
+                  key={item.key}
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    alignItems: "flex-start",
+                    padding: "12px 0",
+                    borderBottom: "1px solid var(--color-border-light)",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "var(--font-micro)",
+                      color: "var(--color-text-muted)",
+                      flexShrink: 0,
+                      paddingTop: 2,
+                      fontVariantNumeric: "tabular-nums",
+                    }}
+                  >
+                    {item.time}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "var(--font-micro)",
+                      fontWeight: 600,
+                      padding: "2px 8px",
+                      borderRadius: "var(--radius-sm)",
+                      background: typeBg[item.type] || "var(--color-border-light)",
+                      color: typeColor[item.type] || "var(--color-text-muted)",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {item.type}
+                  </span>
+                  <span style={{ fontSize: "var(--font-micro)", color: "var(--color-text-secondary)", lineHeight: "18px" }}>
+                    {item.text}
+                  </span>
+                </div>
+              ))
             )}
-          </Card>
+          </section>
         </div>
       </div>
-    </div>
-  );
-}
-
-const PANEL_BORDER = "var(--color-border)";
-const TAB_INACTIVE_BG = "var(--color-border-light)";
-
-const LEFT_PANEL_TABS = [
-  { id: "timetable", label: "시간표" },
-  { id: "todo", label: "투두" },
-];
-
-function HomeTimetableTodoPanel({ activeTab, onTabChange, timetableContent, todoContent }) {
-  return (
-    <div>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 0, paddingLeft: 2 }}>
-        {LEFT_PANEL_TABS.map((tab) => {
-          const active = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => onTabChange(tab.id)}
-              style={{
-                position: "relative",
-                zIndex: active ? 2 : 1,
-                marginBottom: active ? -1 : 0,
-                padding: "10px 28px",
-                borderTop: `1px solid ${PANEL_BORDER}`,
-                borderLeft: `1px solid ${PANEL_BORDER}`,
-                borderRight: `1px solid ${PANEL_BORDER}`,
-                borderBottom: active ? "1px solid var(--color-surface)" : `1px solid ${PANEL_BORDER}`,
-                borderRadius: "8px 8px 0 0",
-                background: active ? "var(--color-surface)" : TAB_INACTIVE_BG,
-                color: active ? "var(--color-text)" : "var(--color-text-muted)",
-                fontWeight: active ? 600 : 500,
-                fontSize: 14,
-                cursor: "pointer",
-                lineHeight: 1.2,
-              }}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          background: "var(--color-surface)",
-          border: `1px solid ${PANEL_BORDER}`,
-          borderRadius: "0 12px 12px 12px",
-          padding: "16px 18px",
-        }}
-      >
-        {activeTab === "timetable" ? timetableContent : todoContent}
-      </div>
-    </div>
-  );
-}
-
-function Card({ title, children }) {
-  return (
-    <div
-      style={{
-        background: "var(--color-surface)",
-        borderRadius: 12,
-        border: "1px solid var(--color-border)",
-        padding: "16px 18px",
-      }}
-    >
-      <p style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>{title}</p>
-      {children}
-    </div>
-  );
-}
-
-function StatCard({ label, value, unit }) {
-  return (
-    <div
-      style={{
-        background: "var(--color-surface)",
-        borderRadius: 12,
-        border: "1px solid var(--color-border)",
-        padding: "14px 18px",
-      }}
-    >
-      <p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--color-text-muted)" }}>{label}</p>
-      <p style={{ margin: 0, fontSize: 24, fontWeight: 700, color: "var(--color-text)", fontVariantNumeric: "tabular-nums" }}>
-        {value}
-        <span style={{ fontSize: 13, fontWeight: 400, marginLeft: 4, color: "var(--color-text-muted)" }}>{unit}</span>
-      </p>
     </div>
   );
 }
