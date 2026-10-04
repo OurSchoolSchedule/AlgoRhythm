@@ -3,19 +3,17 @@ import { useStoreStaffSummary } from "@/hooks";
 import SchoolSettingPanel from "@/components/schedule/SchoolSettingPanel.jsx";
 import {
   HISTORY_PAGE_SIZE,
+  HISTORY_STATUSES,
   HISTORY_TYPES,
   countByType,
   countPending,
   emptyMonthMessage,
   filterHistory,
   formatGroupDate,
-  formatInlineDate,
   formatMonthTitle,
   groupHistoryByDate,
   monthsWithData,
   recordsInMonth,
-  shiftMonth,
-  usesInlineDates,
 } from "@/utils/historyList.js";
 
 const historyData = [
@@ -241,7 +239,7 @@ export function HistoryView() {
   const [monthOpen, setMonthOpen] = useState(false);
   const [type, setType] = useState("전체");
   const [query, setQuery] = useState("");
-  const [pendingOnly, setPendingOnly] = useState(false);
+  const [status, setStatus] = useState("");
   const [visibleCount, setVisibleCount] = useState(HISTORY_PAGE_SIZE);
   const [selectedId, setSelectedId] = useState(null);
   const monthRef = useRef(null);
@@ -249,13 +247,11 @@ export function HistoryView() {
   const monthItems = recordsInMonth(historyData, month);
   const counts = countByType(monthItems);
   const pending = countPending(monthItems);
-  const filtered = filterHistory(monthItems, { type, query, pendingOnly });
+  const filtered = filterHistory(monthItems, { type, query, status });
   const visible = filtered.slice(0, visibleCount);
-  const inlineDates = usesInlineDates(visible);
-  const groups = inlineDates ? [] : groupHistoryByDate(visible);
-  const reserveDate = !inlineDates && groups.some((group) => group.items.length === 1);
+  const groups = groupHistoryByDate(visible);
   const selected = historyData.find((record) => record.id === selectedId) ?? null;
-  const narrowed = type !== "전체" || query.trim() !== "" || pendingOnly;
+  const narrowed = type !== "전체" || query.trim() !== "" || status !== "";
 
   useEffect(() => {
     if (!monthOpen) return undefined;
@@ -269,7 +265,7 @@ export function HistoryView() {
   const resetFilters = () => {
     setType("전체");
     setQuery("");
-    setPendingOnly(false);
+    setStatus("");
     setVisibleCount(HISTORY_PAGE_SIZE);
   };
 
@@ -282,8 +278,8 @@ export function HistoryView() {
 
   const openRecord = (id) => setSelectedId(id);
 
-  const renderRow = (record, showDate) => {
-    const status = STATUS_BADGE[record.status];
+  const renderRow = (record) => {
+    const badge = STATUS_BADGE[record.status];
     return (
       <div
         key={record.id}
@@ -298,15 +294,12 @@ export function HistoryView() {
           }
         }}
       >
-        {(showDate || reserveDate) && (
-          <span className="history-date">{showDate ? formatInlineDate(record.date) : ""}</span>
-        )}
         <span className="day-badge" style={{ background: typeBg[record.type], color: typeColor[record.type] }}>{record.type}</span>
         <div className="history-main">
           <div className="history-line1">
             <span className="history-title">{record.title}</span>
-            {status && (
-              <span className="day-badge" style={{ color: status.color, background: status.background }}>{record.status}</span>
+            {badge && (
+              <span className="day-badge" style={{ color: badge.color, background: badge.background }}>{record.status}</span>
             )}
           </div>
           <p className="history-line2">
@@ -341,7 +334,6 @@ export function HistoryView() {
       <h1 className="sr-only">내역</h1>
       <div className="history-head">
         <div className="history-month" ref={monthRef}>
-          <button type="button" aria-label="이전 월" onClick={() => changeMonth(shiftMonth(month, -1))}>‹</button>
           <button
             type="button"
             className="history-month-label"
@@ -351,7 +343,6 @@ export function HistoryView() {
           >
             {month ? formatMonthTitle(month) : "월 선택"} ▾
           </button>
-          <button type="button" aria-label="다음 월" onClick={() => changeMonth(shiftMonth(month, 1))}>›</button>
           {monthOpen && (
             <div className="dropdown-panel dropdown-panel-top" role="listbox" aria-label="월 선택">
               {months.map((item) => (
@@ -383,18 +374,34 @@ export function HistoryView() {
         </label>
       </div>
 
-      <p className="history-summary">
-        변동 <strong>{monthItems.length}</strong>건
-        <span aria-hidden="true"> · </span>
-        {pending > 0 ? (
-          <>
-            미처리 <strong className="is-danger">{pending}</strong>건
-            <button type="button" className="history-link" onClick={() => setPendingOnly(true)}>미처리만 보기</button>
-          </>
-        ) : (
-          <span className="is-muted">미처리 없음</span>
+      <div className="history-summary">
+        <p>
+          변동 <strong>{monthItems.length}</strong>건
+          <span aria-hidden="true"> · </span>
+          {pending > 0 ? (
+            <>미처리 <strong className="is-danger">{pending}</strong>건</>
+          ) : (
+            <span className="is-muted">미처리 없음</span>
+          )}
+        </p>
+        {monthItems.length > 0 && (
+          <div className="history-status" role="group" aria-label="상태">
+            {HISTORY_STATUSES.map((item) => (
+              <button
+                key={item}
+                type="button"
+                aria-pressed={status === item}
+                onClick={() => {
+                  setStatus((current) => (current === item ? "" : item));
+                  setVisibleCount(HISTORY_PAGE_SIZE);
+                }}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
         )}
-      </p>
+      </div>
 
       {monthItems.length === 0 ? (
         <p className="history-empty">{month ? emptyMonthMessage(month) : "변동 내역이 없습니다"}</p>
@@ -428,15 +435,10 @@ export function HistoryView() {
             </p>
           ) : (
             <div className="history-list">
-              {inlineDates
-                ? visible.map((record) => renderRow(record, true))
-                : groups.flatMap((group) => {
-                  const repeated = group.items.length > 1
-                  return [
-                    repeated ? <h2 key={`${group.date}-day`} className="history-day">{formatGroupDate(group.date)}</h2> : null,
-                    ...group.items.map((record) => renderRow(record, !repeated)),
-                  ]
-                })}
+              {groups.flatMap((group) => [
+                <h2 key={`${group.date}-day`} className="history-day">{formatGroupDate(group.date)}</h2>,
+                ...group.items.map((record) => renderRow(record)),
+              ])}
             </div>
           )}
 

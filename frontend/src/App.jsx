@@ -71,7 +71,7 @@ export default function App() {
       case 'home':
         return <HomeView navigate={navigate} userRole={userRole} />
       case 'timetable':
-        return <TimetableView />
+        return <TimetableView navigate={navigate} userRole={userRole} />
       case 'schedule-create':
         return <ScheduleCreateView navigate={navigate} />
       case 'subject-manage':

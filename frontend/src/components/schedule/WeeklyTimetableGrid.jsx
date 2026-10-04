@@ -1,122 +1,143 @@
-import { Fragment } from 'react'
-import { TIMETABLE_DAYS } from '@/constants/schoolTimetable.js'
+import { SCHOOL_PERIOD_SLOTS } from '@/constants/schoolTimetable.js'
+import { formatClassName } from '@/utils/homeFocus.js'
+import {
+  STATUS_BADGE,
+  boardPeriods,
+  cellSlotKey,
+  cellStatusKind,
+  periodsWithLunch,
+} from '@/utils/timetableBoard.js'
+
+function clockOf(period) {
+  const slot = SCHOOL_PERIOD_SLOTS.find((item) => item.period === period)
+  return shortClock(slot?.start)
+}
+
+function shortClock(value) {
+  if (!value) return ''
+  const [hour, minute] = String(value).split(':')
+  if (hour == null || minute == null) return ''
+  return `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`
+}
+
+function subline(cell, detailMode) {
+  const klass = formatClassName(cell.class)
+  if (detailMode === 'class') return [cell.teacher, cell.location].filter(Boolean).join(' · ')
+  if (detailMode === 'all') return [klass, cell.teacher].filter(Boolean).join(' · ')
+  return [klass, cell.location].filter(Boolean).join(' · ')
+}
 
 /**
  * @param {Object} props
  * @param {ReturnType<import('@/utils/schoolTimetable.js').buildSchoolTimetable>} props.timetable
+ * @param {{ key: string, dayNum: number, holiday: string, isToday: boolean, isPast: boolean }[]} props.days
  */
-export default function WeeklyTimetableGrid({ timetable }) {
-  const { byDay, periods, todayKey } = timetable
+export default function WeeklyTimetableGrid({
+  timetable,
+  days,
+  detailMode = 'teacher',
+  selectedKey = '',
+  editing = false,
+  dragFrom = null,
+  hoverKey = '',
+  hoverReason = '',
+  onSelect,
+  onDragStart,
+  onDragHover,
+  onDrop,
+  onDragEnd,
+}) {
+  const periods = boardPeriods(timetable.periods, timetable.byDay)
+  const rows = periodsWithLunch(periods)
 
   return (
-    <div className="week-grid-scroll show-scrollbar">
-      <div className="week-grid">
-        <div />
-        {TIMETABLE_DAYS.map((day) => {
-          const isToday = day === todayKey
+    <div className="tt-board show-scrollbar">
+      <div className="tt-head-row">
+      <div className="tt-corner" />
+      {days.map((day) => (
+        <div
+          key={day.key}
+          className={`tt-headcell${day.isToday ? ' is-today' : ''}${day.holiday ? ' is-off' : ''}${day.isPast ? ' is-past' : ''}`}
+        >
+          <span className="tt-dow">{day.key}</span>
+          <span className={`tt-dom${day.isToday ? ' is-today' : ''}`}>{day.dayNum}</span>
+          {day.holiday ? <span className="tt-holiday">{day.holiday}</span> : null}
+        </div>
+      ))}
+      </div>
+
+      {rows.map((row) => {
+        if (row.kind === 'lunch') {
           return (
-            <div
-              key={day}
-              style={{
-                position: 'sticky',
-                top: 0,
-                zIndex: 1,
-                textAlign: 'center',
-                fontSize: 'var(--font-caption)',
-                lineHeight: '20px',
-                fontWeight: 500,
-                color: 'var(--color-text-subtle)',
-                background: isToday ? 'var(--color-primary-50)' : 'var(--color-surface-hover)',
-                borderRadius: 'var(--radius-sm)',
-                padding: '8px 0',
-              }}
-            >
-              {day}
-              {isToday ? ' 오늘' : ''}
+            <div key="lunch" className="tt-lunch-row">
+              <div className="tt-time" />
+              <div className="tt-lunch">점심시간</div>
             </div>
           )
-        })}
-
-        {periods.map((period) => (
-          <Fragment key={period}>
-            <div
-              className="week-period"
-              style={{
-                fontSize: 'var(--font-caption)',
-                lineHeight: '20px',
-                fontWeight: 500,
-                color: 'var(--color-text-subtle)',
-                background: 'var(--color-surface-hover)',
-                borderRadius: 'var(--radius-sm)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'flex-end',
-                padding: '0 8px',
-              }}
-            >
-              {period}교시
+        }
+        return (
+          <div key={row.period} className="tt-period-row">
+            <div className="tt-time">
+              <span className="tt-period-num">{row.period}교시</span>
+              <span className="tt-period-clock">{clockOf(row.period)}</span>
             </div>
-            {TIMETABLE_DAYS.map((day) => {
-              const cell = byDay[day][period]
-              const isToday = day === todayKey
-              const title = cell?.teacher || cell?.class || ''
-              const detail = [cell?.teacher ? cell.class : '', cell?.subject].filter(Boolean).join(' ')
+            {days.map((day) => {
+              const cell = timetable.byDay?.[day.key]?.[row.period] ?? null
+              const key = cellSlotKey(day.key, row.period)
+              const kind = cell ? cellStatusKind(cell.status) : ''
+              const dragging = dragFrom && cellSlotKey(dragFrom.day, dragFrom.period) === key
+              const hovered = hoverKey === key && dragFrom
+              const rejected = hovered && hoverReason
+              const className = [
+                'tt-slot',
+                day.isToday ? 'is-today' : '',
+                day.holiday ? 'is-off' : '',
+                day.isPast ? 'is-past' : '',
+                selectedKey === key ? 'is-selected' : '',
+                dragging ? 'is-drag' : '',
+                hovered && !rejected ? 'is-allow' : '',
+                rejected ? 'is-reject' : '',
+              ].filter(Boolean).join(' ')
               return (
-                <div
-                  key={`${day}-${period}`}
-                  style={{
-                    minHeight: 56,
-                    borderRadius: 'var(--radius-sm)',
-                    background: isToday ? 'var(--color-primary-50)' : 'var(--color-surface)',
-                    border: cell
-                      ? '1px solid var(--color-border)'
-                      : '1px dashed var(--color-border-input)',
-                    padding: '6px 8px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    gap: 2,
-                    overflow: 'hidden',
+                <button
+                  key={key}
+                  type="button"
+                  className={className}
+                  draggable={editing && Boolean(cell)}
+                  title={rejected ? hoverReason : undefined}
+                  onClick={() => onSelect?.({ day: day.key, period: row.period })}
+                  onDragStart={(event) => {
+                    event.dataTransfer.effectAllowed = 'move'
+                    event.dataTransfer.setData('text/plain', key)
+                    onDragStart?.({ day: day.key, period: row.period })
                   }}
+                  onDragOver={(event) => {
+                    if (!editing || !dragFrom) return
+                    event.preventDefault()
+                    onDragHover?.({ day: day.key, period: row.period })
+                  }}
+                  onDrop={(event) => {
+                    if (!editing) return
+                    event.preventDefault()
+                    onDrop?.({ day: day.key, period: row.period })
+                  }}
+                  onDragEnd={() => onDragEnd?.()}
                 >
                   {cell ? (
                     <>
-                      <span
-                        style={{
-                          fontSize: 'var(--font-micro)',
-                          lineHeight: '16px',
-                          fontWeight: 600,
-                          color: 'var(--color-text)',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                      >
-                        {title}
-                      </span>
-                      {detail ? (
-                        <span
-                          style={{
-                            fontSize: 'var(--font-micro)',
-                            lineHeight: '16px',
-                            fontWeight: 500,
-                            color: 'var(--color-text-subtle)',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {detail}
-                        </span>
-                      ) : null}
+                      <span className="tt-subject">{cell.subject || '수업'}</span>
+                      {subline(cell, detailMode) ? <span className="tt-sub">{subline(cell, detailMode)}</span> : null}
+                      {kind ? <span className={`tt-badge is-${kind}`}>{STATUS_BADGE[kind]}</span> : null}
                     </>
-                  ) : null}
-                </div>
+                  ) : (
+                    <span className="tt-free">공강</span>
+                  )}
+                </button>
               )
             })}
-          </Fragment>
-        ))}
-      </div>
+          </div>
+        )
+      })}
     </div>
   )
 }

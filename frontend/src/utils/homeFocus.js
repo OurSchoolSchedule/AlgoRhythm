@@ -132,37 +132,52 @@ export function resolveHomeFocus(timetable, now) {
   }
 }
 
-/**
- * @param {import('@/utils/schoolTimetable.js').SchoolTimetable | null | undefined} timetable
- * @param {Date} now
- */
-export function buildTodayRows(timetable, now) {
-  if (!timetable?.todayKey || timetable.todayClassCount === 0) return []
+function dayRelation(now, onDate) {
+  if (!onDate) return 'today'
+  const onTime = new Date(onDate.getFullYear(), onDate.getMonth(), onDate.getDate()).getTime()
+  const todayTime = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+  if (onTime < todayTime) return 'past'
+  if (onTime > todayTime) return 'future'
+  return 'today'
+}
 
-  const periods = timetable.periods.filter((period) => timetable.todayByPeriod[period])
+/**
+ * 선택한 요일의 교시 행. onDate가 없으면 오늘 시각 기준으로 지금·지남을 가른다.
+ * @param {import('@/utils/schoolTimetable.js').SchoolTimetable | null | undefined} timetable
+ * @param {string} dayKey
+ * @param {Date} now
+ * @param {Date | null} [onDate]
+ */
+export function buildDayRows(timetable, dayKey, now = new Date(), onDate = null) {
+  const day = timetable?.byDay?.[dayKey]
+  if (!dayKey || !day) return []
+  const periods = (timetable.periods ?? []).filter((period) => day[period])
+  if (periods.length === 0) return []
+
   const first = periods[0]
   const last = periods[periods.length - 1]
   const nowMinutes = now.getHours() * 60 + now.getMinutes()
+  const relation = dayRelation(now, onDate)
   const rows = []
 
   for (let period = first; period <= last; period += 1) {
     if (period === 5 && first <= 4 && last >= 5) {
       rows.push({ kind: 'lunch', id: 'lunch', label: '12:20–13:10 점심시간' })
     }
-    const cell = timetable.todayByPeriod[period] ?? null
+    const cell = day[period] ?? null
     const slot = slotOf(period)
     const start = cell?.startTime || slot?.start || ''
     const end = cell?.endTime || slot?.end || ''
     const endMinutes = minutesOf(end)
     const startMinutes = minutesOf(start)
-    const isNow = Boolean(
+    const isNow = relation === 'today' && Boolean(
       cell
       && startMinutes != null
       && endMinutes != null
       && nowMinutes >= startMinutes
       && nowMinutes < endMinutes,
     )
-    const isPast = endMinutes != null && nowMinutes >= endMinutes
+    const isPast = relation === 'past' || (relation === 'today' && endMinutes != null && nowMinutes >= endMinutes)
     rows.push({
       kind: 'period',
       id: `period-${period}`,
@@ -176,4 +191,13 @@ export function buildTodayRows(timetable, now) {
   }
 
   return rows
+}
+
+/**
+ * @param {import('@/utils/schoolTimetable.js').SchoolTimetable | null | undefined} timetable
+ * @param {Date} now
+ */
+export function buildTodayRows(timetable, now) {
+  if (!timetable?.todayKey || timetable.todayClassCount === 0) return []
+  return buildDayRows(timetable, timetable.todayKey, now)
 }

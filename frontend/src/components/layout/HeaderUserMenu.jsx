@@ -8,6 +8,85 @@ const THEME_OPTIONS = [
   { id: 'dark', label: '다크' },
 ]
 
+function ThemeIcon({ name }) {
+  const common = {
+    width: 16,
+    height: 16,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.8,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    'aria-hidden': true,
+  }
+  if (name === 'light') {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4" />
+      </svg>
+    )
+  }
+  if (name === 'dark') {
+    return (
+      <svg {...common}>
+        <path d="M20 14.5A8 8 0 0 1 9.5 4 6.5 6.5 0 0 0 20 14.5z" />
+      </svg>
+    )
+  }
+  return (
+    <svg {...common}>
+      <rect x="3" y="4" width="18" height="12" rx="1.5" />
+      <path d="M8 20h8M12 16v4" />
+    </svg>
+  )
+}
+
+function ThemeSwitch({ value, onChange }) {
+  const onKeyDown = (event) => {
+    const index = THEME_OPTIONS.findIndex((option) => option.id === value)
+    const next = event.key === 'ArrowRight' || event.key === 'ArrowDown'
+      ? (index + 1) % THEME_OPTIONS.length
+      : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+        ? (index - 1 + THEME_OPTIONS.length) % THEME_OPTIONS.length
+        : -1
+    if (next < 0) return
+    event.preventDefault()
+    onChange(THEME_OPTIONS[next].id)
+    event.currentTarget.querySelectorAll('[role="radio"]')[next]?.focus()
+  }
+
+  return (
+    <div
+      className="theme-switch"
+      role="radiogroup"
+      aria-label="테마"
+      data-value={value}
+      onKeyDown={onKeyDown}
+    >
+      <span className="theme-switch-thumb" aria-hidden="true" />
+      {THEME_OPTIONS.map((option) => {
+        const selected = value === option.id
+        return (
+          <button
+            key={option.id}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            aria-label={option.label}
+            tabIndex={selected ? 0 : -1}
+            onClick={() => onChange(option.id)}
+          >
+            <ThemeIcon name={option.id} />
+            <span className="theme-switch-label">{option.label}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 function BellIcon() {
   return (
     <svg
@@ -143,6 +222,14 @@ export default function HeaderUserMenu({ userRole, setUserRole, alarmOpen, onAla
         {hasUnread && <span className="alarm-dot" />}
       </button>
 
+      <ThemeSwitch
+        value={themePreference}
+        onChange={(id) => {
+          setThemeChoice(id)
+          setThemePreference(id)
+        }}
+      />
+
       <button
         ref={triggerRef}
         type="button"
@@ -197,29 +284,6 @@ export default function HeaderUserMenu({ userRole, setUserRole, alarmOpen, onAla
           </div>
 
           <div style={{ height: 1, background: 'var(--color-border)', margin: '8px 0' }} />
-
-          <p style={{ margin: '4px 12px', fontSize: 12, color: 'var(--color-text-muted)' }}>화면 테마</p>
-          {THEME_OPTIONS.map((option) => {
-            const selected = themePreference === option.id
-            return (
-              <button
-                key={option.id}
-                type="button"
-                role="menuitem"
-                className="menu-item"
-                onClick={() => {
-                  setThemeChoice(option.id)
-                  setThemePreference(option.id)
-                }}
-                style={{
-                  fontWeight: selected ? 600 : 400,
-                  color: selected ? 'var(--color-primary)' : 'var(--color-text)',
-                }}
-              >
-                {option.label}
-              </button>
-            )
-          })}
 
           <button type="button" role="menuitem" className="menu-item">
             시간대 선호도 제출

@@ -1,6 +1,7 @@
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
 
 export const HISTORY_TYPES = ['전체', '보결', '변경', '생성', '수정', '교환']
+export const HISTORY_STATUSES = ['미처리', '대기 중', '완료', '취소됨']
 export const HISTORY_PAGE_SIZE = 30
 
 /** @param {string} iso YYYY-MM-DD */
@@ -82,12 +83,13 @@ export function countPending(records) {
 
 /**
  * @param {object[]} records
- * @param {{ type?: string, query?: string, pendingOnly?: boolean }} filter
+ * @param {{ type?: string, query?: string, pendingOnly?: boolean, status?: string }} filter
  */
-export function filterHistory(records, { type = '전체', query = '', pendingOnly = false } = {}) {
+export function filterHistory(records, { type = '전체', query = '', pendingOnly = false, status = '' } = {}) {
   const needle = query.trim().toLowerCase()
   return records.filter((record) => {
     if (type !== '전체' && record.type !== type) return false
+    if (status && record.status !== status) return false
     if (pendingOnly && record.status !== '미처리') return false
     if (!needle) return true
     const haystack = [record.title, record.before, record.after, record.actor, record.search]

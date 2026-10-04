@@ -1,4 +1,4 @@
-import { buildTodayRows, formatRowDetail } from '@/utils/homeFocus.js'
+import { buildDayRows, buildTodayRows, formatRowDetail } from '@/utils/homeFocus.js'
 
 function badgeKind(status) {
   if (status === '변경') return 'change'
@@ -11,9 +11,13 @@ function badgeKind(status) {
  * @param {Object} props
  * @param {ReturnType<import('@/utils/schoolTimetable.js').buildSchoolTimetable>} props.timetable
  * @param {Date} [props.now]
+ * @param {string} [props.dayKey]
+ * @param {Date} [props.date]
  */
-export default function DayTimetableList({ timetable, now = new Date() }) {
-  const rows = buildTodayRows(timetable, now)
+export default function DayTimetableList({ timetable, now = new Date(), dayKey, date }) {
+  const rows = dayKey
+    ? buildDayRows(timetable, dayKey, now, date ?? null)
+    : buildTodayRows(timetable, now)
   if (rows.length === 0) return null
 
   return (

@@ -43,6 +43,8 @@ describe('history filters', () => {
   it('filters by type, pending state, and search text', () => {
     expect(filterHistory(records, { type: '보결' }).map((item) => item.date)).toEqual(['2026-05-28', '2026-05-10'])
     expect(filterHistory(records, { pendingOnly: true })).toHaveLength(1)
+    expect(filterHistory(records, { status: '미처리' })).toHaveLength(1)
+    expect(filterHistory(records, { status: '완료' }).every((item) => item.status === '완료')).toBe(true)
     expect(filterHistory(records, { query: '김민지' })).toHaveLength(1)
     expect(filterHistory(records, { query: '없는과목' })).toHaveLength(0)
   })
