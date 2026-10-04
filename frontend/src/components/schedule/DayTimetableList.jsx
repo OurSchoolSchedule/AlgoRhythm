@@ -1,11 +1,11 @@
-import { TIMETABLE_DAYS, TIMETABLE_PERIODS } from '@/constants/schoolTimetable.js'
+import { TIMETABLE_DAYS } from '@/constants/schoolTimetable.js'
 
 /**
  * @param {Object} props
  * @param {ReturnType<import('@/utils/schoolTimetable.js').buildSchoolTimetable>} props.timetable
  */
 export default function DayTimetableList({ timetable }) {
-  const { todayKey, todayByPeriod, currentPeriod, currentClass } = timetable
+  const { todayKey, todayByPeriod, currentPeriod, currentClass, periods } = timetable
 
   if (!todayKey || !todayByPeriod) {
     return (
@@ -66,7 +66,7 @@ export default function DayTimetableList({ timetable }) {
       </div>
 
       <div style={{ overflowY: 'auto', maxHeight: 320 }}>
-        {TIMETABLE_PERIODS.map((p) => {
+        {periods.map((p) => {
           const s = todayByPeriod[p]
           const isCurrent = p === currentPeriod
           return (
@@ -96,6 +96,7 @@ export default function DayTimetableList({ timetable }) {
                   }}
                 >
                   {s.class} | {s.subject}
+                  {s.teacher ? ` · ${s.teacher}` : ''}
                 </span>
               ) : (
                 <span style={{ flex: 1, color: '#d3d1c7', fontSize: 13, paddingLeft: 10 }}>

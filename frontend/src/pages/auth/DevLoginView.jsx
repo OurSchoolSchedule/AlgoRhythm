@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useDevToken } from '@/hooks'
-import { saveDevLoginTokens } from '@/api'
+import { clearPreviewUserRole, clearTokens, saveDevLoginTokens, setPreviewUserRole } from '@/api'
 
 /**
  * 개발용 로그인 화면.
@@ -16,10 +16,17 @@ export default function DevLoginView({ onSuccess }) {
     if (!email.trim()) return
     devToken.mutate(email.trim(), {
       onSuccess: (accessToken) => {
+        clearPreviewUserRole()
         saveDevLoginTokens(accessToken)
         onSuccess?.()
       },
     })
+  }
+
+  const enterPreview = (role) => {
+    clearTokens()
+    setPreviewUserRole(role)
+    onSuccess?.(role)
   }
 
   return (
@@ -104,7 +111,39 @@ export default function DevLoginView({ onSuccess }) {
         >
           {devToken.isPending ? '로그인 중...' : '로그인'}
         </button>
+
+        <p style={{ margin: '20px 0 10px', fontSize: 12, color: '#888', textAlign: 'center' }}>
+          테스트 로그인
+        </p>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => enterPreview('worker')}
+            style={previewButtonStyle}
+          >
+            일반 교사
+          </button>
+          <button
+            type="button"
+            onClick={() => enterPreview('admin')}
+            style={previewButtonStyle}
+          >
+            관리자
+          </button>
+        </div>
       </form>
     </div>
   )
+}
+
+const previewButtonStyle = {
+  flex: 1,
+  padding: '10px 0',
+  borderRadius: 8,
+  border: '0.5px solid #d3d1c7',
+  background: '#fff',
+  color: '#2c2c2a',
+  fontSize: 13,
+  fontWeight: 600,
+  cursor: 'pointer',
 }

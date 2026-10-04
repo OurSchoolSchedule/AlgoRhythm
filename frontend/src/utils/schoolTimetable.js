@@ -4,6 +4,14 @@ import {
   SCHOOL_PERIOD_SLOTS,
 } from '@/constants/schoolTimetable.js'
 
+const API_DAY_TO_KEY = {
+  MON: '월',
+  TUE: '화',
+  WED: '수',
+  THU: '목',
+  FRI: '금',
+}
+
 const JS_DAY_TO_KEY = {
   1: '월',
   2: '화',
@@ -13,7 +21,9 @@ const JS_DAY_TO_KEY = {
 }
 
 function parseClockToMinutes(clock) {
-  const [h, m] = clock.split(':').map(Number)
+  if (!clock) return null
+  const [h, m] = String(clock).split(':').map(Number)
+  if (Number.isNaN(h) || Number.isNaN(m)) return null
   return h * 60 + m
 }
 
@@ -26,77 +36,71 @@ export function getKoreanWeekdayKey(date = new Date()) {
   return JS_DAY_TO_KEY[date.getDay()] ?? null
 }
 
-/** @param {Date} [date] */
-export function getPeriodFromDatetime(date) {
+/**
+ * @param {Date} date
+ * @param {{ period: number, start: string, end: string }[]} slots
+ */
+export function getPeriodFromSlots(date, slots) {
   if (!date || Number.isNaN(date.getTime())) return null
   const minutes = dateToMinutes(date)
-
-  for (const slot of SCHOOL_PERIOD_SLOTS) {
+  for (const slot of slots) {
     const start = parseClockToMinutes(slot.start)
     const end = parseClockToMinutes(slot.end)
+    if (start == null || end == null) continue
     if (minutes >= start && minutes < end) return slot.period
   }
-
-  let closest = null
-  let minDiff = Infinity
-  for (const slot of SCHOOL_PERIOD_SLOTS) {
-    const start = parseClockToMinutes(slot.start)
-    const diff = Math.abs(minutes - start)
-    if (diff < minDiff) {
-      minDiff = diff
-      closest = slot.period
-    }
-  }
-  return minDiff <= 30 ? closest : null
+  return null
 }
 
-function formatTimeOnly(iso) {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleTimeString('ko-KR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  })
+/** 기본 교시 시각으로 현재 교시를 고른다. */
+export function getPeriodFromDatetime(date) {
+  return getPeriodFromSlots(date, SCHOOL_PERIOD_SLOTS)
+}
+
+function classLabel(entry) {
+  if (entry.grade != null && entry.classNumber != null) {
+    return `${entry.grade}-${entry.classNumber}`
+  }
+  return entry.subjectName || '수업'
 }
 
 /**
- * @param {import('@/types/workShift.js').MyWorkShiftDto} shift
+ * @param {import('@/types/timetable.js').TimetableDto} entry
  * @returns {import('@/utils/schoolTimetable.js').TimetableCell | null}
  */
-export function shiftToTimetableCell(shift) {
-  const start = new Date(shift.startDatetime)
-  const end = new Date(shift.endDatetime)
-  if (Number.isNaN(start.getTime())) return null
-
-  const dayKey = getKoreanWeekdayKey(start)
-  const period = getPeriodFromDatetime(start)
+export function entryToTimetableCell(entry) {
+  const dayKey = API_DAY_TO_KEY[entry.dayOfWeek]
+  const period = entry.periodNumber
   if (!dayKey || !period) return null
 
-  const startLabel = formatTimeOnly(shift.startDatetime)
-  const endLabel = formatTimeOnly(shift.endDatetime)
-  const timeLabel =
-    endLabel && endLabel !== startLabel ? `${startLabel} ~ ${endLabel}` : startLabel
-
   return {
-    id: shift.id,
+    id: entry.id,
     dayKey,
     period,
-    class: shift.storeName || '수업',
-    subject: timeLabel,
-    startDatetime: shift.startDatetime,
-    endDatetime: shift.endDatetime,
-    shiftStatus: shift.shiftStatus,
+    class: classLabel(entry),
+    subject: entry.subjectName || '',
+    teacher: entry.teacherName || '',
+    startTime: entry.periodStartTime || '',
+    endTime: entry.periodEndTime || '',
   }
 }
 
-function emptyDayMap() {
+function emptyDayMap(periods) {
   return Object.fromEntries(
     TIMETABLE_DAYS.map((day) => [
       day,
-      Object.fromEntries(TIMETABLE_PERIODS.map((p) => [p, null])),
+      Object.fromEntries(periods.map((p) => [p, null])),
     ]),
   )
+}
+
+function mergeCell(existing, cell) {
+  return {
+    ...existing,
+    class: `${existing.class}, ${cell.class}`,
+    subject: [existing.subject, cell.subject].filter(Boolean).join(', '),
+    teacher: [existing.teacher, cell.teacher].filter(Boolean).join(', '),
+  }
 }
 
 /**
@@ -106,51 +110,57 @@ function emptyDayMap() {
  * @property {number} period
  * @property {string} class
  * @property {string} subject
- * @property {string} startDatetime
- * @property {string} endDatetime
- * @property {string} [shiftStatus]
+ * @property {string} teacher
+ * @property {string} startTime
+ * @property {string} endTime
  */
 
 /**
- * @param {import('@/types/workShift.js').MyWorkShiftDto[]} shifts
+ * @param {import('@/types/timetable.js').TimetableDto[]} entries
  * @param {Date} [referenceDate]
  */
-export function buildSchoolTimetable(shifts, referenceDate = new Date()) {
-  const byDay = emptyDayMap()
+export function buildSchoolTimetable(entries, referenceDate = new Date()) {
   const cells = []
+  for (const entry of entries) {
+    const cell = entryToTimetableCell(entry)
+    if (cell) cells.push(cell)
+  }
 
-  for (const shift of shifts) {
-    const cell = shiftToTimetableCell(shift)
-    if (!cell) continue
-    cells.push(cell)
+  const maxPeriod = cells.reduce((max, cell) => Math.max(max, cell.period), TIMETABLE_PERIODS.at(-1))
+  const periods = Array.from({ length: maxPeriod }, (_, index) => index + 1)
+  const byDay = emptyDayMap(periods)
+
+  for (const cell of cells) {
     const existing = byDay[cell.dayKey][cell.period]
-    if (!existing) {
-      byDay[cell.dayKey][cell.period] = cell
-    } else {
-      byDay[cell.dayKey][cell.period] = {
-        ...existing,
-        subject: `${existing.subject}, ${cell.subject}`,
-      }
-    }
+    byDay[cell.dayKey][cell.period] = existing ? mergeCell(existing, cell) : cell
   }
 
   const todayKey = getKoreanWeekdayKey(referenceDate)
   const todayByPeriod = todayKey ? byDay[todayKey] : null
   const todayClassCount = todayByPeriod
-    ? TIMETABLE_PERIODS.filter((p) => todayByPeriod[p]).length
+    ? periods.filter((p) => todayByPeriod[p]).length
     : 0
-  const weekClassCount = cells.length
-  const currentPeriod = getPeriodFromDatetime(referenceDate)
+
+  const slots = []
+  const seenPeriods = new Set()
+  for (const cell of cells) {
+    if (seenPeriods.has(cell.period) || !cell.startTime || !cell.endTime) continue
+    seenPeriods.add(cell.period)
+    slots.push({ period: cell.period, start: cell.startTime, end: cell.endTime })
+  }
+  const currentPeriod =
+    getPeriodFromSlots(referenceDate, slots) ?? getPeriodFromDatetime(referenceDate)
   const currentClass =
     todayKey && currentPeriod ? byDay[todayKey][currentPeriod] : null
 
   return {
     byDay,
     cells,
+    periods,
     todayKey,
     todayByPeriod,
     todayClassCount,
-    weekClassCount,
+    weekClassCount: cells.length,
     currentPeriod,
     currentClass,
   }

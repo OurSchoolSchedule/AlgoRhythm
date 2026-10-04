@@ -9,20 +9,21 @@ import TimetableView from '@/pages/schedule/TimetableView'
 import SubjectManageView from '@/pages/store/SubjectManageView'
 import HistoryView, { AdminView } from '@/pages/history/HistoryView'
 import { DevLoginView } from '@/pages/auth'
-import { getAccessToken, clearTokens, setOnAuthError } from '@/api'
+import { getAccessToken, clearTokens, clearPreviewUserRole, getPreviewUserRole, setOnAuthError } from '@/api'
 import { useLogout, useActiveStore } from '@/hooks'
 import { positionToUserRole } from '@/constants/domainLabels.js'
 
 export default function App() {
-  const [authed, setAuthed] = useState(() => Boolean(getAccessToken()))
+  const [authed, setAuthed] = useState(() => Boolean(getAccessToken() || getPreviewUserRole()))
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [alarmOpen, setAlarmOpen] = useState(false)
   const [currentView, setCurrentView] = useState('home')
-  const [userRole, setUserRole] = useState('admin') // "admin" | "worker"
+  const [userRole, setUserRole] = useState(() => getPreviewUserRole() ?? 'admin')
   const logoutMutation = useLogout()
-  const { data: activeStore } = useActiveStore({ enabled: authed })
+  const { data: activeStore } = useActiveStore({ enabled: authed && Boolean(getAccessToken()) })
 
   useEffect(() => {
+    if (getPreviewUserRole()) return
     if (activeStore?.position) {
       setUserRole(positionToUserRole(activeStore.position))
     }
@@ -38,13 +39,21 @@ export default function App() {
     logoutMutation.mutate(undefined, {
       onSettled: () => {
         clearTokens()
+        clearPreviewUserRole()
         setAuthed(false)
       },
     })
   }
 
   if (!authed) {
-    return <DevLoginView onSuccess={() => setAuthed(true)} />
+    return (
+      <DevLoginView
+        onSuccess={(role) => {
+          if (role) setUserRole(role)
+          setAuthed(true)
+        }}
+      />
+    )
   }
 
   const navigate = (view) => {

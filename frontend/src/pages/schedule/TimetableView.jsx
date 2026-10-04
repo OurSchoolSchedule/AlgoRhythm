@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { toISODate } from '@/utils'
 import { getTimetableErrorMessage } from '@/utils/timetableErrors.js'
+import { getAccessToken } from '@/api'
 import { useSchoolTimetable } from '@/hooks'
 import WeeklyTimetableGrid from '@/components/schedule/WeeklyTimetableGrid.jsx'
 import ScheduleTodoTab from './ScheduleTodoTab.jsx'
@@ -9,6 +10,7 @@ export default function TimetableView() {
   const [tab, setTab] = useState('weekly')
   const todayDate = toISODate()
   const { timetable, isLoading, isError, error } = useSchoolTimetable()
+  const previewOnly = !getAccessToken()
 
   const tabStyle = (active) => ({
     padding: '10px 28px',
@@ -62,14 +64,14 @@ export default function TimetableView() {
               {isLoading && (
                 <p style={{ margin: 0, fontSize: 13, color: '#888' }}>시간표 불러오는 중...</p>
               )}
-              {isError && (
+              {isError && !previewOnly && (
                 <p style={{ margin: 0, fontSize: 13, color: '#d85a30' }}>
                   {getTimetableErrorMessage(error)}
                 </p>
               )}
-              {!isLoading && !isError && timetable.weekClassCount === 0 && (
+              {!isLoading && (previewOnly || !isError) && timetable.weekClassCount === 0 && (
                 <p style={{ margin: 0, fontSize: 13, color: '#b4b2a9' }}>
-                  이번 주 등록된 수업이 없습니다.
+                  등록된 수업이 없습니다.
                 </p>
               )}
               {!isLoading && !isError && timetable.weekClassCount > 0 && (

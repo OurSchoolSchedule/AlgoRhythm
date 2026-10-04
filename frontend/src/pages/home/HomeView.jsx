@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
-import { useTodos, useToggleTodo, useNotifications, useSchoolTimetable } from "@/hooks";
+import { useTodos, useToggleTodo, useNotifications, useSchoolTimetable, useStoreStaffSummary } from "@/hooks";
 import CreateShiftSwapForm from "@/components/schedule/CreateShiftSwapForm.jsx";
 import DayTimetableList from "@/components/schedule/DayTimetableList.jsx";
+import { getAccessToken } from "@/api";
 import { toISODate } from "@/utils";
 import { getTimetableErrorMessage } from "@/utils/timetableErrors.js";
 import { DOMAIN, localizeNotificationMessage, categoryLabel } from "@/constants/domainLabels.js";
@@ -84,7 +85,9 @@ export default function HomeView({ navigate, userRole = "admin" }) {
     ? [...todoData.storeTodos, ...todoData.handoverTodos, ...todoData.personalTodos]
     : [];
 
+  const { data: staffSummary } = useStoreStaffSummary({ enabled: isAdmin });
   const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const previewOnly = !getAccessToken();
   const todayClassCount = timetable.todayClassCount;
   const weekClassCount = timetable.weekClassCount;
   const substituteCount = isAdmin
@@ -118,8 +121,8 @@ export default function HomeView({ navigate, userRole = "admin" }) {
           <StatCard label="미확인 알림" value={unreadCount} unit="건" color="#f09500" />
         )}
         <StatCard
-          label={isAdmin ? "등록 교사" : "이번 주 수업"}
-          value={isAdmin ? 42 : weekClassCount}
+          label={isAdmin ? "등록 교사" : "등록 수업"}
+          value={isAdmin ? (staffSummary?.totalStaffCount ?? 0) : weekClassCount}
           unit={isAdmin ? "명" : "시수"}
           color="#1d9e75"
         />
@@ -134,14 +137,14 @@ export default function HomeView({ navigate, userRole = "admin" }) {
               {timetableLoading && (
                 <p style={{ margin: 0, fontSize: 13, color: "#888" }}>시간표 불러오는 중...</p>
               )}
-              {timetableError && (
+              {timetableError && !previewOnly && (
                 <p style={{ margin: 0, fontSize: 13, color: "#d85a30" }}>
                   {getTimetableErrorMessage(timetableErr)}
                 </p>
               )}
-              {!timetableLoading && !timetableError && timetable.weekClassCount === 0 && (
+              {!timetableLoading && (previewOnly || !timetableError) && timetable.weekClassCount === 0 && (
                 <p style={{ margin: 0, fontSize: 13, color: "#b4b2a9" }}>
-                  이번 주 등록된 수업이 없습니다.
+                  등록된 수업이 없습니다.
                 </p>
               )}
               {!timetableLoading && !timetableError && timetable.weekClassCount > 0 && (

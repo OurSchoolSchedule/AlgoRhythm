@@ -1,12 +1,12 @@
 import { Fragment } from 'react'
-import { TIMETABLE_DAYS, TIMETABLE_PERIODS } from '@/constants/schoolTimetable.js'
+import { TIMETABLE_DAYS } from '@/constants/schoolTimetable.js'
 
 /**
  * @param {Object} props
  * @param {ReturnType<import('@/utils/schoolTimetable.js').buildSchoolTimetable>} props.timetable
  */
 export default function WeeklyTimetableGrid({ timetable }) {
-  const { byDay } = timetable
+  const { byDay, periods } = timetable
 
   return (
     <div
@@ -33,7 +33,7 @@ export default function WeeklyTimetableGrid({ timetable }) {
         </div>
       ))}
 
-      {TIMETABLE_PERIODS.map((period) => (
+      {periods.map((period) => (
         <Fragment key={period}>
           <div
             style={{
@@ -80,6 +80,7 @@ export default function WeeklyTimetableGrid({ timetable }) {
                     </span>
                     <span style={{ fontSize: 10, color: '#666', lineHeight: 1.2 }}>
                       {cell.subject}
+                      {cell.teacher ? ` · ${cell.teacher}` : ''}
                     </span>
                   </>
                 ) : null}

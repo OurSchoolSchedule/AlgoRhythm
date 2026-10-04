@@ -1,9 +1,6 @@
-import { useState, useEffect } from "react";
-import {
-  useStoreStaffSummary,
-  useStoreSetting,
-  useUpdateStoreSetting,
-} from "@/hooks";
+import { useState } from "react";
+import { useStoreStaffSummary } from "@/hooks";
+import SchoolSettingPanel from "@/components/schedule/SchoolSettingPanel.jsx";
 
 const historyData = [
   { id: 1, date: "2026.05.28", type: "보결", detail: "3교시 · 2-3반 · 수학 → 김민지 선생님 보결 처리", status: "완료" },
@@ -75,15 +72,6 @@ const STATUS_STYLE = {
 };
 const ROLE_LABEL = { ADMIN: "관리자", TEACHER: "교사" };
 
-// "HH:mm:ss" -> "HH:mm" (input[type=time]), 빈 값 안전 처리
-function toInputTime(t) {
-  return t ? t.slice(0, 5) : "";
-}
-// "HH:mm" -> "HH:mm:ss" (API 전송용)
-function toApiTime(t) {
-  return t && t.length === 5 ? `${t}:00` : t;
-}
-
 export function AdminView({ navigate }) {
   const [tab, setTab] = useState("교사");
   const tabs = ["교사", "학급", "설정"];
@@ -94,39 +82,6 @@ export function AdminView({ navigate }) {
     isError: staffError,
   } = useStoreStaffSummary();
   const staffList = staffSummary?.staffList ?? [];
-
-  const {
-    data: setting,
-    isLoading: settingLoading,
-    isError: settingError,
-  } = useStoreSetting();
-  const updateSetting = useUpdateStoreSetting();
-  const [form, setForm] = useState(null);
-
-  useEffect(() => {
-    if (!setting) return;
-    setForm({
-      openTime: toInputTime(setting.openTime),
-      closeTime: toInputTime(setting.closeTime),
-      hasBreakTime: Boolean(setting.hasBreakTime),
-      breakStartTime: toInputTime(setting.breakStartTime),
-      breakEndTime: toInputTime(setting.breakEndTime),
-      useSegments: Boolean(setting.useSegments),
-    });
-  }, [setting]);
-
-  const handleSaveSetting = () => {
-    if (!form) return;
-    updateSetting.mutate({
-      openTime: toApiTime(form.openTime),
-      closeTime: toApiTime(form.closeTime),
-      useSegments: form.useSegments,
-      segments: setting?.segments ?? [],
-      hasBreakTime: form.hasBreakTime,
-      breakStartTime: form.hasBreakTime ? toApiTime(form.breakStartTime) : null,
-      breakEndTime: form.hasBreakTime ? toApiTime(form.breakEndTime) : null,
-    });
-  };
 
   return (
     <div>
@@ -237,88 +192,7 @@ export function AdminView({ navigate }) {
         </div>
       )}
 
-      {tab === "설정" && (
-        <div style={{ background: "#fff", borderRadius: 12, border: "0.5px solid #e8e6e0", padding: "20px 24px" }}>
-          <p style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: "#2c2c2a" }}>학교 운영 설정</p>
-
-          {settingLoading && (
-            <p style={{ margin: 0, fontSize: 13, color: "#888" }}>불러오는 중...</p>
-          )}
-          {settingError && (
-            <p style={{ margin: 0, fontSize: 13, color: "#d85a30" }}>설정을 불러오지 못했습니다.</p>
-          )}
-
-          {!settingLoading && !settingError && form && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <SettingField label="운영 시작 시간">
-                <input type="time" value={form.openTime}
-                  onChange={e => setForm(f => ({ ...f, openTime: e.target.value }))}
-                  style={settingInputStyle} />
-              </SettingField>
-              <SettingField label="운영 종료 시간">
-                <input type="time" value={form.closeTime}
-                  onChange={e => setForm(f => ({ ...f, closeTime: e.target.value }))}
-                  style={settingInputStyle} />
-              </SettingField>
-
-              <SettingField label="휴게시간 사용">
-                <input type="checkbox" checked={form.hasBreakTime}
-                  onChange={e => setForm(f => ({ ...f, hasBreakTime: e.target.checked }))}
-                  style={{ accentColor: "#27a859", width: 16, height: 16 }} />
-              </SettingField>
-              {form.hasBreakTime && (
-                <>
-                  <SettingField label="휴게 시작 시간">
-                    <input type="time" value={form.breakStartTime}
-                      onChange={e => setForm(f => ({ ...f, breakStartTime: e.target.value }))}
-                      style={settingInputStyle} />
-                  </SettingField>
-                  <SettingField label="휴게 종료 시간">
-                    <input type="time" value={form.breakEndTime}
-                      onChange={e => setForm(f => ({ ...f, breakEndTime: e.target.value }))}
-                      style={settingInputStyle} />
-                  </SettingField>
-                </>
-              )}
-
-              {updateSetting.isError && (
-                <p style={{ margin: 0, fontSize: 12, color: "#d85a30" }}>저장에 실패했습니다.</p>
-              )}
-              {updateSetting.isSuccess && (
-                <p style={{ margin: 0, fontSize: 12, color: "#1d9e75" }}>저장되었습니다.</p>
-              )}
-
-              <button onClick={handleSaveSetting} disabled={updateSetting.isPending}
-                style={{
-                  marginTop: 8, padding: "8px 24px", borderRadius: 8, border: "none",
-                  background: updateSetting.isPending ? "#bfe3cd" : "#27a859", color: "#fff",
-                  fontSize: 13, cursor: updateSetting.isPending ? "default" : "pointer", alignSelf: "flex-start",
-                }}>
-                {updateSetting.isPending ? "저장 중..." : "저장"}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-const settingInputStyle = {
-  flex: 1,
-  maxWidth: 240,
-  padding: "7px 12px",
-  borderRadius: 8,
-  border: "0.5px solid #d3d1c7",
-  fontSize: 13,
-  color: "#2c2c2a",
-};
-
-function SettingField({ label, children }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-      <label style={{ fontSize: 13, color: "#888", width: 120 }}>{label}</label>
-      {children}
+      {tab === "설정" && <SchoolSettingPanel />}
     </div>
   );
 }

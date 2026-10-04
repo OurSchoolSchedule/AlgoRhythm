@@ -19,6 +19,10 @@ export const queryKeys = {
     detail: () => ['store-settings'],
     temporary: (key) => ['store-settings', 'temporary', key],
   },
+  schoolSetting: {
+    detail: () => ['school-setting'],
+    periods: () => ['school-setting', 'periods'],
+  },
   availability: {
     me: () => ['availability', 'me'],
     store: (storeId) => ['availability', 'store', storeId],
