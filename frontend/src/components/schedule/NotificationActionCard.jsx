@@ -119,7 +119,7 @@ export default function NotificationActionCard({ notification, position, compact
               type="button"
               disabled={pending}
               onClick={onApprove}
-              style={{ ...btnBase, border: 'none', background: 'var(--color-primary-500)', color: 'var(--color-surface)' }}
+              style={{ ...btnBase, border: 'none', background: 'var(--color-primary-button)', color: 'var(--color-on-primary)' }}
             >
               승인
             </button>
@@ -143,7 +143,7 @@ export default function NotificationActionCard({ notification, position, compact
               type="button"
               disabled={pending}
               onClick={onAccept}
-              style={{ ...btnBase, border: 'none', background: 'var(--color-primary-500)', color: 'var(--color-surface)' }}
+              style={{ ...btnBase, border: 'none', background: 'var(--color-primary-button)', color: 'var(--color-on-primary)' }}
             >
               수락
             </button>

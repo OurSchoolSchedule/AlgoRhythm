@@ -29,8 +29,8 @@ const buttonStyle = {
   padding: '7px 14px',
   borderRadius: 8,
   border: 'none',
-  background: 'var(--color-primary-500)',
-  color: 'var(--color-surface)',
+  background: 'var(--color-primary-button)',
+  color: 'var(--color-on-primary)',
   fontSize: 13,
   cursor: 'pointer',
 }
@@ -181,8 +181,8 @@ export default function SchoolSettingPanel() {
             style={{
               ...buttonStyle,
               alignSelf: 'flex-start',
-              background: saveSetting.isPending ? 'var(--color-border)' : 'var(--color-primary-500)',
-              color: saveSetting.isPending ? 'var(--color-text-muted)' : 'var(--color-surface)',
+              background: saveSetting.isPending ? 'var(--color-border)' : 'var(--color-primary-button)',
+              color: saveSetting.isPending ? 'var(--color-text-muted)' : 'var(--color-on-primary)',
             }}
           >
             {saveSetting.isPending ? '저장 중...' : '설정 저장'}

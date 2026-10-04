@@ -23,8 +23,8 @@ const typeBg = {
   보결: "var(--color-warning-light)",
   변경: "var(--color-info-light)",
   생성: "var(--color-success-light)",
-  수정: "var(--color-border-light)",
-  교환: "var(--color-border-light)",
+  수정: "var(--color-surface-hover)",
+  교환: "var(--color-surface-hover)",
 };
 
 export function HistoryView({ navigate }) {
@@ -44,9 +44,9 @@ export function HistoryView({ navigate }) {
           {types.map(t => (
             <button key={t} onClick={() => setFilter(t)} style={{
               padding: "5px 14px", borderRadius: 8, border: "1px solid", fontSize: 13, cursor: "pointer",
-              background: filter === t ? "var(--color-primary-500)" : "transparent",
-              borderColor: filter === t ? "var(--color-primary-500)" : "var(--color-border-input)",
-              color: filter === t ? "var(--color-surface)" : "var(--color-text-subtle)",
+              background: filter === t ? "var(--color-primary-button)" : "transparent",
+              borderColor: filter === t ? "var(--color-primary-button)" : "var(--color-border-input)",
+              color: filter === t ? "var(--color-on-primary)" : "var(--color-text-subtle)",
             }}>{t}</button>
           ))}
         </div>
@@ -87,7 +87,7 @@ const STATUS_LABEL = { HIRED: "재직", ON_LEAVE: "휴직", RESIGNED: "퇴직" }
 const STATUS_STYLE = {
   HIRED: { bg: "var(--color-success-light)", color: "var(--color-success)" },
   ON_LEAVE: { bg: "var(--color-warning-light)", color: "var(--color-warning)" },
-  RESIGNED: { bg: "var(--color-border-light)", color: "var(--color-text-muted)" },
+  RESIGNED: { bg: "var(--color-surface-hover)", color: "var(--color-text-muted)" },
 };
 const ROLE_LABEL = { ADMIN: "관리자", TEACHER: "교사" };
 
@@ -122,7 +122,7 @@ export function AdminView({ navigate }) {
           onClick={() => navigate("schedule-create")}
           style={{
             padding: "10px 20px", borderRadius: 8, border: "none",
-            background: "var(--color-primary-500)", color: "var(--color-surface)", fontSize: 14, fontWeight: 500, cursor: "pointer",
+            background: "var(--color-primary-button)", color: "var(--color-on-primary)", fontSize: 14, fontWeight: 500, cursor: "pointer",
             flexShrink: 0,
           }}
         >
@@ -134,8 +134,8 @@ export function AdminView({ navigate }) {
         {tabs.map(t => (
           <button key={t} onClick={() => setTab(t)} style={{
             padding: "10px 20px", border: "none", background: "none", cursor: "pointer", fontSize: 14,
-            color: tab === t ? "var(--color-primary-500)" : "var(--color-text-muted)", fontWeight: tab === t ? 600 : 400,
-            borderBottom: tab === t ? "2px solid var(--color-primary-500)" : "2px solid transparent",
+            color: tab === t ? "var(--color-primary)" : "var(--color-text-muted)", fontWeight: tab === t ? 600 : 400,
+            borderBottom: tab === t ? "2px solid var(--color-primary)" : "2px solid transparent",
           }}>{t}</button>
         ))}
       </div>

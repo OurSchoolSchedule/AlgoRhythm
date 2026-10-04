@@ -70,7 +70,7 @@ export default function ScheduleCreateView({ navigate }) {
             onClick={() => setStep(s => Math.min(2, s + 1))}
             style={{
               padding: "10px 24px", borderRadius: 8, border: "none",
-              background: "var(--color-primary-500)", color: "var(--color-surface)", cursor: "pointer", fontSize: 14, fontWeight: 500,
+              background: "var(--color-primary-button)", color: "var(--color-on-primary)", cursor: "pointer", fontSize: 14, fontWeight: 500,
             }}
           >다음</button>
         ) : null}
@@ -99,7 +99,7 @@ function Step0({ form, setForm, fileRef, handleFile }) {
                 <input
                   type="radio" checked={form.isHomeroom === v}
                   onChange={() => setForm(p => ({ ...p, isHomeroom: v }))}
-                  style={{ accentColor: "var(--color-primary-500)" }}
+                  style={{ accentColor: "var(--color-primary)" }}
                 />
                 {v ? "담임 포함" : "담임 없음"}
               </label>
@@ -121,7 +121,7 @@ function Step0({ form, setForm, fileRef, handleFile }) {
       </div>
 
       <SectionTitle>교사·과목 데이터 업로드 (CSV)</SectionTitle>
-      <div style={{ background: "var(--color-bg)", borderRadius: 8, border: "1px dashed var(--color-border-input)", padding: "24px", textAlign: "center", marginBottom: 16 }}>
+      <div style={{ background: "var(--color-surface-hover)", borderRadius: 8, border: "1px dashed var(--color-border-input)", padding: "24px", textAlign: "center", marginBottom: 16 }}>
         <input ref={fileRef} type="file" accept=".csv" onChange={handleFile} style={{ display: "none" }} />
         {form.csvFile ? (
           <div>
@@ -135,7 +135,7 @@ function Step0({ form, setForm, fileRef, handleFile }) {
         )}
         <button
           onClick={() => fileRef.current?.click()}
-          style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid var(--color-primary-500)", background: "transparent", color: "var(--color-primary-500)", fontSize: 13, cursor: "pointer" }}
+          style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid var(--color-primary)", background: "transparent", color: "var(--color-primary)", fontSize: 13, cursor: "pointer" }}
         >{form.csvFile ? "파일 변경" : "파일 선택"}</button>
       </div>
 
@@ -169,7 +169,7 @@ function Step1({ form, setForm }) {
             cursor: "pointer", background: form.constraints[c.key] ? "var(--color-primary-50)" : "transparent",
           }}>
             <input type="checkbox" checked={form.constraints[c.key]} onChange={() => toggle(c.key)}
-              style={{ accentColor: "var(--color-primary-500)", width: 15, height: 15, marginTop: 2 }} />
+              style={{ accentColor: "var(--color-primary)", width: 15, height: 15, marginTop: 2 }} />
             <div>
               <p style={{ margin: 0, fontSize: 14, fontWeight: 500, color: "var(--color-text)" }}>{c.label}</p>
               <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--color-text-muted)" }}>{c.desc}</p>
@@ -183,7 +183,7 @@ function Step1({ form, setForm }) {
           <input
             type="range" min={3} max={8} value={form.constraints.maxPeriodsPerDay}
             onChange={e => setForm(p => ({ ...p, constraints: { ...p.constraints, maxPeriodsPerDay: Number(e.target.value) } }))}
-            style={{ flex: 1, accentColor: "var(--color-primary-500)" }}
+            style={{ flex: 1, accentColor: "var(--color-primary)" }}
           />
           <span style={{ fontSize: 16, fontWeight: 600, color: "var(--color-text)", minWidth: 24, fontVariantNumeric: "tabular-nums" }}>{form.constraints.maxPeriodsPerDay}</span>
         </div>
@@ -238,7 +238,7 @@ function Step2({ form, generating, generated, handleGenerate, navigate }) {
           onClick={handleGenerate}
           style={{
             width: "100%", padding: "12px 0", borderRadius: 8, border: "none",
-            background: "var(--color-primary-500)", color: "var(--color-surface)", fontSize: 14, fontWeight: 600, cursor: "pointer",
+            background: "var(--color-primary-button)", color: "var(--color-on-primary)", fontSize: 14, fontWeight: 600, cursor: "pointer",
           }}
         >시간표 생성</button>
       )}
@@ -267,8 +267,8 @@ function Step2({ form, generating, generated, handleGenerate, navigate }) {
                 <button type="button" style={{
                   padding: "6px 14px", borderRadius: 6,
                   border: i === 0 ? "none" : "1px solid var(--color-border-input)",
-                  background: i === 0 ? "var(--color-primary-500)" : "var(--color-surface)",
-                  color: i === 0 ? "var(--color-surface)" : "var(--color-text)",
+                  background: i === 0 ? "var(--color-primary-button)" : "var(--color-surface)",
+                  color: i === 0 ? "var(--color-on-primary)" : "var(--color-text)",
                   fontSize: 12, cursor: "pointer",
                 }}>{i === 0 ? "선택됨" : "선택하기"}</button>
               </div>
@@ -278,7 +278,7 @@ function Step2({ form, generating, generated, handleGenerate, navigate }) {
             onClick={() => navigate("admin")}
             style={{
               width: "100%", marginTop: 16, padding: "12px 0", borderRadius: 8,
-              border: "none", background: "var(--color-primary-500)", color: "var(--color-surface)", fontSize: 14, fontWeight: 600, cursor: "pointer",
+              border: "none", background: "var(--color-primary-button)", color: "var(--color-on-primary)", fontSize: 14, fontWeight: 600, cursor: "pointer",
             }}
           >확정하기</button>
         </div>
@@ -295,12 +295,12 @@ function StepIndicator({ steps, current }) {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{
               width: 28, height: 28, borderRadius: "var(--radius-md)", flexShrink: 0,
-              background: i === current ? "var(--color-primary-500)" : "var(--color-border-light)",
-              color: i === current ? "var(--color-surface)" : "var(--color-text-muted)",
+              background: i === current ? "var(--color-primary-button)" : "var(--color-surface-hover)",
+              color: i === current ? "var(--color-on-primary)" : "var(--color-text-muted)",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 12, fontWeight: 600,
             }}>{i + 1}</div>
-            <span style={{ fontSize: 13, color: i === current ? "var(--color-primary-500)" : "var(--color-text-muted)", fontWeight: i === current ? 600 : 400 }}>{s}</span>
+            <span style={{ fontSize: 13, color: i === current ? "var(--color-primary)" : "var(--color-text-muted)", fontWeight: i === current ? 600 : 400 }}>{s}</span>
           </div>
           {i < steps.length - 1 && <div style={{ flex: 1, height: 1, background: "var(--color-border)", margin: "0 12px" }} />}
         </div>

@@ -64,7 +64,7 @@ const typeBg = {
   보결: "var(--color-warning-light)",
   변경: "var(--color-info-light)",
   완료: "var(--color-success-light)",
-  안내: "var(--color-border-light)",
+  안내: "var(--color-surface-hover)",
   "추가 근무": "var(--color-info-light)",
 };
 
@@ -159,8 +159,8 @@ export default function HomeView({ navigate, userRole = "admin" }) {
               padding: "0 16px",
               borderRadius: "var(--radius-md)",
               border: "none",
-              background: "var(--color-primary-500)",
-              color: "var(--color-surface)",
+              background: "var(--color-primary-button)",
+              color: "var(--color-on-primary)",
               fontSize: "var(--font-body)",
               fontWeight: 600,
               flexShrink: 0,
@@ -214,7 +214,7 @@ export default function HomeView({ navigate, userRole = "admin" }) {
                       padding: 0,
                       border: "none",
                       background: "none",
-                      color: "var(--color-primary-500)",
+                      color: "var(--color-primary)",
                       fontSize: "var(--font-caption)",
                       fontWeight: 600,
                     }}
@@ -277,7 +277,7 @@ export default function HomeView({ navigate, userRole = "admin" }) {
                   checked={Boolean(todo.completed)}
                   disabled={toggleTodo.isPending}
                   onChange={() => toggleTodo.mutate(todo.id)}
-                  style={{ accentColor: "var(--color-primary-500)", width: 16, height: 16 }}
+                  style={{ accentColor: "var(--color-primary)", width: 16, height: 16 }}
                 />
                 <span
                   style={{

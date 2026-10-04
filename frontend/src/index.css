@@ -1,9 +1,12 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css');
 
 :root {
+  color-scheme: light;
+
   --color-primary-50: #e8f7ee;
   --color-primary-100: #c8ebd6;
   --color-primary-200: #9dd9b8;
+  --color-primary-400: #42b876;
   --color-primary-500: #27a859;
   --color-primary-600: #1f8f4a;
   --color-primary-700: #18753c;
@@ -12,26 +15,29 @@
   --color-primary-light: var(--color-primary-50);
   --color-primary-muted: var(--color-primary-100);
   --color-primary-dark: var(--color-primary-600);
+  /* 흰 글자 대비: #27a859 3.07:1, #1f8f4a 4.13:1, #18753c 5.76:1 */
+  --color-primary-button: var(--color-primary-700);
+  --color-on-primary: #ffffff;
 
   --color-success: #1d9e75;
-  --color-success-light: #e1f5ee;
   --color-warning: #f09500;
-  --color-warning-light: #faeeda;
   --color-danger: #d85a30;
-  --color-danger-light: #faece7;
   --color-info: #185fa5;
-  --color-info-light: #e6f1fb;
+  --color-success-light: color-mix(in srgb, var(--color-success) 14%, transparent);
+  --color-warning-light: color-mix(in srgb, var(--color-warning) 14%, transparent);
+  --color-danger-light: color-mix(in srgb, var(--color-danger) 14%, transparent);
+  --color-info-light: color-mix(in srgb, var(--color-info) 14%, transparent);
 
-  --color-text: #2c2c2a;
-  --color-text-secondary: #444441;
-  --color-text-subtle: #5f5e5a;
-  --color-text-muted: #888780;
-  /* 토큰 추가 필요: 빈 상태용으로 더 연한 글자색을 쓰던 곳은 --color-text-muted로 대체 */
-  --color-border-input: #d3d1c7;
-  --color-border: #e8e6e0;
-  --color-border-light: #f1efe8;
-  --color-bg: #f8f8f6;
+  --color-text: #1f2328;
+  --color-text-secondary: #4b5563;
+  --color-text-subtle: var(--color-text-secondary);
+  --color-text-muted: #6b7280;
+  --color-border-input: #d1d5db;
+  --color-border: #e5e7eb;
+  --color-border-light: #f0f1f3;
+  --color-bg: #ffffff;
   --color-surface: #ffffff;
+  --color-surface-hover: #f5f6f7;
 
   --font-display: 24px;
   --font-title: 20px;
@@ -59,6 +65,30 @@
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
 }
 
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-primary: var(--color-primary-400);
+  --color-primary-50: color-mix(in srgb, var(--color-primary-400) 18%, var(--color-surface));
+  --color-primary-100: color-mix(in srgb, var(--color-primary-400) 28%, var(--color-surface));
+  --color-primary-200: color-mix(in srgb, var(--color-primary-400) 40%, var(--color-surface));
+  --color-on-primary: var(--color-text);
+
+  /* 다크 표면에서 info #185fa5는 2.65:1, danger #d85a30은 4.46:1 */
+  --color-info: color-mix(in srgb, #185fa5 50%, #e8eaed);
+  --color-danger: color-mix(in srgb, #d85a30 90%, #e8eaed);
+
+  --color-bg: #111316;
+  --color-surface: #181b1f;
+  --color-surface-hover: #20242a;
+  --color-border: #2b3037;
+  --color-border-light: #22262c;
+  --color-border-input: #3a4049;
+  --color-text: #e8eaed;
+  --color-text-secondary: #b4bac2;
+  --color-text-muted: #8b929b;
+}
+
 *,
 *::before,
 *::after {
@@ -67,6 +97,7 @@
   padding: 0;
 }
 
+html,
 body {
   font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', -apple-system,
     sans-serif;
@@ -91,6 +122,18 @@ select {
   font-family: inherit;
 }
 
+input,
+textarea,
+select {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-text-muted);
+}
+
 button {
   cursor: pointer;
 }
@@ -100,7 +143,7 @@ button:focus {
 }
 
 button:focus-visible {
-  outline: 2px solid var(--color-primary-500);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
@@ -150,10 +193,6 @@ body {
   margin: 0 auto;
 }
 
-.app-content-wide {
-  max-width: none;
-}
-
 .top-nav-links {
   display: flex;
   align-items: stretch;
@@ -181,13 +220,13 @@ body {
 }
 
 .nav-link[aria-current='page'] {
-  color: var(--color-primary-500);
+  color: var(--color-primary);
   font-weight: 600;
-  border-bottom-color: var(--color-primary-500);
+  border-bottom-color: var(--color-primary);
 }
 
 .nav-link[aria-current='page']:hover {
-  color: var(--color-primary-500);
+  color: var(--color-primary);
 }
 
 .menu-item {
@@ -205,7 +244,7 @@ body {
 
 .menu-item:hover,
 .menu-item:focus-visible {
-  background: var(--color-bg);
+  background: var(--color-surface-hover);
 }
 
 .bottom-tabs {
@@ -229,13 +268,13 @@ body {
 }
 
 .bottom-tab[aria-current='page'] {
-  color: var(--color-primary-500);
+  color: var(--color-primary);
   font-weight: 600;
-  border-bottom-color: var(--color-primary-500);
+  border-bottom-color: var(--color-primary);
 }
 
 .bottom-tab[aria-current='page']:hover {
-  color: var(--color-primary-500);
+  color: var(--color-primary);
 }
 
 .bottom-tabs .bottom-tab {
@@ -260,11 +299,10 @@ body {
   padding: 0 18px;
   border: none;
   border-radius: var(--radius-full);
-  background: var(--color-primary-500);
-  color: var(--color-surface);
+  background: var(--color-primary-button);
+  color: var(--color-on-primary);
   font-size: var(--font-body);
   font-weight: 600;
-  box-shadow: var(--shadow-md);
 }
 
 .ai-assistant-panel {
@@ -275,8 +313,8 @@ body {
   width: min(400px, calc(100vw - 48px));
   height: min(600px, calc(100vh - 96px));
   background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -430,8 +468,8 @@ body {
   width: 360px;
   height: 100%;
   background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 12px 0 0 12px;
-  box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
   overflow: hidden;

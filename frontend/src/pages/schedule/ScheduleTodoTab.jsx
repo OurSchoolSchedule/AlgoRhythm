@@ -73,7 +73,7 @@ function TodoRow({ todo, isAdmin, userId, toggleTodo, updateTodo, deleteTodo }) 
         checked={Boolean(todo.completed)}
         disabled={isBusy || !canModify}
         onChange={() => toggleTodo.mutate(todo.id)}
-        style={{ accentColor: 'var(--color-primary-500)', width: 16, height: 16, flexShrink: 0 }}
+        style={{ accentColor: 'var(--color-primary)', width: 16, height: 16, flexShrink: 0 }}
       />
 
       {editing ? (
@@ -124,7 +124,7 @@ function TodoRow({ todo, isAdmin, userId, toggleTodo, updateTodo, deleteTodo }) 
                 type="button"
                 disabled={isBusy || !editContent.trim()}
                 onClick={saveEdit}
-                style={actionBtnStyle('var(--color-primary-500)')}
+                style={actionBtnStyle('var(--color-primary)')}
               >
                 저장
               </button>
@@ -258,8 +258,8 @@ export default function ScheduleTodoTab({ date }) {
             padding: '9px 18px',
             borderRadius: 8,
             border: 'none',
-            background: createTodo.isPending || !content.trim() ? 'var(--color-border)' : 'var(--color-primary-500)',
-            color: createTodo.isPending || !content.trim() ? 'var(--color-text-muted)' : 'var(--color-surface)',
+            background: createTodo.isPending || !content.trim() ? 'var(--color-border)' : 'var(--color-primary-button)',
+            color: createTodo.isPending || !content.trim() ? 'var(--color-text-muted)' : 'var(--color-on-primary)',
             fontSize: 13,
             fontWeight: 600,
             cursor: createTodo.isPending || !content.trim() ? 'default' : 'pointer',

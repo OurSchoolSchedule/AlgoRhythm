@@ -67,7 +67,7 @@ export default function AIFloatingChat() {
               }}>
                 <div style={{
                   maxWidth: "82%", padding: "10px 14px", borderRadius: "var(--radius-lg)",
-                  background: m.role === "user" ? "var(--color-primary-50)" : "var(--color-border-light)",
+                  background: m.role === "user" ? "var(--color-primary-50)" : "var(--color-surface-hover)",
                   color: "var(--color-text)",
                   fontSize: "var(--font-body)", lineHeight: "22px", whiteSpace: "pre-wrap",
                 }}>
@@ -77,7 +77,7 @@ export default function AIFloatingChat() {
             ))}
             {loading && (
               <div style={{ display: "flex" }}>
-                <div style={{ background: "var(--color-border-light)", borderRadius: "var(--radius-lg)", padding: "10px 14px" }}>
+                <div style={{ background: "var(--color-surface-hover)", borderRadius: "var(--radius-lg)", padding: "10px 14px" }}>
                   <span style={{ fontSize: 13, color: "var(--color-text-muted)" }}>답변 작성 중</span>
                 </div>
               </div>
@@ -120,8 +120,8 @@ export default function AIFloatingChat() {
               disabled={loading || !input.trim()}
               style={{
                 width: 36, height: 36, borderRadius: 8, border: "none",
-                background: input.trim() && !loading ? "var(--color-primary-500)" : "var(--color-border)",
-                color: input.trim() && !loading ? "var(--color-surface)" : "var(--color-text-muted)", cursor: input.trim() && !loading ? "pointer" : "default",
+                background: input.trim() && !loading ? "var(--color-primary-button)" : "var(--color-border)",
+                color: input.trim() && !loading ? "var(--color-on-primary)" : "var(--color-text-muted)", cursor: input.trim() && !loading ? "pointer" : "default",
                 display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                 alignSelf: "flex-end",
               }}

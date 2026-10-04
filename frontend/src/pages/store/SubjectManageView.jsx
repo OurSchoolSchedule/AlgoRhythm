@@ -72,9 +72,9 @@ export default function SubjectManageView({ navigate }) {
               <button key={g} onClick={() => setFilterGrade(g)} style={{
                 padding: "6px 14px", borderRadius: 8, fontSize: 13,
                 border: "1px solid", cursor: "pointer",
-                background: filterGrade === g ? "var(--color-primary-500)" : "transparent",
-                borderColor: filterGrade === g ? "var(--color-primary-500)" : "var(--color-border-input)",
-                color: filterGrade === g ? "var(--color-surface)" : "var(--color-text-subtle)",
+                background: filterGrade === g ? "var(--color-primary-button)" : "transparent",
+                borderColor: filterGrade === g ? "var(--color-primary-button)" : "var(--color-border-input)",
+                color: filterGrade === g ? "var(--color-on-primary)" : "var(--color-text-subtle)",
               }}>{g}</button>
             ))}
           </div>
@@ -86,7 +86,7 @@ export default function SubjectManageView({ navigate }) {
             }}>CSV 올리기</button>
             <button onClick={() => setShowAdd(v => !v)} style={{
               padding: "7px 16px", borderRadius: 8, border: "none",
-              background: "var(--color-primary-500)", color: "var(--color-surface)", fontSize: 13, fontWeight: 600, cursor: "pointer",
+              background: "var(--color-primary-button)", color: "var(--color-on-primary)", fontSize: 13, fontWeight: 600, cursor: "pointer",
             }}>{showAdd ? "닫기" : "수업 추가"}</button>
           </div>
         </div>
@@ -119,7 +119,7 @@ export default function SubjectManageView({ navigate }) {
                 />
               </div>
             ))}
-            <button onClick={handleAddRow} style={{ padding: "7px 0", borderRadius: 6, border: "none", background: "var(--color-primary-500)", color: "var(--color-surface)", fontSize: 13, fontWeight: 600, cursor: "pointer", height: 32 }}>추가하기</button>
+            <button onClick={handleAddRow} style={{ padding: "7px 0", borderRadius: 6, border: "none", background: "var(--color-primary-button)", color: "var(--color-on-primary)", fontSize: 13, fontWeight: 600, cursor: "pointer", height: 32 }}>추가하기</button>
           </div>
         )}
 

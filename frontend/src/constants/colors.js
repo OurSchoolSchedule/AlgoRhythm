@@ -1,9 +1,11 @@
 /** index.css 토큰을 그대로 가리킨다. hex는 여기 두지 않는다. */
 export const colors = {
-  primary: 'var(--color-primary-500)',
+  primary: 'var(--color-primary)',
   primaryLight: 'var(--color-primary-50)',
   primaryMuted: 'var(--color-primary-100)',
   primaryDark: 'var(--color-primary-600)',
+  primaryButton: 'var(--color-primary-button)',
+  onPrimary: 'var(--color-on-primary)',
 
   success: 'var(--color-success)',
   successLight: 'var(--color-success-light)',
@@ -28,4 +30,5 @@ export const colors = {
 
   bg: 'var(--color-bg)',
   surface: 'var(--color-surface)',
+  surfaceHover: 'var(--color-surface-hover)',
 }

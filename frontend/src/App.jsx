@@ -11,6 +11,7 @@ import { DevLoginView } from '@/pages/auth'
 import { getAccessToken, clearTokens, clearPreviewUserRole, getPreviewUserRole, setOnAuthError } from '@/api'
 import { useLogout, useActiveStore } from '@/hooks'
 import { positionToUserRole } from '@/constants/domainLabels.js'
+import { applyTheme, getStoredTheme } from '@/theme'
 
 export default function App() {
   const [authed, setAuthed] = useState(() => Boolean(getAccessToken() || getPreviewUserRole()))
@@ -29,6 +30,15 @@ export default function App() {
   useEffect(() => {
     setOnAuthError(() => setAuthed(false))
     return () => setOnAuthError(null)
+  }, [])
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const sync = () => {
+      if (getStoredTheme() === 'system') applyTheme('system')
+    }
+    media.addEventListener('change', sync)
+    return () => media.removeEventListener('change', sync)
   }, [])
 
   const handleLogout = () => {
@@ -106,7 +116,7 @@ export default function App() {
         }}
       >
         <main className={`hide-scrollbar app-main`}>
-          <div className={currentView === 'timetable' ? 'app-content app-content-wide' : 'app-content'}>
+          <div className="app-content">
             {renderView()}
           </div>
         </main>

@@ -82,7 +82,7 @@ export default function NotificationActionButtons({ notification, position }) {
           className="action-button"
           disabled={pending}
           onClick={onPrimary}
-          style={{ ...btnBase, border: 'none', background: 'var(--color-primary-500)', color: 'var(--color-surface)' }}
+          style={{ ...btnBase, border: 'none', background: 'var(--color-primary-button)', color: 'var(--color-on-primary)' }}
         >
           {isManager ? '승인' : '수락'}
         </button>

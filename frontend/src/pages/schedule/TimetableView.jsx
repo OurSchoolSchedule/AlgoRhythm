@@ -16,7 +16,7 @@ export default function TimetableView() {
     padding: '10px 28px',
     border: '1px solid var(--color-border)',
     borderBottom: active ? '1px solid var(--color-surface)' : '1px solid var(--color-border)',
-    background: active ? 'var(--color-surface)' : 'var(--color-border-light)',
+    background: active ? 'var(--color-surface)' : 'var(--color-surface-hover)',
     color: active ? 'var(--color-text)' : 'var(--color-text-muted)',
     fontWeight: active ? 600 : 400,
     fontSize: 14,
@@ -56,7 +56,7 @@ export default function TimetableView() {
             background: 'var(--color-surface)',
             border: '1px solid var(--color-border)',
             borderRadius: '0 12px 12px 12px',
-            padding: '28px 32px',
+            padding: '20px 24px',
           }}
         >
           {tab === 'weekly' ? (

@@ -1,4 +1,11 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { getStoredTheme, setThemePreference } from '@/theme'
+
+const THEME_OPTIONS = [
+  { id: 'system', label: '시스템' },
+  { id: 'light', label: '라이트' },
+  { id: 'dark', label: '다크' },
+]
 
 function UserIcon({ dark = false }) {
   return (
@@ -78,6 +85,7 @@ function moveMenuFocus(menu, direction) {
 
 export default function HeaderUserMenu({ userRole, setUserRole, alarmOpen, onAlarmToggle, onLogout }) {
   const [profileOpen, setProfileOpen] = useState(false)
+  const [themePreference, setThemeChoice] = useState(() => getStoredTheme())
   const menuRef = useRef(null)
   const triggerRef = useRef(null)
   const panelRef = useRef(null)
@@ -149,7 +157,7 @@ export default function HeaderUserMenu({ userRole, setUserRole, alarmOpen, onAla
           borderRadius: 'var(--radius-md)',
           display: 'flex',
           alignItems: 'center',
-          color: alarmOpen ? 'var(--color-primary-500)' : 'var(--color-text-secondary)',
+          color: alarmOpen ? 'var(--color-primary)' : 'var(--color-text-secondary)',
         }}
       >
         <BellIcon />
@@ -211,6 +219,29 @@ export default function HeaderUserMenu({ userRole, setUserRole, alarmOpen, onAla
 
           <div style={{ height: 1, background: 'var(--color-border)', margin: '8px 0' }} />
 
+          <p style={{ margin: '4px 12px', fontSize: 12, color: 'var(--color-text-muted)' }}>테마</p>
+          {THEME_OPTIONS.map((option) => {
+            const selected = themePreference === option.id
+            return (
+              <button
+                key={option.id}
+                type="button"
+                role="menuitem"
+                className="menu-item"
+                onClick={() => {
+                  setThemeChoice(option.id)
+                  setThemePreference(option.id)
+                }}
+                style={{
+                  fontWeight: selected ? 600 : 400,
+                  color: selected ? 'var(--color-primary)' : 'var(--color-text)',
+                }}
+              >
+                {option.label}
+              </button>
+            )
+          })}
+
           <button type="button" role="menuitem" className="menu-item">
             시간대 선호도 제출
           </button>
@@ -225,7 +256,7 @@ export default function HeaderUserMenu({ userRole, setUserRole, alarmOpen, onAla
                   setUserRole('admin')
                   setProfileOpen(false)
                 }}
-                style={{ fontWeight: userRole === 'admin' ? 600 : 400, color: userRole === 'admin' ? 'var(--color-primary-500)' : 'var(--color-text)' }}
+                style={{ fontWeight: userRole === 'admin' ? 600 : 400, color: userRole === 'admin' ? 'var(--color-primary)' : 'var(--color-text)' }}
               >
                 관리자 화면
               </button>
@@ -237,7 +268,7 @@ export default function HeaderUserMenu({ userRole, setUserRole, alarmOpen, onAla
                   setUserRole('worker')
                   setProfileOpen(false)
                 }}
-                style={{ fontWeight: userRole === 'worker' ? 600 : 400, color: userRole === 'worker' ? 'var(--color-primary-500)' : 'var(--color-text)' }}
+                style={{ fontWeight: userRole === 'worker' ? 600 : 400, color: userRole === 'worker' ? 'var(--color-primary)' : 'var(--color-text)' }}
               >
                 교사 화면
               </button>

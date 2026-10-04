@@ -26,7 +26,7 @@ export default function WeeklyTimetableGrid({ timetable }) {
                 lineHeight: '20px',
                 fontWeight: 500,
                 color: 'var(--color-text-subtle)',
-                background: isToday ? 'var(--color-primary-50)' : 'var(--color-border-light)',
+                background: isToday ? 'var(--color-primary-50)' : 'var(--color-surface-hover)',
                 borderRadius: 'var(--radius-sm)',
                 padding: '8px 0',
               }}
@@ -46,7 +46,7 @@ export default function WeeklyTimetableGrid({ timetable }) {
                 lineHeight: '20px',
                 fontWeight: 500,
                 color: 'var(--color-text-subtle)',
-                background: 'var(--color-border-light)',
+                background: 'var(--color-surface-hover)',
                 borderRadius: 'var(--radius-sm)',
                 display: 'flex',
                 alignItems: 'center',
