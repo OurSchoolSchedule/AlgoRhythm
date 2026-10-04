@@ -2,10 +2,53 @@ import { useEffect, useId, useRef, useState } from 'react'
 import HeaderUserMenu from '@/components/layout/HeaderUserMenu.jsx'
 
 const MAIN_ITEMS = [
-  { id: 'home', label: '홈' },
-  { id: 'timetable', label: '시간표' },
-  { id: 'history', label: '내역' },
+  { id: 'home', label: '홈', icon: 'home' },
+  { id: 'timetable', label: '시간표', icon: 'timetable' },
+  { id: 'history', label: '내역', icon: 'history' },
 ]
+
+function TabIcon({ name }) {
+  const common = {
+    width: 22,
+    height: 22,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.8,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    'aria-hidden': true,
+  }
+  if (name === 'home') {
+    return (
+      <svg {...common}>
+        <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z" />
+      </svg>
+    )
+  }
+  if (name === 'timetable') {
+    return (
+      <svg {...common}>
+        <rect x="4" y="5" width="16" height="15" rx="1.5" />
+        <path d="M4 9h16M8 3.5V6.5M16 3.5V6.5" />
+      </svg>
+    )
+  }
+  if (name === 'history') {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="8" />
+        <path d="M12 8v4.5l3 2" />
+      </svg>
+    )
+  }
+  return (
+    <svg {...common}>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2M6 6l1.4 1.4M16.6 16.6 18 18M18 6l-1.4 1.4M7.4 16.6 6 18" />
+    </svg>
+  )
+}
 
 const ADMIN_ITEMS = [
   { id: 'subject-manage', label: '과목·수업 관리' },
@@ -98,7 +141,12 @@ function AdminMenu({ open, onToggle, onClose, onSelect, currentView, placement }
           }
         }}
       >
-        {placement === 'bottom' ? '관리' : '관리 ▾'}
+        {placement === 'bottom' ? (
+          <>
+            <TabIcon name="admin" />
+            <span>관리</span>
+          </>
+        ) : '관리 ▾'}
       </button>
       {open && (
         <div
@@ -195,7 +243,8 @@ export default function TopNav({
             aria-current={currentView === item.id ? 'page' : undefined}
             onClick={() => go(item.id)}
           >
-            {item.label}
+            <TabIcon name={item.icon} />
+            <span>{item.label}</span>
           </button>
         ))}
         {isAdmin && (

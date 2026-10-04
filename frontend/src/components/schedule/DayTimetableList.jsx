@@ -1,57 +1,64 @@
-const HOME_PERIODS = [1, 2, 3, 4, 5, 6, 7]
+import { buildTodayRows, formatRowDetail } from '@/utils/homeFocus.js'
+
+function badgeKind(status) {
+  if (status === '변경') return 'change'
+  if (status === '보결' || status === '대타 대기') return 'wait'
+  return 'neutral'
+}
 
 /**
- * 홈의 오늘 시간표. 교시 1~7 행은 수업이 없어도 항상 그린다.
+ * 홈의 오늘 시간표. 수업이 없는 날은 행을 그리지 않는다.
  * @param {Object} props
  * @param {ReturnType<import('@/utils/schoolTimetable.js').buildSchoolTimetable>} props.timetable
+ * @param {Date} [props.now]
  */
-export default function DayTimetableList({ timetable }) {
-  const todayByPeriod = timetable?.todayByPeriod
-  const currentPeriod = timetable?.currentPeriod
+export default function DayTimetableList({ timetable, now = new Date() }) {
+  const rows = buildTodayRows(timetable, now)
+  if (rows.length === 0) return null
 
   return (
-    <div
-      style={{
-        border: '1px solid var(--color-border)',
-        borderRadius: 'var(--radius-lg)',
-        background: 'var(--color-surface)',
-        overflow: 'hidden',
-      }}
-    >
-      {HOME_PERIODS.map((period, index) => {
-        const cell = todayByPeriod?.[period]
-        const selected = Boolean(cell) && period === currentPeriod
+    <div className="day-list">
+      {rows.map((row) => {
+        if (row.kind === 'lunch') {
+          return (
+            <div key={row.id} className="day-row-lunch">
+              {row.label}
+            </div>
+          )
+        }
+
+        const cell = row.cell
         return (
           <div
-            key={period}
-            className="day-row"
-            style={{
-              borderTop: index === 0 ? 'none' : '1px solid var(--color-border-light)',
-              background: selected ? 'var(--color-primary-50)' : 'transparent',
-            }}
+            key={row.id}
+            className={`day-row${row.isNow ? ' day-row-now' : ''}${row.isPast ? ' day-row-past' : ''}`}
           >
-            <span
-              className="day-period"
-              style={{
-                fontSize: 'var(--font-caption)',
-                color: 'var(--color-text-muted)',
-                fontVariantNumeric: 'tabular-nums',
-              }}
-            >
-              {period}교시
-            </span>
-            <span
-              className="day-detail"
-              style={{
-                fontSize: 'var(--font-body)',
-                color: cell ? 'var(--color-text)' : 'var(--color-text-muted)',
-                fontWeight: selected ? 600 : 400,
-              }}
-            >
-              {cell
-                ? [cell.class, cell.subject, cell.teacher].filter(Boolean).join(' · ')
-                : '-'}
-            </span>
+            <div className="day-period-col">
+              <span className="day-period-label">{row.periodLabel}</span>
+              <span className="day-period-time">{row.time}</span>
+            </div>
+            <div className="day-main">
+              {cell ? (
+                <>
+                  <span className="day-subject">{cell.subject || '수업'}</span>
+                  {formatRowDetail(cell) && <span className="day-meta">{formatRowDetail(cell)}</span>}
+                  {cell.previousTeacher && (
+                    <span className="day-change">
+                      <s>{cell.previousTeacher}</s>
+                      {cell.teacher ? ` → ${cell.teacher}` : ''}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="day-subject day-empty">공강</span>
+              )}
+            </div>
+            <div className="day-badges">
+              {row.isNow && <span className="day-badge day-badge-now">지금</span>}
+              {cell?.status && (
+                <span className={`day-badge day-badge-${badgeKind(cell.status)}`}>{cell.status}</span>
+              )}
+            </div>
           </div>
         )
       })}

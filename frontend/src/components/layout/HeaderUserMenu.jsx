@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { useNotifications } from '@/hooks'
 import { getStoredTheme, setThemePreference } from '@/theme'
 
 const THEME_OPTIONS = [
@@ -6,33 +7,6 @@ const THEME_OPTIONS = [
   { id: 'light', label: '라이트' },
   { id: 'dark', label: '다크' },
 ]
-
-function UserIcon({ dark = false }) {
-  return (
-    <div
-      style={{
-        width: 20,
-        height: 20,
-        borderRadius: 'var(--radius-sm)',
-        background: dark ? 'var(--color-text)' : 'var(--color-border)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
-      }}
-    >
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill={dark ? 'var(--color-surface)' : 'var(--color-text-muted)'}
-      >
-        <circle cx="12" cy="8" r="4" />
-        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-      </svg>
-    </div>
-  )
-}
 
 function BellIcon() {
   return (
@@ -53,15 +27,17 @@ function BellIcon() {
 const PROFILE = {
   admin: {
     label: '관리자',
-    name: '관리자님',
+    name: '관리자',
+    initial: '관',
     subjects: '전체 과목 관리',
-    homeroom: '-',
+    homeroom: '없음',
   },
   worker: {
-    label: '사용자',
-    name: '사용자 선생님',
-    subjects: '수학, 미적분 I, 미적분 II',
-    homeroom: '3-2',
+    label: '김민지 선생님',
+    name: '김민지 선생님',
+    initial: '김',
+    subjects: '국어',
+    homeroom: '2-3',
   },
 }
 
@@ -92,6 +68,8 @@ export default function HeaderUserMenu({ userRole, setUserRole, alarmOpen, onAla
   const menuId = useId()
   const profile = PROFILE[userRole] ?? PROFILE.worker
   const devRoleSwitch = showDevRoleSwitch()
+  const { data: notifications = [] } = useNotifications()
+  const hasUnread = notifications.some((item) => item?.isRead === false)
 
   useEffect(() => {
     if (!profileOpen) return undefined
@@ -150,6 +128,7 @@ export default function HeaderUserMenu({ userRole, setUserRole, alarmOpen, onAla
         aria-pressed={alarmOpen}
         onClick={onAlarmToggle}
         style={{
+          position: 'relative',
           background: alarmOpen ? 'var(--color-primary-50)' : 'none',
           border: 'none',
           cursor: 'pointer',
@@ -161,6 +140,7 @@ export default function HeaderUserMenu({ userRole, setUserRole, alarmOpen, onAla
         }}
       >
         <BellIcon />
+        {hasUnread && <span className="alarm-dot" />}
       </button>
 
       <button
@@ -177,6 +157,7 @@ export default function HeaderUserMenu({ userRole, setUserRole, alarmOpen, onAla
             })
           }
         }}
+        aria-label={profile.label}
         aria-expanded={profileOpen}
         aria-haspopup="menu"
         aria-controls={menuId}
@@ -190,10 +171,8 @@ export default function HeaderUserMenu({ userRole, setUserRole, alarmOpen, onAla
           padding: 0,
         }}
       >
-        <UserIcon />
-        <span className="profile-label">
-          {profile.label}
-        </span>
+        <span className="profile-avatar" aria-hidden="true">{profile.initial}</span>
+        <span className="profile-label">{profile.label}</span>
       </button>
 
       {profileOpen && (
