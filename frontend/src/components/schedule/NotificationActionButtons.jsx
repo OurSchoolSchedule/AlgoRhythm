@@ -79,6 +79,7 @@ export default function NotificationActionButtons({ notification, position }) {
       <div style={{ display: 'flex', gap: 8 }}>
         <button
           type="button"
+          className="action-button"
           disabled={pending}
           onClick={onPrimary}
           style={{ ...btnBase, border: 'none', background: 'var(--color-primary-500)', color: 'var(--color-surface)' }}
@@ -87,6 +88,7 @@ export default function NotificationActionButtons({ notification, position }) {
         </button>
         <button
           type="button"
+          className="action-button"
           disabled={pending}
           onClick={onSecondary}
           style={{

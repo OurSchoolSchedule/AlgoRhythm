@@ -53,7 +53,7 @@ export default function AIFloatingChat() {
             display: "flex", alignItems: "center", gap: 8, background: "var(--color-surface)",
           }}>
             <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: "var(--color-text)" }}>AI 도우미</p>
-            <button onClick={() => setOpen(false)} aria-label="질문 닫기" style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "var(--color-text-muted)", padding: 4, display: "flex" }}>
+            <button type="button" className="panel-close" onClick={() => setOpen(false)} aria-label="질문 닫기">
               <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
               </svg>
@@ -108,16 +108,12 @@ export default function AIFloatingChat() {
           </div>
           <div style={{ padding: "10px 12px", borderTop: "1px solid var(--color-border)", display: "flex", gap: 8 }}>
             <textarea
+              className="chat-input"
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="질문을 입력하세요..."
               rows={1}
-              style={{
-                flex: 1, resize: "none", border: "1px solid var(--color-border-input)", borderRadius: 8,
-                padding: "8px 12px", fontSize: 13, fontFamily: "inherit", outline: "none",
-                lineHeight: 1.5,
-              }}
             />
             <button
               onClick={sendMessage}

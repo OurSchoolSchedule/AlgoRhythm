@@ -106,20 +106,8 @@ function AdminMenu({ open, onToggle, onClose, onSelect, currentView, placement }
           id={menuId}
           role="menu"
           aria-label="관리"
+          className={placement === 'bottom' ? 'dropdown-panel dropdown-panel-bottom' : 'dropdown-panel dropdown-panel-top'}
           onKeyDown={onMenuKeyDown}
-          style={{
-            position: 'absolute',
-            ...(placement === 'bottom'
-              ? { bottom: 'calc(100% + 8px)', right: 0 }
-              : { top: 'calc(100% + 4px)', left: 0 }),
-            minWidth: 180,
-            background: 'var(--color-surface)',
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius-md)',
-            boxShadow: 'var(--shadow-md)',
-            zIndex: 40,
-            padding: '4px 0',
-          }}
         >
           {ADMIN_ITEMS.map((item) => (
             <button
@@ -157,33 +145,10 @@ export default function TopNav({
 
   return (
     <>
-      <header
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          height: 56,
-          padding: '0 var(--space-8)',
-          background: 'var(--color-surface)',
-          borderBottom: '1px solid var(--color-border)',
-          flexShrink: 0,
-          zIndex: 20,
-          position: 'relative',
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => go('home')}
-          style={{
-            background: 'none',
-            border: 'none',
-            padding: 0,
-            fontSize: 'var(--font-heading)',
-            fontWeight: 600,
-            color: 'var(--color-text)',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          우리학교 시간표
+      <header className="top-nav">
+        <button type="button" className="logo-button" onClick={() => go('home')}>
+          <span className="logo-full">우리학교 시간표</span>
+          <span className="logo-short">시간표</span>
         </button>
 
         <nav className="top-nav-links" aria-label="주요 메뉴">

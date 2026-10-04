@@ -137,6 +137,7 @@ export default function HeaderUserMenu({ userRole, setUserRole, alarmOpen, onAla
     >
       <button
         type="button"
+        className="icon-button"
         aria-label="알림"
         aria-pressed={alarmOpen}
         onClick={onAlarmToggle}
@@ -157,6 +158,7 @@ export default function HeaderUserMenu({ userRole, setUserRole, alarmOpen, onAla
       <button
         ref={triggerRef}
         type="button"
+        className="icon-button"
         onClick={() => setProfileOpen((open) => !open)}
         onKeyDown={(event) => {
           if (event.key === 'ArrowDown') {
@@ -181,7 +183,7 @@ export default function HeaderUserMenu({ userRole, setUserRole, alarmOpen, onAla
         }}
       >
         <UserIcon />
-        <span style={{ fontSize: 14, color: 'var(--color-text)', fontWeight: 500 }}>
+        <span className="profile-label">
           {profile.label}
         </span>
       </button>
@@ -193,19 +195,7 @@ export default function HeaderUserMenu({ userRole, setUserRole, alarmOpen, onAla
           role="menu"
           aria-label="사용자 정보"
           onKeyDown={onPanelKeyDown}
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 8px)',
-            right: 0,
-            width: 280,
-            background: 'var(--color-surface)',
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius-md)',
-            boxShadow: 'var(--shadow-md)',
-            zIndex: 60,
-            overflow: 'hidden',
-            padding: '4px 0',
-          }}
+          className="profile-menu"
         >
           <div style={{ padding: '12px 12px 8px' }}>
             <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>

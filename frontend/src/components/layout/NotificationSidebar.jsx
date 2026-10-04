@@ -12,7 +12,6 @@ import {
 } from '@/utils/notificationActions.js'
 
 export const NOTIFICATION_PANEL_WIDTH = 360
-const PANEL_VERTICAL_INSET = 16
 
 const GROUP_ORDER = ['오늘', '이번주', '이전']
 
@@ -105,30 +104,8 @@ export default function NotificationSidebar({ open, onClose }) {
   const visibleGroups = GROUP_ORDER.filter((g) => grouped[g].length > 0)
 
   return (
-    <aside
-      style={{
-        width: open ? NOTIFICATION_PANEL_WIDTH : 0,
-        minWidth: open ? NOTIFICATION_PANEL_WIDTH : 0,
-        height: '100%',
-        flexShrink: 0,
-        overflow: 'hidden',
-        padding: open ? `${PANEL_VERTICAL_INSET}px 0` : 0,
-        boxSizing: 'border-box',
-        transition: 'width 180ms ease-out, min-width 180ms ease-out',
-      }}
-    >
-      <div
-        style={{
-          width: NOTIFICATION_PANEL_WIDTH,
-          height: '100%',
-          background: 'var(--color-surface)',
-          borderRadius: '12px 0 0 12px',
-          boxShadow: 'var(--shadow-sm)',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}
-      >
+    <aside className="notification-panel" data-open={open ? 'true' : 'false'}>
+      <div className="notification-panel-card">
         <div
           style={{
             display: 'flex',
@@ -152,16 +129,8 @@ export default function NotificationSidebar({ open, onClose }) {
           <button
             type="button"
             onClick={onClose}
+            className="panel-close"
             aria-label="알림 닫기"
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: 'var(--color-text-muted)',
-              padding: 4,
-              display: 'flex',
-              alignItems: 'center',
-            }}
           >
             <svg
               width="16"

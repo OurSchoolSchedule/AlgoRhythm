@@ -132,9 +132,15 @@ body::-webkit-scrollbar,
   display: block !important;
 }
 
+html,
+body {
+  overflow-x: hidden;
+}
+
 .app-main {
   flex: 1;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   min-width: 0;
   padding: var(--space-8) var(--space-8) 80px;
 }
@@ -240,7 +246,8 @@ body::-webkit-scrollbar,
   display: grid;
   /* TODO: 토큰 추가 필요 (40px) */
   grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 40px;
+  column-gap: 40px;
+  row-gap: 32px;
   align-items: start;
 }
 
@@ -275,7 +282,240 @@ body::-webkit-scrollbar,
   overflow: hidden;
 }
 
+.top-nav {
+  display: flex;
+  align-items: center;
+  height: 56px;
+  padding: 0 var(--space-8);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+  z-index: 20;
+  position: relative;
+  min-width: 0;
+}
+
+.logo-button {
+  background: none;
+  border: none;
+  padding: 0 var(--space-1);
+  min-height: 44px;
+  font-size: var(--font-heading);
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.logo-short {
+  display: none;
+}
+
+.profile-label {
+  font-size: var(--font-body);
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.dropdown-panel {
+  position: absolute;
+  z-index: 40;
+  max-width: calc(100vw - 32px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 4px 0;
+}
+
+.dropdown-panel-top {
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 180px;
+}
+
+.dropdown-panel-bottom {
+  bottom: calc(100% + 8px);
+  right: 0;
+  left: auto;
+  min-width: 180px;
+}
+
+.profile-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(280px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: 60;
+  overflow: hidden;
+  padding: 4px 0;
+}
+
+.home-side {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  min-width: 0;
+}
+
+.home-timetable,
+.home-tasks,
+.home-changes {
+  min-width: 0;
+  width: 100%;
+}
+
+.home-row {
+  min-height: 44px;
+}
+
+.day-detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.day-row {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 12px;
+}
+
+.week-grid-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  scrollbar-width: thin;
+  box-shadow: inset -16px 0 12px -14px var(--color-border);
+}
+
+.week-grid {
+  display: grid;
+  grid-template-columns: 72px repeat(5, minmax(120px, 1fr));
+  gap: 8px;
+  align-items: stretch;
+  min-width: 760px;
+}
+
+.week-period {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+}
+
+.notification-panel {
+  width: 0;
+  min-width: 0;
+  height: 100%;
+  flex-shrink: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  transition: width 180ms ease-out, min-width 180ms ease-out;
+}
+
+.notification-panel[data-open='true'] {
+  width: 360px;
+  min-width: 360px;
+  padding: 16px 0;
+}
+
+.notification-panel-card {
+  width: 360px;
+  height: 100%;
+  background: var(--color-surface);
+  border-radius: 12px 0 0 12px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.panel-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-input {
+  flex: 1;
+  resize: none;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  font-size: var(--font-caption);
+  font-family: inherit;
+  outline: none;
+  line-height: 1.5;
+}
+
+/* 태블릿 768~1023: 상단 메뉴 유지, 로고 약칭, 홈은 1단 */
+@media (max-width: 1023px) {
+  .logo-full {
+    display: none;
+  }
+
+  .logo-short {
+    display: inline;
+  }
+
+  .profile-label {
+    display: none;
+  }
+
+  .icon-button {
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .home-columns {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 32px;
+  }
+
+  .home-side {
+    display: contents;
+  }
+
+  .home-tasks { order: 1; }
+  .home-timetable { order: 2; }
+  .home-changes { order: 3; }
+}
+
+@media (min-width: 1024px) {
+  .logo-short {
+    display: none;
+  }
+
+  .logo-full {
+    display: inline;
+  }
+
+  .profile-label {
+    display: inline;
+  }
+}
+
+/* 모바일 <768 */
 @media (max-width: 767px) {
+  .top-nav {
+    padding: 0 var(--space-4);
+  }
+
   .top-nav-links {
     display: none;
   }
@@ -293,16 +533,119 @@ body::-webkit-scrollbar,
   }
 
   .app-main {
-    /* 80px 본문 여백 + 하단 탭 56px */
-    padding-bottom: 136px;
+    padding: var(--space-4) var(--space-4) 136px;
   }
 
-  .home-columns {
-    grid-template-columns: minmax(0, 1fr);
+  .logo-full {
+    display: inline;
   }
 
-  .ai-assistant-button,
-  .ai-assistant-panel {
+  .logo-short {
+    display: none;
+  }
+
+  .profile-label {
+    display: inline;
+  }
+
+  .dropdown-panel-top,
+  .dropdown-panel-bottom,
+  .profile-menu {
+    left: auto;
+    right: 0;
+  }
+
+  button,
+  .menu-item,
+  .action-button,
+  .icon-button,
+  .panel-close,
+  .home-create-button,
+  .ai-assistant-panel button {
+    min-height: 44px;
+  }
+
+  .menu-item,
+  .action-button,
+  .icon-button,
+  .panel-close,
+  .home-create-button,
+  .ai-assistant-panel button {
+    min-width: 44px;
+  }
+
+  .menu-item {
+    display: flex;
+    align-items: center;
+  }
+
+  .day-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 0;
+  }
+
+  .day-period::after {
+    content: ' · ';
+  }
+
+  .day-detail {
+    white-space: normal;
+  }
+
+  .chat-input,
+  input,
+  textarea,
+  select {
+    font-size: var(--font-heading);
+  }
+
+  .notification-panel[data-open='false'] {
+    display: none;
+  }
+
+  .notification-panel[data-open='true'] {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    z-index: 50;
+  }
+
+  .notification-panel-card {
+    width: 100%;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .ai-assistant-button {
     bottom: 72px;
+  }
+
+  .ai-assistant-panel {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    border-radius: 0;
+    bottom: 0;
+    right: 0;
+  }
+
+  /* 모달은 하단 시트. 현재 오버레이 모달은 없고, 알림·AI는 전체 화면이다. */
+  .bottom-sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    max-height: 90vh;
+    overflow: auto;
+    background: var(--color-surface);
+    border-radius: 16px 16px 0 0;
+    box-shadow: var(--shadow-lg);
   }
 }

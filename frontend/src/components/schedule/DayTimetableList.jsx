@@ -24,17 +24,14 @@ export default function DayTimetableList({ timetable }) {
         return (
           <div
             key={period}
+            className="day-row"
             style={{
-              display: 'grid',
-              gridTemplateColumns: '64px minmax(0, 1fr)',
-              alignItems: 'center',
-              minHeight: 44,
-              padding: '8px 12px',
               borderTop: index === 0 ? 'none' : '1px solid var(--color-border-light)',
               background: selected ? 'var(--color-primary-50)' : 'transparent',
             }}
           >
             <span
+              className="day-period"
               style={{
                 fontSize: 'var(--font-caption)',
                 color: 'var(--color-text-muted)',
@@ -43,22 +40,18 @@ export default function DayTimetableList({ timetable }) {
             >
               {period}교시
             </span>
-            {cell ? (
-              <span
-                style={{
-                  fontSize: 'var(--font-body)',
-                  color: 'var(--color-text)',
-                  fontWeight: selected ? 600 : 400,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {[cell.class, cell.subject, cell.teacher].filter(Boolean).join(' ')}
-              </span>
-            ) : (
-              <span style={{ fontSize: 'var(--font-body)', color: 'var(--color-text-muted)' }}>-</span>
-            )}
+            <span
+              className="day-detail"
+              style={{
+                fontSize: 'var(--font-body)',
+                color: cell ? 'var(--color-text)' : 'var(--color-text-muted)',
+                fontWeight: selected ? 600 : 400,
+              }}
+            >
+              {cell
+                ? [cell.class, cell.subject, cell.teacher].filter(Boolean).join(' · ')
+                : '-'}
+            </span>
           </div>
         )
       })}

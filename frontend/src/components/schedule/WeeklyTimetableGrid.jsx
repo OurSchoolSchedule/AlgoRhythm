@@ -9,16 +9,8 @@ export default function WeeklyTimetableGrid({ timetable }) {
   const { byDay, periods, todayKey } = timetable
 
   return (
-    <div className="show-scrollbar" style={{ overflow: 'auto' }}>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '72px repeat(5, minmax(120px, 1fr))',
-          gap: '8px 8px',
-          alignItems: 'stretch',
-          minWidth: 760,
-        }}
-      >
+    <div className="week-grid-scroll show-scrollbar">
+      <div className="week-grid">
         <div />
         {TIMETABLE_DAYS.map((day) => {
           const isToday = day === todayKey
@@ -48,10 +40,8 @@ export default function WeeklyTimetableGrid({ timetable }) {
         {periods.map((period) => (
           <Fragment key={period}>
             <div
+              className="week-period"
               style={{
-                position: 'sticky',
-                left: 0,
-                zIndex: 1,
                 fontSize: 'var(--font-caption)',
                 lineHeight: '20px',
                 fontWeight: 500,

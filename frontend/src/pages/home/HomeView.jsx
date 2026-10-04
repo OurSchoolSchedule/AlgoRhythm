@@ -153,6 +153,7 @@ export default function HomeView({ navigate, userRole = "admin" }) {
           <button
             type="button"
             onClick={() => navigate("schedule-create")}
+            className="home-create-button"
             style={{
               height: 36,
               padding: "0 16px",
@@ -183,7 +184,7 @@ export default function HomeView({ navigate, userRole = "admin" }) {
       </p>
 
       <div className="home-columns">
-        <section style={{ minWidth: 0 }}>
+        <section className="home-timetable">
           <h2 style={sectionTitleStyle()}>오늘 시간표</h2>
           {timetableLoading && (
             <p style={{ margin: "0 0 12px", fontSize: "var(--font-caption)", color: "var(--color-text-muted)" }}>
@@ -227,8 +228,8 @@ export default function HomeView({ navigate, userRole = "admin" }) {
           <DayTimetableList timetable={timetable} />
         </section>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 32, minWidth: 0 }}>
-          <section>
+        <div className="home-side">
+          <section className="home-tasks">
             <h2 style={sectionTitleStyle()}>처리할 일</h2>
             {todoLoading && (
               <p style={{ margin: 0, fontSize: "var(--font-caption)", color: "var(--color-text-muted)" }}>불러오는 중</p>
@@ -246,6 +247,7 @@ export default function HomeView({ navigate, userRole = "admin" }) {
             {actionable.map((item) => (
               <div
                 key={item.id ?? item.createdAt}
+                className="home-row"
                 style={{
                   padding: "12px 0",
                   borderBottom: "1px solid var(--color-border-light)",
@@ -260,6 +262,7 @@ export default function HomeView({ navigate, userRole = "admin" }) {
             {todoItems.map((todo) => (
               <label
                 key={todo.id}
+                className="home-row"
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -289,7 +292,7 @@ export default function HomeView({ navigate, userRole = "admin" }) {
             ))}
           </section>
 
-          <section>
+          <section className="home-changes">
             <h2 style={sectionTitleStyle()}>오늘 변동</h2>
             {briefs.length === 0 ? (
               <p style={{ margin: 0, fontSize: "var(--font-caption)", color: "var(--color-text-muted)" }}>
@@ -301,6 +304,7 @@ export default function HomeView({ navigate, userRole = "admin" }) {
               briefs.slice(0, 8).map((item) => (
                 <div
                   key={item.key}
+                  className="home-row"
                   style={{
                     display: "flex",
                     gap: 8,
