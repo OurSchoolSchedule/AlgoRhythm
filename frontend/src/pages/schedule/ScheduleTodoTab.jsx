@@ -65,7 +65,7 @@ function TodoRow({ todo, isAdmin, userId, toggleTodo, updateTodo, deleteTodo }) 
         alignItems: 'center',
         gap: 12,
         padding: '12px 4px',
-        borderBottom: '0.5px solid #f1efe8',
+        borderBottom: '1px solid var(--color-border-light)',
       }}
     >
       <input
@@ -73,7 +73,7 @@ function TodoRow({ todo, isAdmin, userId, toggleTodo, updateTodo, deleteTodo }) 
         checked={Boolean(todo.completed)}
         disabled={isBusy || !canModify}
         onChange={() => toggleTodo.mutate(todo.id)}
-        style={{ accentColor: '#27a859', width: 16, height: 16, flexShrink: 0 }}
+        style={{ accentColor: 'var(--color-primary-500)', width: 16, height: 16, flexShrink: 0 }}
       />
 
       {editing ? (
@@ -91,9 +91,9 @@ function TodoRow({ todo, isAdmin, userId, toggleTodo, updateTodo, deleteTodo }) 
             flex: 1,
             padding: '8px 10px',
             borderRadius: 8,
-            border: '0.5px solid #d3d1c7',
+            border: '1px solid var(--color-border-input)',
             fontSize: 14,
-            color: '#2c2c2a',
+            color: 'var(--color-text)',
             outline: 'none',
           }}
         />
@@ -103,7 +103,7 @@ function TodoRow({ todo, isAdmin, userId, toggleTodo, updateTodo, deleteTodo }) 
             style={{
               display: 'block',
               fontSize: 14,
-              color: todo.completed ? '#b4b2a9' : '#2c2c2a',
+              color: todo.completed ? 'var(--color-text-muted)' : 'var(--color-text)',
               textDecoration: todo.completed ? 'line-through' : 'none',
               wordBreak: 'break-word',
             }}
@@ -111,7 +111,7 @@ function TodoRow({ todo, isAdmin, userId, toggleTodo, updateTodo, deleteTodo }) 
             {todo.content}
           </span>
           {todo.authorName && (
-            <span style={{ fontSize: 11, color: '#b4b2a9' }}>{todo.authorName}</span>
+            <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{todo.authorName}</span>
           )}
         </div>
       )}
@@ -124,11 +124,11 @@ function TodoRow({ todo, isAdmin, userId, toggleTodo, updateTodo, deleteTodo }) 
                 type="button"
                 disabled={isBusy || !editContent.trim()}
                 onClick={saveEdit}
-                style={actionBtnStyle('#27a859')}
+                style={actionBtnStyle('var(--color-primary-500)')}
               >
                 저장
               </button>
-              <button type="button" disabled={isBusy} onClick={cancelEdit} style={actionBtnStyle('#888')}>
+              <button type="button" disabled={isBusy} onClick={cancelEdit} style={actionBtnStyle('var(--color-text-muted)')}>
                 취소
               </button>
             </>
@@ -138,7 +138,7 @@ function TodoRow({ todo, isAdmin, userId, toggleTodo, updateTodo, deleteTodo }) 
                 type="button"
                 disabled={isBusy}
                 onClick={() => setEditing(true)}
-                style={actionBtnStyle('#888')}
+                style={actionBtnStyle('var(--color-text-muted)')}
               >
                 수정
               </button>
@@ -146,7 +146,7 @@ function TodoRow({ todo, isAdmin, userId, toggleTodo, updateTodo, deleteTodo }) 
                 type="button"
                 disabled={isBusy}
                 onClick={handleDelete}
-                style={actionBtnStyle('#d85a30')}
+                style={actionBtnStyle('var(--color-danger)')}
               >
                 삭제
               </button>
@@ -162,8 +162,8 @@ function actionBtnStyle(color) {
   return {
     padding: '5px 10px',
     borderRadius: 6,
-    border: `0.5px solid ${color}`,
-    background: '#fff',
+    border: `1px solid ${color}`,
+    background: 'var(--color-surface)',
     color,
     fontSize: 12,
     cursor: 'pointer',
@@ -212,11 +212,8 @@ export default function ScheduleTodoTab({ date }) {
         style={{
           display: 'flex',
           flexWrap: 'wrap',
-          gap: 10,
-          padding: '16px',
-          borderRadius: 10,
-          background: '#f8f8f6',
-          border: '0.5px solid #eceae4',
+          gap: 8,
+          alignItems: 'center',
         }}
       >
         <select
@@ -225,10 +222,10 @@ export default function ScheduleTodoTab({ date }) {
           style={{
             padding: '9px 12px',
             borderRadius: 8,
-            border: '0.5px solid #d3d1c7',
+            border: '1px solid var(--color-border-input)',
             fontSize: 13,
-            color: '#2c2c2a',
-            background: '#fff',
+            color: 'var(--color-text)',
+            background: 'var(--color-surface)',
           }}
         >
           {availableTypes.map((opt) => (
@@ -248,9 +245,9 @@ export default function ScheduleTodoTab({ date }) {
             minWidth: 180,
             padding: '9px 12px',
             borderRadius: 8,
-            border: '0.5px solid #d3d1c7',
+            border: '1px solid var(--color-border-input)',
             fontSize: 14,
-            color: '#2c2c2a',
+            color: 'var(--color-text)',
             outline: 'none',
           }}
         />
@@ -261,8 +258,8 @@ export default function ScheduleTodoTab({ date }) {
             padding: '9px 18px',
             borderRadius: 8,
             border: 'none',
-            background: createTodo.isPending || !content.trim() ? '#bfe3cd' : '#27a859',
-            color: '#fff',
+            background: createTodo.isPending || !content.trim() ? 'var(--color-border)' : 'var(--color-primary-500)',
+            color: createTodo.isPending || !content.trim() ? 'var(--color-text-muted)' : 'var(--color-surface)',
             fontSize: 13,
             fontWeight: 600,
             cursor: createTodo.isPending || !content.trim() ? 'default' : 'pointer',
@@ -273,15 +270,15 @@ export default function ScheduleTodoTab({ date }) {
       </form>
 
       {createTodo.isError && (
-        <p style={{ margin: 0, fontSize: 13, color: '#d85a30' }}>
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--color-danger)' }}>
           할 일 추가에 실패했습니다. 권한을 확인해 주세요.
         </p>
       )}
 
-      {isLoading && <p style={{ margin: 0, fontSize: 14, color: '#888' }}>불러오는 중...</p>}
+      {isLoading && <p style={{ margin: 0, fontSize: 14, color: 'var(--color-text-muted)' }}>불러오는 중...</p>}
       {isError && (
-        <p style={{ margin: 0, fontSize: 14, color: '#d85a30' }}>
-          할 일을 불러오지 못했습니다.
+        <p style={{ margin: 0, fontSize: 14, color: 'var(--color-danger)' }}>
+          할 일을 불러오지 못했습니다. 새로고침 후 다시 확인하세요.
         </p>
       )}
 
@@ -297,7 +294,7 @@ export default function ScheduleTodoTab({ date }) {
                     margin: '0 0 8px',
                     fontSize: 13,
                     fontWeight: 600,
-                    color: '#888',
+                    color: 'var(--color-text-muted)',
                   }}
                 >
                   {label}
@@ -320,8 +317,8 @@ export default function ScheduleTodoTab({ date }) {
           })}
 
           {TODO_SECTIONS.every(({ key }) => (todoData[key] ?? []).length === 0) && (
-            <p style={{ margin: 0, fontSize: 14, color: '#b4b2a9' }}>
-              오늘 등록된 할 일이 없습니다. 위에서 추가해 보세요.
+            <p style={{ margin: 0, fontSize: 14, color: 'var(--color-text-muted)' }}>
+              오늘 할 일이 없습니다. 위에서 추가하세요.
             </p>
           )}
         </>

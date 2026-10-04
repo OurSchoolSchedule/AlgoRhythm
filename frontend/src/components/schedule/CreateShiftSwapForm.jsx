@@ -28,7 +28,7 @@ const fieldStyle = {
   marginBottom: 8,
   padding: '8px 10px',
   borderRadius: 6,
-  border: '0.5px solid #d3d1c7',
+  border: '1px solid var(--color-border-input)',
   fontSize: 12,
 }
 
@@ -80,25 +80,25 @@ export default function CreateShiftSwapForm() {
 
   return (
     <form onSubmit={handleSubmit} style={{ marginTop: 10 }}>
-      <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 600, color: '#2c2c2a' }}>
+      <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 600, color: 'var(--color-text)' }}>
         수업 교환 요청
       </p>
       {mineQuery.isLoading && (
-        <p style={{ margin: 0, fontSize: 12, color: '#888' }}>내 수업 목록 불러오는 중...</p>
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--color-text-muted)' }}>내 수업 목록 불러오는 중...</p>
       )}
       {mineQuery.isError && (
-        <p style={{ margin: 0, fontSize: 12, color: '#d85a30' }}>
-          내 시간표를 불러오지 못했습니다.
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--color-danger)' }}>
+          내 시간표를 불러오지 못했습니다. 새로고침 후 다시 확인하세요.
         </p>
       )}
       {!mineQuery.isLoading && !mineQuery.isError && mySlots.length === 0 && (
-        <p style={{ margin: 0, fontSize: 12, color: '#b4b2a9' }}>
-          등록된 내 수업이 없습니다.
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--color-text-muted)' }}>
+          등록된 내 수업이 없습니다. 시간표가 등록되면 교환을 요청할 수 있습니다.
         </p>
       )}
       {mySlots.length > 0 && (
         <>
-          <label style={{ display: 'block', fontSize: 11, color: '#888', marginBottom: 4 }}>
+          <label style={{ display: 'block', fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 4 }}>
             내 수업
           </label>
           <select
@@ -116,7 +116,7 @@ export default function CreateShiftSwapForm() {
               </option>
             ))}
           </select>
-          <label style={{ display: 'block', fontSize: 11, color: '#888', marginBottom: 4 }}>
+          <label style={{ display: 'block', fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 4 }}>
             내 수업 날짜
           </label>
           <input
@@ -126,14 +126,14 @@ export default function CreateShiftSwapForm() {
             style={fieldStyle}
           />
 
-          <label style={{ display: 'block', fontSize: 11, color: '#888', marginBottom: 4 }}>
+          <label style={{ display: 'block', fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 4 }}>
             바꿀 수업
           </label>
           {schoolQuery.isLoading && (
-            <p style={{ margin: '0 0 8px', fontSize: 12, color: '#888' }}>학교 시간표 불러오는 중...</p>
+            <p style={{ margin: '0 0 8px', fontSize: 12, color: 'var(--color-text-muted)' }}>학교 시간표 불러오는 중...</p>
           )}
           {schoolQuery.isError && (
-            <p style={{ margin: '0 0 8px', fontSize: 12, color: '#d85a30' }}>
+            <p style={{ margin: '0 0 8px', fontSize: 12, color: 'var(--color-danger)' }}>
               학교 시간표를 불러오지 못했습니다. 상대 수업을 고르려면 전체 시간표 조회 권한이 필요합니다.
             </p>
           )}
@@ -151,7 +151,7 @@ export default function CreateShiftSwapForm() {
               ))}
             </select>
           )}
-          <label style={{ display: 'block', fontSize: 11, color: '#888', marginBottom: 4 }}>
+          <label style={{ display: 'block', fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 4 }}>
             상대 수업 날짜
           </label>
           <input
@@ -161,7 +161,7 @@ export default function CreateShiftSwapForm() {
             style={fieldStyle}
           />
 
-          <label style={{ display: 'block', fontSize: 11, color: '#888', marginBottom: 4 }}>
+          <label style={{ display: 'block', fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 4 }}>
             사유
           </label>
           <input
@@ -179,24 +179,24 @@ export default function CreateShiftSwapForm() {
               padding: '10px 16px',
               borderRadius: 'var(--radius-md)',
               border: 'none',
-              background: canSubmit ? 'var(--color-primary-500)' : 'var(--color-primary-100)',
-              color: 'var(--color-surface)',
+              background: canSubmit ? 'var(--color-primary-500)' : 'var(--color-border)',
+              color: canSubmit ? 'var(--color-surface)' : 'var(--color-text-muted)',
               fontSize: 'var(--font-body)',
               fontWeight: 600,
               cursor: canSubmit ? 'pointer' : 'default',
             }}
           >
-            {createSwap.isPending ? '요청 중...' : '수업 교환 요청 보내기'}
+            {createSwap.isPending ? '요청 중' : '요청하기'}
           </button>
         </>
       )}
       {createSwap.isError && (
-        <p style={{ margin: '8px 0 0', fontSize: 11, color: '#d85a30' }}>
-          요청에 실패했습니다.
+        <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--color-danger)' }}>
+          요청에 실패했습니다. 입력 내용을 확인한 뒤 다시 요청하세요.
         </p>
       )}
       {createSwap.isSuccess && (
-        <p style={{ margin: '8px 0 0', fontSize: 11, color: '#1d9e75' }}>
+        <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--color-success)' }}>
           교환 요청을 보냈습니다.
         </p>
       )}

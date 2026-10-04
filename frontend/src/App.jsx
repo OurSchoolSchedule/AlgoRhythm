@@ -151,7 +151,6 @@ export default function App() {
               fontWeight: 600,
               fontSize: 'var(--font-body)',
               color: 'var(--color-text)',
-              letterSpacing: '-0.3px',
               padding: 0,
             }}
           >

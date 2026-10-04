@@ -44,7 +44,7 @@ export default function Sidebar({ open, navigate, currentView, userRole, setUser
           color: active ? 'var(--color-primary-500)' : 'var(--color-text-secondary)',
           fontWeight: active ? 600 : 400,
           fontSize: 'var(--font-body)',
-          transition: 'background 0.12s',
+          transition: 'background 150ms ease-out',
         }}
       >
         <Icon size={20} active={active} />
@@ -63,8 +63,7 @@ export default function Sidebar({ open, navigate, currentView, userRole, setUser
         overflow: 'hidden',
         padding: open ? `${SIDEBAR_VERTICAL_INSET}px 0` : 0,
         boxSizing: 'border-box',
-        transition:
-          'width 0.22s cubic-bezier(0.4,0,0.2,1), min-width 0.22s cubic-bezier(0.4,0,0.2,1)',
+        transition: 'width 180ms ease-out, min-width 180ms ease-out',
       }}
     >
       <div

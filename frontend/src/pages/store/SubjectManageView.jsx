@@ -54,56 +54,56 @@ export default function SubjectManageView({ navigate }) {
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-        <button onClick={() => navigate("home")} style={{ background: "none", border: "none", cursor: "pointer", color: "#888", fontSize: 13, padding: 0 }}>← 뒤로</button>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#2c2c2a", letterSpacing: "-0.5px" }}>과목·수업 관리</h1>
+        <button onClick={() => navigate("home")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-muted)", fontSize: 13, padding: 0 }}>← 뒤로</button>
+        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--color-text)" }}>과목·수업 관리</h1>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
-        <StatCard label="등록 과목" value={subjects.length} unit="개" color="#27a859" />
-        <StatCard label="총 주간 시수" value={totalHours} unit="시간" color="#1d9e75" />
-        <StatCard label="담당 교사" value={teachers} unit="명" color="#f09500" />
-        <StatCard label="학년 수" value={3} unit="개" color="#d85a30" />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
+        <StatCard label="등록 과목" value={subjects.length} unit="개" />
+        <StatCard label="총 주간 시수" value={totalHours} unit="시간" />
+        <StatCard label="담당 교사" value={teachers} unit="명" />
+        <StatCard label="학년 수" value={3} unit="개" />
       </div>
 
-      <div style={{ background: "#fff", borderRadius: 12, border: "0.5px solid #e8e6e0", padding: "20px 24px", marginBottom: 16 }}>
+      <div style={{ background: "var(--color-surface)", borderRadius: 12, border: "1px solid var(--color-border)", padding: "20px 24px", marginBottom: 16 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <div style={{ display: "flex", gap: 6 }}>
             {GRADES.map(g => (
               <button key={g} onClick={() => setFilterGrade(g)} style={{
-                padding: "6px 14px", borderRadius: 20, fontSize: 13,
-                border: "0.5px solid", cursor: "pointer",
-                background: filterGrade === g ? "#27a859" : "transparent",
-                borderColor: filterGrade === g ? "#27a859" : "#d3d1c7",
-                color: filterGrade === g ? "#fff" : "#5f5e5a",
+                padding: "6px 14px", borderRadius: 8, fontSize: 13,
+                border: "1px solid", cursor: "pointer",
+                background: filterGrade === g ? "var(--color-primary-500)" : "transparent",
+                borderColor: filterGrade === g ? "var(--color-primary-500)" : "var(--color-border-input)",
+                color: filterGrade === g ? "var(--color-surface)" : "var(--color-text-subtle)",
               }}>{g}</button>
             ))}
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <input type="file" ref={fileRef} accept=".csv" onChange={handleCSV} style={{ display: "none" }} />
             <button onClick={() => fileRef.current?.click()} style={{
-              padding: "7px 16px", borderRadius: 8, border: "0.5px solid #1d9e75",
-              background: "transparent", color: "#1d9e75", fontSize: 13, cursor: "pointer",
-            }}>CSV 업로드</button>
+              padding: "7px 16px", borderRadius: 8, border: "1px solid var(--color-border-input)",
+              background: "var(--color-surface)", color: "var(--color-text)", fontSize: 13, fontWeight: 500, cursor: "pointer",
+            }}>CSV 올리기</button>
             <button onClick={() => setShowAdd(v => !v)} style={{
               padding: "7px 16px", borderRadius: 8, border: "none",
-              background: "#27a859", color: "#fff", fontSize: 13, cursor: "pointer",
-            }}>+ 직접 추가</button>
+              background: "var(--color-primary-500)", color: "var(--color-surface)", fontSize: 13, fontWeight: 600, cursor: "pointer",
+            }}>{showAdd ? "닫기" : "수업 추가"}</button>
           </div>
         </div>
 
         {csvStatus === "loading" && (
-          <div style={{ padding: "10px 14px", background: "#e8f7ee", borderRadius: 8, marginBottom: 12, fontSize: 13, color: "#27a859" }}>
-            ⏳ CSV 파일 파싱 중...
-          </div>
+          <p style={{ margin: "0 0 12px", fontSize: 13, color: "var(--color-text-muted)" }}>
+            CSV 파일을 읽고 있습니다.
+          </p>
         )}
         {csvStatus === "success" && (
-          <div style={{ padding: "10px 14px", background: "#e1f5ee", borderRadius: 8, marginBottom: 12, fontSize: 13, color: "#0f6e56" }}>
-            ✓ CSV 파싱 완료 — 2개 행이 추가되었습니다.
-          </div>
+          <p style={{ margin: "0 0 12px", fontSize: 13, color: "var(--color-success)" }}>
+            CSV를 반영했습니다. 2개 행이 추가되었습니다.
+          </p>
         )}
 
         {showAdd && (
-          <div style={{ background: "#f8f8f6", borderRadius: 8, padding: "14px 16px", marginBottom: 14, display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8, alignItems: "end" }}>
+          <div style={{ marginBottom: 14, display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8, alignItems: "end" }}>
             {[
               { label: "학년", type: "number", key: "grade", min: 1, max: 3 },
               { label: "학반", type: "text", key: "classNum", placeholder: "1-1" },
@@ -112,40 +112,38 @@ export default function SubjectManageView({ navigate }) {
               { label: "담당 교사", type: "text", key: "teacher", placeholder: "이름" },
             ].map(f => (
               <div key={f.key}>
-                <label style={{ display: "block", fontSize: 11, color: "#888", marginBottom: 4 }}>{f.label}</label>
+                <label style={{ display: "block", fontSize: 12, color: "var(--color-text-muted)", marginBottom: 4 }}>{f.label}</label>
                 <input type={f.type} value={newRow[f.key]} min={f.min} max={f.max} placeholder={f.placeholder}
                   onChange={e => setNewRow(p => ({ ...p, [f.key]: f.type === "number" ? Number(e.target.value) : e.target.value }))}
-                  style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "0.5px solid #d3d1c7", fontSize: 13, boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid var(--color-border-input)", fontSize: 13, boxSizing: "border-box" }}
                 />
               </div>
             ))}
-            <button onClick={handleAddRow} style={{ padding: "7px 0", borderRadius: 6, border: "none", background: "#27a859", color: "#fff", fontSize: 13, cursor: "pointer", height: 32 }}>추가</button>
+            <button onClick={handleAddRow} style={{ padding: "7px 0", borderRadius: 6, border: "none", background: "var(--color-primary-500)", color: "var(--color-surface)", fontSize: 13, fontWeight: 600, cursor: "pointer", height: 32 }}>추가하기</button>
           </div>
         )}
 
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
-              <tr style={{ borderBottom: "0.5px solid #e8e6e0" }}>
+              <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
                 {["학년", "학반", "과목명", "주간 시수", "담당 교사", ""].map(h => (
-                  <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "#888" }}>{h}</th>
+                  <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "var(--color-text-muted)" }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.map(s => (
-                <tr key={s.id} style={{ borderBottom: "0.5px solid #f1efe8" }}>
-                  <td style={{ padding: "10px 12px", color: "#888" }}>{s.grade}학년</td>
-                  <td style={{ padding: "10px 12px", fontWeight: 600, color: "#2c2c2a" }}>{s.classNum}</td>
-                  <td style={{ padding: "10px 12px", color: "#2c2c2a" }}>{s.subject}</td>
-                  <td style={{ padding: "10px 12px" }}>
-                    <span style={{ background: "#e8f7ee", color: "#27a859", padding: "3px 10px", borderRadius: 12, fontSize: 12, fontWeight: 600 }}>
-                      {s.hours}시간
-                    </span>
+                <tr key={s.id} style={{ borderBottom: "1px solid var(--color-border-light)" }}>
+                  <td style={{ padding: "10px 12px", color: "var(--color-text-muted)" }}>{s.grade}학년</td>
+                  <td style={{ padding: "10px 12px", fontWeight: 600, color: "var(--color-text)" }}>{s.classNum}</td>
+                  <td style={{ padding: "10px 12px", color: "var(--color-text)" }}>{s.subject}</td>
+                  <td style={{ padding: "10px 12px", color: "var(--color-text)", fontVariantNumeric: "tabular-nums" }}>
+                    {s.hours}시간
                   </td>
-                  <td style={{ padding: "10px 12px", color: "#444" }}>{s.teacher}</td>
+                  <td style={{ padding: "10px 12px", color: "var(--color-text-secondary)" }}>{s.teacher}</td>
                   <td style={{ padding: "10px 12px" }}>
-                    <button onClick={() => handleDelete(s.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#d85a30", fontSize: 12 }}>삭제</button>
+                    <button onClick={() => handleDelete(s.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-danger)", fontSize: 12 }}>삭제</button>
                   </td>
                 </tr>
               ))}
@@ -153,18 +151,18 @@ export default function SubjectManageView({ navigate }) {
           </table>
         </div>
 
-        <p style={{ margin: "12px 0 0", fontSize: 12, color: "#888" }}>총 {filtered.length}개 항목</p>
+        <p style={{ margin: "12px 0 0", fontSize: 12, color: "var(--color-text-muted)" }}>총 {filtered.length}개 항목</p>
       </div>
     </div>
   );
 }
 
-function StatCard({ label, value, unit, color }) {
+function StatCard({ label, value, unit }) {
   return (
-    <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e8e6e0", padding: "14px 18px" }}>
-      <p style={{ margin: "0 0 4px", fontSize: 12, color: "#888" }}>{label}</p>
-      <p style={{ margin: 0, fontSize: 24, fontWeight: 700, color, letterSpacing: "-1px" }}>
-        {value}<span style={{ fontSize: 12, fontWeight: 400, marginLeft: 3, color: "#888" }}>{unit}</span>
+    <div style={{ background: "var(--color-surface)", borderRadius: 12, border: "1px solid var(--color-border)", padding: "14px 18px" }}>
+      <p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--color-text-muted)" }}>{label}</p>
+      <p style={{ margin: 0, fontSize: 24, fontWeight: 700, color: "var(--color-text)", fontVariantNumeric: "tabular-nums" }}>
+        {value}<span style={{ fontSize: 12, fontWeight: 400, marginLeft: 4, color: "var(--color-text-muted)" }}>{unit}</span>
       </p>
     </div>
   );

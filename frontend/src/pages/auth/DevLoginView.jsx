@@ -36,7 +36,7 @@ export default function DevLoginView({ onSuccess }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#f8f8f6',
+        background: 'var(--color-bg)',
         fontFamily: "'Pretendard', 'Apple SD Gothic Neo', sans-serif",
       }}
     >
@@ -44,29 +44,27 @@ export default function DevLoginView({ onSuccess }) {
         onSubmit={handleSubmit}
         style={{
           width: 360,
-          background: '#fff',
+          background: 'var(--color-surface)',
           borderRadius: 16,
-          border: '0.5px solid #e8e6e0',
-          padding: '36px 32px',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.05)',
+          border: '1px solid var(--color-border)',
+          padding: '32px',
         }}
       >
         <h1
           style={{
             margin: '0 0 4px',
-            fontSize: 22,
+            fontSize: 20,
             fontWeight: 700,
-            color: '#2c2c2a',
-            letterSpacing: '-0.5px',
+            color: 'var(--color-text)',
           }}
         >
           AlgoRhythm
         </h1>
-        <p style={{ margin: '0 0 24px', fontSize: 13, color: '#888' }}>
+        <p style={{ margin: '0 0 24px', fontSize: 13, color: 'var(--color-text-muted)' }}>
           개발용 로그인 (dev-token)
         </p>
 
-        <label style={{ display: 'block', fontSize: 12, color: '#888', marginBottom: 6 }}>
+        <label style={{ display: 'block', fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 6 }}>
           이메일
         </label>
         <input
@@ -79,9 +77,9 @@ export default function DevLoginView({ onSuccess }) {
             width: '100%',
             padding: '10px 12px',
             borderRadius: 8,
-            border: '0.5px solid #d3d1c7',
+            border: '1px solid var(--color-border-input)',
             fontSize: 14,
-            color: '#2c2c2a',
+            color: 'var(--color-text)',
             boxSizing: 'border-box',
             outline: 'none',
             marginBottom: 16,
@@ -89,8 +87,8 @@ export default function DevLoginView({ onSuccess }) {
         />
 
         {devToken.isError && (
-          <p style={{ margin: '0 0 12px', fontSize: 12, color: '#d85a30' }}>
-            로그인 실패: 해당 이메일의 사용자를 찾을 수 없습니다.
+          <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--color-danger)' }}>
+            로그인에 실패했습니다. 등록된 이메일을 다시 입력하세요.
           </p>
         )}
 
@@ -102,8 +100,8 @@ export default function DevLoginView({ onSuccess }) {
             padding: '11px 0',
             borderRadius: 8,
             border: 'none',
-            background: devToken.isPending || !email.trim() ? '#bfe3cd' : '#27a859',
-            color: '#fff',
+            background: devToken.isPending || !email.trim() ? 'var(--color-border)' : 'var(--color-primary-500)',
+            color: devToken.isPending || !email.trim() ? 'var(--color-text-muted)' : 'var(--color-surface)',
             fontSize: 14,
             fontWeight: 600,
             cursor: devToken.isPending || !email.trim() ? 'default' : 'pointer',
@@ -112,7 +110,7 @@ export default function DevLoginView({ onSuccess }) {
           {devToken.isPending ? '로그인 중...' : '로그인'}
         </button>
 
-        <p style={{ margin: '20px 0 10px', fontSize: 12, color: '#888', textAlign: 'center' }}>
+        <p style={{ margin: '20px 0 10px', fontSize: 12, color: 'var(--color-text-muted)', textAlign: 'center' }}>
           테스트 로그인
         </p>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -140,9 +138,9 @@ const previewButtonStyle = {
   flex: 1,
   padding: '10px 0',
   borderRadius: 8,
-  border: '0.5px solid #d3d1c7',
-  background: '#fff',
-  color: '#2c2c2a',
+  border: '1px solid var(--color-border-input)',
+  background: 'var(--color-surface)',
+  color: 'var(--color-text)',
   fontSize: 13,
   fontWeight: 600,
   cursor: 'pointer',

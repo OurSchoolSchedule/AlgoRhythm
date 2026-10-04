@@ -9,8 +9,8 @@ export default function DayTimetableList({ timetable }) {
 
   if (!todayKey || !todayByPeriod) {
     return (
-      <p style={{ margin: 0, fontSize: 13, color: '#888' }}>
-        주말에는 수업 일정이 표시되지 않습니다.
+      <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-muted)' }}>
+        주말에는 수업이 없습니다. 월요일 일정은 시간표에서 확인하세요.
       </p>
     )
   }
@@ -20,26 +20,26 @@ export default function DayTimetableList({ timetable }) {
       {currentClass ? (
         <div
           style={{
-            background: '#e8f7ee',
+            background: 'var(--color-primary-50)',
             borderRadius: 8,
             padding: '10px 14px',
             marginBottom: 12,
           }}
         >
-          <span style={{ fontSize: 13, color: '#27a859', fontWeight: 600 }}>
-            {currentPeriod}교시 · {currentClass.class} · {currentClass.subject}
+          <span style={{ fontSize: 13, color: 'var(--color-text)', fontWeight: 600 }}>
+            진행 중 {currentPeriod}교시 {currentClass.class} {currentClass.subject}
           </span>
         </div>
       ) : (
         <div
           style={{
-            background: '#f1efe8',
+            background: 'var(--color-border-light)',
             borderRadius: 8,
             padding: '10px 14px',
             marginBottom: 12,
           }}
         >
-          <span style={{ fontSize: 13, color: '#888' }}>현재 공강 시간입니다</span>
+          <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>현재 공강 시간입니다</span>
         </div>
       )}
 
@@ -51,10 +51,11 @@ export default function DayTimetableList({ timetable }) {
             style={{
               width: 32,
               height: 32,
-              borderRadius: '50%',
-              border: 'none',
-              background: d === todayKey ? '#27a859' : 'transparent',
-              color: d === todayKey ? '#fff' : '#5f5e5a',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid',
+              borderColor: d === todayKey ? 'var(--color-primary-500)' : 'transparent',
+              background: d === todayKey ? 'var(--color-primary-500)' : 'transparent',
+              color: d === todayKey ? 'var(--color-surface)' : 'var(--color-text-subtle)',
               fontWeight: d === todayKey ? 600 : 400,
               fontSize: 13,
               cursor: 'default',
@@ -77,18 +78,18 @@ export default function DayTimetableList({ timetable }) {
                 alignItems: 'center',
                 gap: 10,
                 padding: '7px 0',
-                borderBottom: '0.5px solid #e8e6e0',
+                borderBottom: '1px solid var(--color-border)',
               }}
             >
-              <span style={{ fontSize: 12, color: '#888', width: 32, flexShrink: 0 }}>
+              <span style={{ fontSize: 12, color: 'var(--color-text-muted)', width: 32, flexShrink: 0 }}>
                 {p}교시
               </span>
               {s ? (
                 <span
                   style={{
                     flex: 1,
-                    background: isCurrent ? '#e8f7ee' : '#f1efe8',
-                    color: isCurrent ? '#27a859' : '#444',
+                    background: isCurrent ? 'var(--color-primary-50)' : 'var(--color-border-light)',
+                    color: 'var(--color-text)',
                     borderRadius: 6,
                     padding: '5px 10px',
                     fontSize: 13,
@@ -99,8 +100,8 @@ export default function DayTimetableList({ timetable }) {
                   {s.teacher ? ` · ${s.teacher}` : ''}
                 </span>
               ) : (
-                <span style={{ flex: 1, color: '#d3d1c7', fontSize: 13, paddingLeft: 10 }}>
-                  —
+                <span style={{ flex: 1, color: 'var(--color-text-muted)', fontSize: 13, paddingLeft: 10 }}>
+                  공강
                 </span>
               )}
             </div>

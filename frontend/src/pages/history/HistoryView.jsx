@@ -12,9 +12,20 @@ const historyData = [
   { id: 7, date: "2026.05.10", type: "보결", detail: "1교시 · 1-2반 · 수학 → 신청자 없음", status: "미처리" },
 ];
 
-const typeColor = { 보결: "#f09500", 변경: "#27a859", 생성: "#1d9e75", 수정: "#185fa5", 교환: "#d85a30" };
-const typeBg = { 보결: "#faeeda", 변경: "#e8f7ee", 생성: "#e1f5ee", 수정: "#e6f1fb", 교환: "#faece7" };
-const statusColor = { 완료: "#1d9e75", 미처리: "#d85a30" };
+const typeColor = {
+  보결: "var(--color-warning)",
+  변경: "var(--color-info)",
+  생성: "var(--color-success)",
+  수정: "var(--color-text)",
+  교환: "var(--color-text)",
+};
+const typeBg = {
+  보결: "var(--color-warning-light)",
+  변경: "var(--color-info-light)",
+  생성: "var(--color-success-light)",
+  수정: "var(--color-border-light)",
+  교환: "var(--color-border-light)",
+};
 
 export function HistoryView({ navigate }) {
   const [filter, setFilter] = useState("전체");
@@ -24,18 +35,18 @@ export function HistoryView({ navigate }) {
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-        <button onClick={() => navigate("home")} style={{ background: "none", border: "none", cursor: "pointer", color: "#888", fontSize: 13, padding: 0 }}>← 뒤로</button>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#2c2c2a", letterSpacing: "-0.5px" }}>내역</h1>
+        <button onClick={() => navigate("home")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-muted)", fontSize: 13, padding: 0 }}>← 뒤로</button>
+        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--color-text)" }}>내역</h1>
       </div>
 
-      <div style={{ background: "#fff", borderRadius: 12, border: "0.5px solid #e8e6e0", padding: "20px 24px" }}>
+      <div style={{ background: "var(--color-surface)", borderRadius: 12, border: "1px solid var(--color-border)", padding: "20px 24px" }}>
         <div style={{ display: "flex", gap: 6, marginBottom: 18, flexWrap: "wrap" }}>
           {types.map(t => (
             <button key={t} onClick={() => setFilter(t)} style={{
-              padding: "5px 14px", borderRadius: 20, border: "0.5px solid", fontSize: 13, cursor: "pointer",
-              background: filter === t ? "#27a859" : "transparent",
-              borderColor: filter === t ? "#27a859" : "#d3d1c7",
-              color: filter === t ? "#fff" : "#5f5e5a",
+              padding: "5px 14px", borderRadius: 8, border: "1px solid", fontSize: 13, cursor: "pointer",
+              background: filter === t ? "var(--color-primary-500)" : "transparent",
+              borderColor: filter === t ? "var(--color-primary-500)" : "var(--color-border-input)",
+              color: filter === t ? "var(--color-surface)" : "var(--color-text-subtle)",
             }}>{t}</button>
           ))}
         </div>
@@ -44,21 +55,29 @@ export function HistoryView({ navigate }) {
           {filtered.map((h, i) => (
             <div key={h.id} style={{
               display: "flex", alignItems: "center", gap: 14,
-              padding: "12px 0", borderBottom: i < filtered.length - 1 ? "0.5px solid #f1efe8" : "none",
+              padding: "12px 0", borderBottom: i < filtered.length - 1 ? "1px solid var(--color-border-light)" : "none",
             }}>
-              <span style={{ fontSize: 12, color: "#888", flexShrink: 0, width: 80 }}>{h.date}</span>
+              <span style={{ fontSize: 12, color: "var(--color-text-muted)", flexShrink: 0, width: 80 }}>{h.date}</span>
               <span style={{
-                fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 4, flexShrink: 0,
-                background: typeBg[h.type] || "#f1efe8", color: typeColor[h.type] || "#888",
+                fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 6, flexShrink: 0,
+                background: typeBg[h.type] || "var(--color-border-light)", color: typeColor[h.type] || "var(--color-text-muted)",
               }}>{h.type}</span>
-              <span style={{ flex: 1, fontSize: 13, color: "#2c2c2a" }}>{h.detail}</span>
-              <span style={{ fontSize: 12, color: statusColor[h.status] || "#888", flexShrink: 0, fontWeight: 500 }}>
-                {h.status === "완료" ? "✓ 완료" : "⚠ 미처리"}
+              <span style={{ flex: 1, fontSize: 13, color: "var(--color-text)" }}>{h.detail}</span>
+              <span style={{
+                fontSize: 12,
+                fontWeight: 600,
+                padding: "2px 8px",
+                borderRadius: 6,
+                flexShrink: 0,
+                background: h.status === "완료" ? "var(--color-success-light)" : "var(--color-danger-light)",
+                color: h.status === "완료" ? "var(--color-success)" : "var(--color-danger)",
+              }}>
+                {h.status}
               </span>
             </div>
           ))}
         </div>
-        <p style={{ margin: "12px 0 0", fontSize: 12, color: "#888" }}>{filtered.length}개 항목</p>
+        <p style={{ margin: "12px 0 0", fontSize: 12, color: "var(--color-text-muted)" }}>{filtered.length}개 항목</p>
       </div>
     </div>
   );
@@ -66,9 +85,9 @@ export function HistoryView({ navigate }) {
 
 const STATUS_LABEL = { HIRED: "재직", ON_LEAVE: "휴직", RESIGNED: "퇴직" };
 const STATUS_STYLE = {
-  HIRED: { bg: "#e1f5ee", color: "#0f6e56" },
-  ON_LEAVE: { bg: "#faeeda", color: "#f09500" },
-  RESIGNED: { bg: "#f1efe8", color: "#888" },
+  HIRED: { bg: "var(--color-success-light)", color: "var(--color-success)" },
+  ON_LEAVE: { bg: "var(--color-warning-light)", color: "var(--color-warning)" },
+  RESIGNED: { bg: "var(--color-border-light)", color: "var(--color-text-muted)" },
 };
 const ROLE_LABEL = { ADMIN: "관리자", TEACHER: "교사" };
 
@@ -86,24 +105,24 @@ export function AdminView({ navigate }) {
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-        <button onClick={() => navigate("home")} style={{ background: "none", border: "none", cursor: "pointer", color: "#888", fontSize: 13, padding: 0 }}>← 뒤로</button>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#2c2c2a", letterSpacing: "-0.5px" }}>관리자 도구</h1>
+        <button onClick={() => navigate("home")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-muted)", fontSize: 13, padding: 0 }}>← 뒤로</button>
+        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--color-text)" }}>관리자 도구</h1>
       </div>
 
       <div style={{
-        background: "#fff", borderRadius: 12, border: "0.5px solid #e8e6e0",
+        background: "var(--color-surface)", borderRadius: 12, border: "1px solid var(--color-border)",
         padding: "20px 24px", marginBottom: 16,
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
         <div>
-          <p style={{ margin: "0 0 4px", fontSize: 15, fontWeight: 600, color: "#2c2c2a" }}>시간표 생성</p>
-          <p style={{ margin: 0, fontSize: 13, color: "#888" }}>AI 기반으로 새 학기 시간표를 생성합니다</p>
+          <p style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 600, color: "var(--color-text)" }}>시간표 생성</p>
+          <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>새 학기 시간표를 만듭니다.</p>
         </div>
         <button
           onClick={() => navigate("schedule-create")}
           style={{
             padding: "10px 20px", borderRadius: 8, border: "none",
-            background: "#27a859", color: "#fff", fontSize: 14, fontWeight: 500, cursor: "pointer",
+            background: "var(--color-primary-500)", color: "var(--color-surface)", fontSize: 14, fontWeight: 500, cursor: "pointer",
             flexShrink: 0,
           }}
         >
@@ -111,57 +130,57 @@ export function AdminView({ navigate }) {
         </button>
       </div>
 
-      <div style={{ display: "flex", gap: 0, marginBottom: 16, borderBottom: "0.5px solid #e8e6e0" }}>
+      <div style={{ display: "flex", gap: 0, marginBottom: 16, borderBottom: "1px solid var(--color-border)" }}>
         {tabs.map(t => (
           <button key={t} onClick={() => setTab(t)} style={{
             padding: "10px 20px", border: "none", background: "none", cursor: "pointer", fontSize: 14,
-            color: tab === t ? "#27a859" : "#888", fontWeight: tab === t ? 600 : 400,
-            borderBottom: tab === t ? "2px solid #27a859" : "2px solid transparent",
+            color: tab === t ? "var(--color-primary-500)" : "var(--color-text-muted)", fontWeight: tab === t ? 600 : 400,
+            borderBottom: tab === t ? "2px solid var(--color-primary-500)" : "2px solid transparent",
           }}>{t}</button>
         ))}
       </div>
 
       {tab === "교사" && (
-        <div style={{ background: "#fff", borderRadius: 12, border: "0.5px solid #e8e6e0", padding: "20px 24px" }}>
+        <div style={{ background: "var(--color-surface)", borderRadius: 12, border: "1px solid var(--color-border)", padding: "20px 24px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#2c2c2a" }}>
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>
               교사 목록{staffSummary ? ` · 총 ${staffSummary.totalStaffCount}명` : ""}
             </p>
             {staffSummary?.storeName && (
-              <span style={{ fontSize: 12, color: "#888" }}>{staffSummary.storeName}</span>
+              <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{staffSummary.storeName}</span>
             )}
           </div>
 
           {staffLoading && (
-            <p style={{ margin: 0, fontSize: 13, color: "#888" }}>불러오는 중...</p>
+            <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>불러오는 중...</p>
           )}
           {staffError && (
-            <p style={{ margin: 0, fontSize: 13, color: "#d85a30" }}>
-              교사 목록을 불러오지 못했습니다. (관리자 권한이 필요할 수 있습니다)
+            <p style={{ margin: 0, fontSize: 13, color: "var(--color-danger)" }}>
+              교사 목록을 불러오지 못했습니다. 관리자 권한으로 다시 확인하세요.
             </p>
           )}
           {!staffLoading && !staffError && staffList.length === 0 && (
-            <p style={{ margin: 0, fontSize: 13, color: "#b4b2a9" }}>등록된 교사가 없습니다.</p>
+            <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>등록된 교사가 없습니다. 교사를 초대하면 여기에 표시됩니다.</p>
           )}
 
           {!staffLoading && !staffError && staffList.length > 0 && (
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
-                <tr style={{ borderBottom: "0.5px solid #e8e6e0" }}>
+                <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
                   {["이름", "역할", "재직상태"].map(h => (
-                    <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "#888" }}>{h}</th>
+                    <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "var(--color-text-muted)" }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {staffList.map(s => {
-                  const st = STATUS_STYLE[s.employmentStatus] ?? { bg: "#f1efe8", color: "#888" };
+                  const st = STATUS_STYLE[s.employmentStatus] ?? { bg: "var(--color-border-light)", color: "var(--color-text-muted)" };
                   return (
-                    <tr key={s.userStoreId} style={{ borderBottom: "0.5px solid #f1efe8" }}>
-                      <td style={{ padding: "10px 12px", fontWeight: 600, color: "#2c2c2a" }}>{s.username}</td>
-                      <td style={{ padding: "10px 12px", color: "#444" }}>{ROLE_LABEL[s.role] ?? s.role}</td>
+                    <tr key={s.userStoreId} style={{ borderBottom: "1px solid var(--color-border-light)" }}>
+                      <td style={{ padding: "10px 12px", fontWeight: 600, color: "var(--color-text)" }}>{s.username}</td>
+                      <td style={{ padding: "10px 12px", color: "var(--color-text-secondary)" }}>{ROLE_LABEL[s.role] ?? s.role}</td>
                       <td style={{ padding: "10px 12px" }}>
-                        <span style={{ padding: "2px 8px", borderRadius: 12, fontSize: 12, background: st.bg, color: st.color }}>
+                        <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 12, background: st.bg, color: st.color }}>
                           {STATUS_LABEL[s.employmentStatus] ?? s.employmentStatus}
                         </span>
                       </td>
@@ -175,15 +194,15 @@ export function AdminView({ navigate }) {
       )}
 
       {tab === "학급" && (
-        <div style={{ background: "#fff", borderRadius: 12, border: "0.5px solid #e8e6e0", padding: "20px 24px" }}>
+        <div style={{ background: "var(--color-surface)", borderRadius: 12, border: "1px solid var(--color-border)", padding: "20px 24px" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
             {[1, 2, 3].map(grade => (
-              <div key={grade} style={{ border: "0.5px solid #e8e6e0", borderRadius: 10, padding: "14px 16px" }}>
-                <p style={{ margin: "0 0 10px", fontSize: 14, fontWeight: 600, color: "#2c2c2a" }}>{grade}학년</p>
+              <div key={grade}>
+                <p style={{ margin: "0 0 8px", fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>{grade}학년</p>
                 {["1", "2", "3", "4"].map(cls => (
-                  <div key={cls} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "0.5px solid #f1efe8" }}>
-                    <span style={{ fontSize: 13, color: "#444" }}>{grade}-{cls}반</span>
-                    <span style={{ fontSize: 12, color: "#27a859" }}>30명</span>
+                  <div key={cls} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid var(--color-border-light)" }}>
+                    <span style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>{grade}-{cls}반</span>
+                    <span style={{ fontSize: 12, color: "var(--color-text)", fontVariantNumeric: "tabular-nums" }}>30명</span>
                   </div>
                 ))}
               </div>

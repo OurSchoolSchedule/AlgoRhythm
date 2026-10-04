@@ -27,25 +27,25 @@ export default function CreateExtraShiftForm() {
 
   return (
     <form onSubmit={handleSubmit} style={{ marginTop: 10 }}>
-      <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 600, color: '#2c2c2a' }}>
+      <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 600, color: 'var(--color-text)' }}>
         {DOMAIN.extraWork} 요청
       </p>
       {isLoading && (
-        <p style={{ margin: 0, fontSize: 12, color: '#888' }}>수업 목록 불러오는 중...</p>
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--color-text-muted)' }}>수업 목록 불러오는 중...</p>
       )}
       {isError && (
-        <p style={{ margin: 0, fontSize: 12, color: '#d85a30' }}>
-          수업 목록을 불러오지 못했습니다.
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--color-danger)' }}>
+          수업 목록을 불러오지 못했습니다. 새로고침 후 다시 확인하세요.
         </p>
       )}
       {!isLoading && !isError && shifts.length === 0 && (
-        <p style={{ margin: 0, fontSize: 12, color: '#b4b2a9' }}>
-          이번 주 등록된 수업이 없습니다.
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--color-text-muted)' }}>
+          이번 주 등록된 수업이 없습니다. 시간표가 등록되면 요청할 수 있습니다.
         </p>
       )}
       {shifts.length > 0 && (
         <>
-          <label style={{ display: 'block', fontSize: 11, color: '#888', marginBottom: 4 }}>
+          <label style={{ display: 'block', fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 4 }}>
             기준 수업
           </label>
           <select
@@ -56,7 +56,7 @@ export default function CreateExtraShiftForm() {
               marginBottom: 8,
               padding: '8px 10px',
               borderRadius: 6,
-              border: '0.5px solid #d3d1c7',
+              border: '1px solid var(--color-border-input)',
               fontSize: 12,
             }}
           >
@@ -68,10 +68,10 @@ export default function CreateExtraShiftForm() {
               </option>
             ))}
           </select>
-          <p style={{ margin: '0 0 8px', fontSize: 11, color: '#888' }}>
+          <p style={{ margin: '0 0 8px', fontSize: 12, color: 'var(--color-text-muted)' }}>
             필요 인원: {DOMAIN.headcount}
           </p>
-          <label style={{ display: 'block', fontSize: 11, color: '#888', marginBottom: 4 }}>
+          <label style={{ display: 'block', fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 4 }}>
             메모 (선택)
           </label>
           <input
@@ -84,7 +84,7 @@ export default function CreateExtraShiftForm() {
               marginBottom: 8,
               padding: '8px 10px',
               borderRadius: 6,
-              border: '0.5px solid #d3d1c7',
+              border: '1px solid var(--color-border-input)',
               fontSize: 12,
             }}
           />
@@ -96,8 +96,8 @@ export default function CreateExtraShiftForm() {
               padding: '8px 0',
               borderRadius: 6,
               border: 'none',
-              background: createExtra.isPending ? '#bfe3cd' : '#1d9e75',
-              color: '#fff',
+              background: createExtra.isPending ? 'var(--color-border)' : 'var(--color-primary-500)',
+              color: createExtra.isPending ? 'var(--color-text-muted)' : 'var(--color-surface)',
               fontSize: 12,
               fontWeight: 600,
               cursor: createExtra.isPending ? 'default' : 'pointer',
@@ -108,12 +108,12 @@ export default function CreateExtraShiftForm() {
         </>
       )}
       {createExtra.isError && (
-        <p style={{ margin: '8px 0 0', fontSize: 11, color: '#d85a30' }}>
-          요청에 실패했습니다.
+        <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--color-danger)' }}>
+          요청에 실패했습니다. 입력 내용을 확인한 뒤 다시 요청하세요.
         </p>
       )}
       {createExtra.isSuccess && (
-        <p style={{ margin: '8px 0 0', fontSize: 11, color: '#1d9e75' }}>
+        <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--color-success)' }}>
           추가 근무 요청을 보냈습니다.
         </p>
       )}

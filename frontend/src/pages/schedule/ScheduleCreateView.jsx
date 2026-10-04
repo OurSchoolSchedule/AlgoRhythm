@@ -37,13 +37,13 @@ export default function ScheduleCreateView({ navigate }) {
   return (
     <div style={{ maxWidth: 780 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-        <button onClick={() => navigate("admin")} style={{ background: "none", border: "none", cursor: "pointer", color: "#888", fontSize: 13, padding: 0 }}>← 뒤로</button>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#2c2c2a", letterSpacing: "-0.5px" }}>시간표 생성</h1>
+        <button onClick={() => navigate("admin")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-muted)", fontSize: 13, padding: 0 }}>← 뒤로</button>
+        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--color-text)" }}>시간표 생성</h1>
       </div>
 
       <StepIndicator steps={STEPS} current={step} />
 
-      <div style={{ background: "#fff", borderRadius: 12, border: "0.5px solid #e8e6e0", padding: "28px 32px", marginTop: 20 }}>
+      <div style={{ background: "var(--color-surface)", borderRadius: 12, border: "1px solid var(--color-border)", padding: "28px 32px", marginTop: 20 }}>
         {step === 0 && (
           <Step0 form={form} setForm={setForm} fileRef={fileRef} handleFile={handleFile} />
         )}
@@ -60,8 +60,8 @@ export default function ScheduleCreateView({ navigate }) {
           onClick={() => setStep(s => Math.max(0, s - 1))}
           disabled={step === 0}
           style={{
-            padding: "10px 24px", borderRadius: 8, border: "0.5px solid #d3d1c7",
-            background: "transparent", color: step === 0 ? "#d3d1c7" : "#444",
+            padding: "10px 24px", borderRadius: 8, border: "1px solid var(--color-border-input)",
+            background: "transparent", color: step === 0 ? "var(--color-border-input)" : "var(--color-text-secondary)",
             cursor: step === 0 ? "default" : "pointer", fontSize: 14,
           }}
         >이전</button>
@@ -70,9 +70,9 @@ export default function ScheduleCreateView({ navigate }) {
             onClick={() => setStep(s => Math.min(2, s + 1))}
             style={{
               padding: "10px 24px", borderRadius: 8, border: "none",
-              background: "#27a859", color: "#fff", cursor: "pointer", fontSize: 14, fontWeight: 500,
+              background: "var(--color-primary-500)", color: "var(--color-surface)", cursor: "pointer", fontSize: 14, fontWeight: 500,
             }}
-          >다음 →</button>
+          >다음</button>
         ) : null}
       </div>
     </div>
@@ -99,7 +99,7 @@ function Step0({ form, setForm, fileRef, handleFile }) {
                 <input
                   type="radio" checked={form.isHomeroom === v}
                   onChange={() => setForm(p => ({ ...p, isHomeroom: v }))}
-                  style={{ accentColor: "#27a859" }}
+                  style={{ accentColor: "var(--color-primary-500)" }}
                 />
                 {v ? "담임 포함" : "담임 없음"}
               </label>
@@ -121,36 +121,27 @@ function Step0({ form, setForm, fileRef, handleFile }) {
       </div>
 
       <SectionTitle>교사·과목 데이터 업로드 (CSV)</SectionTitle>
-      <div style={{ background: "#f8f8f6", borderRadius: 10, border: "1px dashed #d3d1c7", padding: "24px", textAlign: "center", marginBottom: 16 }}>
+      <div style={{ background: "var(--color-bg)", borderRadius: 8, border: "1px dashed var(--color-border-input)", padding: "24px", textAlign: "center", marginBottom: 16 }}>
         <input ref={fileRef} type="file" accept=".csv" onChange={handleFile} style={{ display: "none" }} />
         {form.csvFile ? (
           <div>
-            <p style={{ margin: "0 0 6px", fontSize: 14, fontWeight: 600, color: "#2c2c2a" }}>✓ {form.csvName}</p>
-            <p style={{ margin: 0, fontSize: 12, color: "#888" }}>파일이 업로드되었습니다.</p>
+            <p style={{ margin: "0 0 6px", fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>{form.csvName}</p>
+            <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-muted)" }}>파일이 업로드되었습니다.</p>
           </div>
         ) : (
           <div>
-            <p style={{ margin: "0 0 8px", fontSize: 14, color: "#5f5e5a" }}>CSV 파일을 드래그하거나 버튼으로 업로드하세요</p>
-            <p style={{ margin: "0 0 14px", fontSize: 12, color: "#888" }}>포함 항목: 교사명, 담당 과목, 학년·반, 주간 시수, 선호 시간대</p>
+            <p style={{ margin: "0 0 14px", fontSize: 14, color: "var(--color-text-subtle)" }}>CSV 파일을 드래그하거나 버튼으로 업로드하세요</p>
           </div>
         )}
         <button
           onClick={() => fileRef.current?.click()}
-          style={{ padding: "8px 20px", borderRadius: 8, border: "0.5px solid #27a859", background: "transparent", color: "#27a859", fontSize: 13, cursor: "pointer" }}
+          style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid var(--color-primary-500)", background: "transparent", color: "var(--color-primary-500)", fontSize: 13, cursor: "pointer" }}
         >{form.csvFile ? "파일 변경" : "파일 선택"}</button>
       </div>
 
-      <div style={{ background: "#e8f7ee", borderRadius: 8, padding: "12px 16px" }}>
-        <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 600, color: "#27a859" }}>📋 CSV 포함 항목 안내</p>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
-          {["교사명", "사번", "담당 과목", "담당 학년·반", "주간 시수", "선호 시간대", "기피 시간대", "담임 여부"].map(item => (
-            <p key={item} style={{ margin: 0, fontSize: 12, color: "#27a859" }}>• {item}</p>
-          ))}
-        </div>
-        <p style={{ margin: "8px 0 0", fontSize: 11, color: "#1f8f4a" }}>
-          업로드 후 자동으로 파싱되어 서버에 저장됩니다.
-        </p>
-      </div>
+      <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-muted)", lineHeight: 1.5 }}>
+        포함 항목: 교사명, 사번, 담당 과목, 담당 학년과 반, 주간 시수, 선호 시간대, 기피 시간대, 담임 여부. 업로드하면 서버에 저장됩니다.
+      </p>
     </div>
   );
 }
@@ -174,14 +165,14 @@ function Step1({ form, setForm }) {
         {constraints.map(c => (
           <label key={c.key} style={{
             display: "flex", alignItems: "flex-start", gap: 12,
-            padding: "12px 16px", borderRadius: 8, border: "0.5px solid #e8e6e0",
-            cursor: "pointer", background: form.constraints[c.key] ? "#eef9f3" : "#fff",
+            padding: "12px 8px", borderBottom: "1px solid var(--color-border)",
+            cursor: "pointer", background: form.constraints[c.key] ? "var(--color-primary-50)" : "transparent",
           }}>
             <input type="checkbox" checked={form.constraints[c.key]} onChange={() => toggle(c.key)}
-              style={{ accentColor: "#27a859", width: 15, height: 15, marginTop: 2 }} />
+              style={{ accentColor: "var(--color-primary-500)", width: 15, height: 15, marginTop: 2 }} />
             <div>
-              <p style={{ margin: 0, fontSize: 14, fontWeight: 500, color: "#2c2c2a" }}>{c.label}</p>
-              <p style={{ margin: "2px 0 0", fontSize: 12, color: "#888" }}>{c.desc}</p>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 500, color: "var(--color-text)" }}>{c.label}</p>
+              <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--color-text-muted)" }}>{c.desc}</p>
             </div>
           </label>
         ))}
@@ -192,14 +183,14 @@ function Step1({ form, setForm }) {
           <input
             type="range" min={3} max={8} value={form.constraints.maxPeriodsPerDay}
             onChange={e => setForm(p => ({ ...p, constraints: { ...p.constraints, maxPeriodsPerDay: Number(e.target.value) } }))}
-            style={{ flex: 1, accentColor: "#27a859" }}
+            style={{ flex: 1, accentColor: "var(--color-primary-500)" }}
           />
-          <span style={{ fontSize: 15, fontWeight: 600, color: "#27a859", minWidth: 24 }}>{form.constraints.maxPeriodsPerDay}</span>
+          <span style={{ fontSize: 16, fontWeight: 600, color: "var(--color-text)", minWidth: 24, fontVariantNumeric: "tabular-nums" }}>{form.constraints.maxPeriodsPerDay}</span>
         </div>
       </Field>
 
       <div style={{ marginTop: 20 }}>
-        <SectionTitle>자연어 제약 조건 (LLM 파싱)</SectionTitle>
+        <SectionTitle>추가 제약 조건</SectionTitle>
         <textarea
           value={form.naturalConstraint}
           onChange={e => setForm(p => ({ ...p, naturalConstraint: e.target.value }))}
@@ -208,8 +199,8 @@ function Step1({ form, setForm }) {
             ...inputStyle, height: 100, resize: "vertical", lineHeight: 1.6,
           }}
         />
-        <p style={{ margin: "6px 0 0", fontSize: 11, color: "#888" }}>
-          자연어로 입력 시 Claude/OpenAI API가 파싱하여 제약 조건으로 자동 변환합니다.
+        <p style={{ margin: "6px 0 0", fontSize: 12, color: "var(--color-text-muted)" }}>
+          문장으로 적어도 제약 조건으로 저장됩니다.
         </p>
       </div>
     </div>
@@ -218,9 +209,9 @@ function Step1({ form, setForm }) {
 
 function Step2({ form, generating, generated, handleGenerate, navigate }) {
   const alternatives = [
-    { id: "A", desc: "오전 집중형 — 3학년 수업 오전 배정, 오후 여유", score: 94 },
-    { id: "B", desc: "균형 분산형 — 학년별 고르게 분산 배치", score: 88 },
-    { id: "C", desc: "교사 선호 우선형 — 선호도 반영 최대화", score: 82 },
+    { id: "A", desc: "오전 집중. 3학년 수업은 오전에 배정합니다.", score: 94 },
+    { id: "B", desc: "균형 분산. 학년별로 나눠 배치합니다.", score: 88 },
+    { id: "C", desc: "선호 시간 우선. 교사 선호를 먼저 반영합니다.", score: 82 },
   ];
 
   return (
@@ -236,8 +227,8 @@ function Step2({ form, generating, generated, handleGenerate, navigate }) {
           ["자연어 조건", form.naturalConstraint ? "입력됨" : "없음"],
         ].map(([k, v]) => (
           <div key={k} style={{ display: "flex", gap: 8 }}>
-            <span style={{ fontSize: 13, color: "#888", flexShrink: 0 }}>{k}</span>
-            <span style={{ fontSize: 13, color: "#2c2c2a", fontWeight: 500 }}>{v}</span>
+            <span style={{ fontSize: 13, color: "var(--color-text-muted)", flexShrink: 0 }}>{k}</span>
+            <span style={{ fontSize: 13, color: "var(--color-text)", fontWeight: 500 }}>{v}</span>
           </div>
         ))}
       </div>
@@ -246,52 +237,40 @@ function Step2({ form, generating, generated, handleGenerate, navigate }) {
         <button
           onClick={handleGenerate}
           style={{
-            width: "100%", padding: "14px 0", borderRadius: 10, border: "none",
-            background: "#27a859", color: "#fff", fontSize: 15, fontWeight: 600, cursor: "pointer",
+            width: "100%", padding: "12px 0", borderRadius: 8, border: "none",
+            background: "var(--color-primary-500)", color: "var(--color-surface)", fontSize: 14, fontWeight: 600, cursor: "pointer",
           }}
-        >🧠 AI 시간표 생성 시작</button>
+        >시간표 생성</button>
       )}
 
       {generating && (
-        <div style={{ textAlign: "center", padding: "28px 0" }}>
-          <div style={{ width: 40, height: 40, border: "3px solid #e8f7ee", borderTop: "3px solid #27a859", borderRadius: "50%", margin: "0 auto 14px", animation: "spin 0.8s linear infinite" }} />
-          <p style={{ margin: 0, fontSize: 14, color: "#27a859", fontWeight: 500 }}>AI가 최적 시간표를 생성 중입니다...</p>
-          <p style={{ margin: "4px 0 0", fontSize: 12, color: "#888" }}>제약 조건 분석 및 배치 최적화 중</p>
-          <style>{`@keyframes spin { to { transform: rotate(360deg); }}`}</style>
+        <div style={{ padding: "24px 0" }}>
+          <p style={{ margin: 0, fontSize: 14, color: "var(--color-text)", fontWeight: 500 }}>시간표를 만들고 있습니다.</p>
+          <p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--color-text-muted)" }}>제약 조건을 적용하는 중입니다.</p>
         </div>
       )}
 
       {generated && (
         <div>
-          <p style={{ margin: "0 0 14px", fontSize: 14, fontWeight: 600, color: "#1d9e75" }}>✓ 시간표 {alternatives.length}개 대안이 생성되었습니다</p>
+          <p style={{ margin: "0 0 14px", fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>시간표 {alternatives.length}안을 만들었습니다. 하나를 선택하세요.</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {alternatives.map((alt, i) => (
               <div key={alt.id} style={{
-                padding: "14px 16px", borderRadius: 10,
-                border: i === 0 ? "1.5px solid #27a859" : "0.5px solid #e8e6e0",
-                background: i === 0 ? "#eef9f3" : "#fff",
+                padding: "12px 8px",
+                borderBottom: "1px solid var(--color-border)",
+                background: i === 0 ? "var(--color-primary-50)" : "transparent",
                 display: "flex", alignItems: "center", gap: 12,
               }}>
-                <div style={{
-                  width: 32, height: 32, borderRadius: "50%",
-                  background: i === 0 ? "#27a859" : "#f1efe8",
-                  color: i === 0 ? "#fff" : "#888",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontWeight: 700, fontSize: 14, flexShrink: 0,
-                }}>{alt.id}</div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ margin: 0, fontSize: 14, fontWeight: i === 0 ? 600 : 400, color: "#2c2c2a" }}>{alt.desc}</p>
-                  {i === 0 && <p style={{ margin: "2px 0 0", fontSize: 11, color: "#27a859" }}>추천 대안</p>}
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: i === 0 ? "#27a859" : "#888" }}>{alt.score}</p>
-                  <p style={{ margin: 0, fontSize: 10, color: "#b4b2a9" }}>점수</p>
-                </div>
-                <button style={{
-                  padding: "6px 14px", borderRadius: 6, border: "0.5px solid #27a859",
-                  background: i === 0 ? "#27a859" : "transparent",
-                  color: i === 0 ? "#fff" : "#27a859", fontSize: 12, cursor: "pointer",
-                }}>선택</button>
+                <span style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)", width: 28, flexShrink: 0 }}>{alt.id}안</span>
+                <p style={{ margin: 0, flex: 1, fontSize: 14, fontWeight: i === 0 ? 600 : 400, color: "var(--color-text)" }}>{alt.desc}</p>
+                <span style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)", fontVariantNumeric: "tabular-nums", width: 36, textAlign: "right" }}>{alt.score}</span>
+                <button type="button" style={{
+                  padding: "6px 14px", borderRadius: 6,
+                  border: i === 0 ? "none" : "1px solid var(--color-border-input)",
+                  background: i === 0 ? "var(--color-primary-500)" : "var(--color-surface)",
+                  color: i === 0 ? "var(--color-surface)" : "var(--color-text)",
+                  fontSize: 12, cursor: "pointer",
+                }}>{i === 0 ? "선택됨" : "선택하기"}</button>
               </div>
             ))}
           </div>
@@ -299,9 +278,9 @@ function Step2({ form, generating, generated, handleGenerate, navigate }) {
             onClick={() => navigate("admin")}
             style={{
               width: "100%", marginTop: 16, padding: "12px 0", borderRadius: 8,
-              border: "none", background: "#1d9e75", color: "#fff", fontSize: 14, fontWeight: 500, cursor: "pointer",
+              border: "none", background: "var(--color-primary-500)", color: "var(--color-surface)", fontSize: 14, fontWeight: 600, cursor: "pointer",
             }}
-          >✓ 확정 및 적용</button>
+          >확정하기</button>
         </div>
       )}
     </div>
@@ -315,15 +294,15 @@ function StepIndicator({ steps, current }) {
         <div key={s} style={{ display: "flex", alignItems: "center", flex: i < steps.length - 1 ? 1 : "initial" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{
-              width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
-              background: i <= current ? "#27a859" : "#f1efe8",
-              color: i <= current ? "#fff" : "#b4b2a9",
+              width: 28, height: 28, borderRadius: "var(--radius-md)", flexShrink: 0,
+              background: i === current ? "var(--color-primary-500)" : "var(--color-border-light)",
+              color: i === current ? "var(--color-surface)" : "var(--color-text-muted)",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 12, fontWeight: 600,
             }}>{i + 1}</div>
-            <span style={{ fontSize: 13, color: i === current ? "#27a859" : i < current ? "#888" : "#b4b2a9", fontWeight: i === current ? 600 : 400 }}>{s}</span>
+            <span style={{ fontSize: 13, color: i === current ? "var(--color-primary-500)" : "var(--color-text-muted)", fontWeight: i === current ? 600 : 400 }}>{s}</span>
           </div>
-          {i < steps.length - 1 && <div style={{ flex: 1, height: 1, background: i < current ? "#27a859" : "#e8e6e0", margin: "0 12px" }} />}
+          {i < steps.length - 1 && <div style={{ flex: 1, height: 1, background: "var(--color-border)", margin: "0 12px" }} />}
         </div>
       ))}
     </div>
@@ -331,19 +310,19 @@ function StepIndicator({ steps, current }) {
 }
 
 function SectionTitle({ children }) {
-  return <p style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#2c2c2a", paddingBottom: 8, borderBottom: "0.5px solid #e8e6e0" }}>{children}</p>;
+  return <p style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "var(--color-text)", paddingBottom: 8, borderBottom: "1px solid var(--color-border)" }}>{children}</p>;
 }
 
 function Field({ label, children }) {
   return (
     <div>
-      <label style={{ display: "block", fontSize: 12, color: "#888", marginBottom: 6 }}>{label}</label>
+      <label style={{ display: "block", fontSize: 12, color: "var(--color-text-muted)", marginBottom: 6 }}>{label}</label>
       {children}
     </div>
   );
 }
 
 const inputStyle = {
-  width: "100%", padding: "8px 12px", borderRadius: 8, border: "0.5px solid #d3d1c7",
-  background: "#fff", fontSize: 13, color: "#2c2c2a", boxSizing: "border-box", outline: "none",
+  width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid var(--color-border-input)",
+  background: "var(--color-surface)", fontSize: 13, color: "var(--color-text)", boxSizing: "border-box", outline: "none",
 };

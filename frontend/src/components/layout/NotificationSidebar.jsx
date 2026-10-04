@@ -55,12 +55,12 @@ function NotificationItem({ notification, position }) {
           {tag}
         </span>
       )}
-      <p style={{ margin: '0 0 4px', fontSize: 14, color: '#2c2c2a', lineHeight: 1.5 }}>
-        • {localizeNotificationMessage(notification.message)}
+      <p style={{ margin: '0 0 4px', fontSize: 14, color: 'var(--color-text)', lineHeight: 1.5 }}>
+        {localizeNotificationMessage(notification.message)}
       </p>
       {notification.storeName && (
-        <p style={{ margin: 0, fontSize: 13, color: '#888', paddingLeft: 12 }}>
-          - {notification.storeName}
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-muted)' }}>
+          {notification.storeName}
         </p>
       )}
       {hasAction && (
@@ -114,17 +114,16 @@ export default function NotificationSidebar({ open, onClose }) {
         overflow: 'hidden',
         padding: open ? `${PANEL_VERTICAL_INSET}px 0` : 0,
         boxSizing: 'border-box',
-        transition:
-          'width 0.22s cubic-bezier(0.4,0,0.2,1), min-width 0.22s cubic-bezier(0.4,0,0.2,1)',
+        transition: 'width 180ms ease-out, min-width 180ms ease-out',
       }}
     >
       <div
         style={{
           width: NOTIFICATION_PANEL_WIDTH,
           height: '100%',
-          background: '#fff',
+          background: 'var(--color-surface)',
           borderRadius: '12px 0 0 12px',
-          boxShadow: '-2px 0 12px rgba(0, 0, 0, 0.06)',
+          boxShadow: 'var(--shadow-sm)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -136,38 +135,37 @@ export default function NotificationSidebar({ open, onClose }) {
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '20px 20px 12px',
-            borderBottom: '0.5px solid #e8e6e0',
+            borderBottom: '1px solid var(--color-border)',
             flexShrink: 0,
           }}
         >
           <h2
             style={{
               margin: 0,
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: 600,
-              color: '#888',
-              letterSpacing: '-0.3px',
+              color: 'var(--color-text)',
             }}
           >
-            알람
+            알림
           </h2>
           <button
             type="button"
             onClick={onClose}
-            aria-label="알람 닫기"
+            aria-label="알림 닫기"
             style={{
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: '#888',
+              color: 'var(--color-text-muted)',
               padding: 4,
               display: 'flex',
               alignItems: 'center',
             }}
           >
             <svg
-              width="18"
-              height="18"
+              width="16"
+              height="16"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
@@ -184,11 +182,11 @@ export default function NotificationSidebar({ open, onClose }) {
           style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 24px' }}
         >
           {isLoading && (
-            <p style={{ margin: 0, fontSize: 13, color: '#888' }}>불러오는 중...</p>
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-muted)' }}>불러오는 중...</p>
           )}
           {isError && (
-            <p style={{ margin: 0, fontSize: 13, color: '#d85a30' }}>
-              알림을 불러오지 못했습니다.
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--color-danger)' }}>
+              알림을 불러오지 못했습니다. 잠시 후 다시 열어 주세요.
             </p>
           )}
 
@@ -199,7 +197,7 @@ export default function NotificationSidebar({ open, onClose }) {
                   margin: '0 0 10px',
                   fontSize: 13,
                   fontWeight: 700,
-                  color: '#f09500',
+                  color: 'var(--color-warning)',
                 }}
               >
                 처리 필요 ({actionable.length})
@@ -214,7 +212,7 @@ export default function NotificationSidebar({ open, onClose }) {
               <div
                 style={{
                   height: 1,
-                  background: '#e8e6e0',
+                  background: 'var(--color-border)',
                   margin: '4px 0 16px',
                 }}
               />
@@ -222,8 +220,8 @@ export default function NotificationSidebar({ open, onClose }) {
           )}
 
           {!isLoading && !isError && visibleGroups.length === 0 && actionable.length === 0 && (
-            <p style={{ margin: 0, fontSize: 13, color: '#b4b2a9' }}>
-              새로운 알림이 없습니다.
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-muted)' }}>
+              새 알림이 없습니다. 요청이 오면 여기에 표시됩니다.
             </p>
           )}
 
@@ -233,7 +231,7 @@ export default function NotificationSidebar({ open, onClose }) {
                 <div
                   style={{
                     height: 1,
-                    background: '#e8e6e0',
+                    background: 'var(--color-border)',
                     margin: '4px 0 16px',
                   }}
                 />
@@ -243,7 +241,7 @@ export default function NotificationSidebar({ open, onClose }) {
                   margin: '0 0 12px',
                   fontSize: 14,
                   fontWeight: 700,
-                  color: '#2c2c2a',
+                  color: 'var(--color-text)',
                 }}
               >
                 {group}
@@ -259,9 +257,8 @@ export default function NotificationSidebar({ open, onClose }) {
           ))}
 
           {!isLoading && !isError && notifications.length > 0 && actionable.length === 0 && (
-            <p style={{ margin: '12px 0 0', fontSize: 11, color: '#b4b2a9', lineHeight: 1.5 }}>
-              수락·거절 버튼은 보결/추가 근무 요청 알림이며, 로그인 계정 권한(교사·관리자)에
-              따라 표시됩니다.
+            <p style={{ margin: '12px 0 0', fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
+              수락, 거절 버튼은 보결과 추가 근무 요청에 표시됩니다. 교사와 관리자 권한에 따라 달라집니다.
             </p>
           )}
         </div>

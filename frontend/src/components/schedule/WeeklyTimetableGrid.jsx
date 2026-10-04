@@ -39,21 +39,8 @@ export default function WeeklyTimetableGrid({ timetable }) {
                 padding: '8px 0',
               }}
             >
-              {isToday && (
-                <span
-                  aria-hidden
-                  style={{
-                    display: 'inline-block',
-                    width: 6,
-                    height: 6,
-                    marginRight: 6,
-                    borderRadius: 'var(--radius-full)',
-                    background: 'var(--color-primary-500)',
-                    verticalAlign: 'middle',
-                  }}
-                />
-              )}
               {day}
+              {isToday ? ' 오늘' : ''}
             </div>
           )
         })}

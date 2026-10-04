@@ -19,9 +19,9 @@ function toApiTime(value) {
 const inputStyle = {
   padding: '7px 12px',
   borderRadius: 8,
-  border: '0.5px solid #d3d1c7',
+  border: '1px solid var(--color-border-input)',
   fontSize: 13,
-  color: '#2c2c2a',
+  color: 'var(--color-text)',
   width: 120,
 }
 
@@ -29,8 +29,8 @@ const buttonStyle = {
   padding: '7px 14px',
   borderRadius: 8,
   border: 'none',
-  background: '#27a859',
-  color: '#fff',
+  background: 'var(--color-primary-500)',
+  color: 'var(--color-surface)',
   fontSize: 13,
   cursor: 'pointer',
 }
@@ -115,14 +115,14 @@ export default function SchoolSettingPanel() {
   }
 
   return (
-    <div style={{ background: '#fff', borderRadius: 12, border: '0.5px solid #e8e6e0', padding: '20px 24px' }}>
-      <p style={{ margin: '0 0 16px', fontSize: 14, fontWeight: 600, color: '#2c2c2a' }}>교시 설정</p>
+    <div style={{ background: 'var(--color-surface)', borderRadius: 12, border: '1px solid var(--color-border)', padding: '20px 24px' }}>
+      <p style={{ margin: '0 0 16px', fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>교시 설정</p>
 
       {settingQuery.isLoading && (
-        <p style={{ margin: 0, fontSize: 13, color: '#888' }}>불러오는 중...</p>
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-muted)' }}>불러오는 중...</p>
       )}
       {settingFailed && (
-        <p style={{ margin: 0, fontSize: 13, color: '#d85a30' }}>설정을 불러오지 못했습니다.</p>
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--color-danger)' }}>설정을 불러오지 못했습니다. 새로고침 후 다시 확인하세요.</p>
       )}
 
       {!settingQuery.isLoading && !settingFailed && form && (
@@ -163,32 +163,37 @@ export default function SchoolSettingPanel() {
           </Field>
 
           {saveSetting.isError && (
-            <p style={{ margin: 0, fontSize: 12, color: '#d85a30' }}>설정 저장에 실패했습니다.</p>
+            <p style={{ margin: 0, fontSize: 12, color: 'var(--color-danger)' }}>설정 저장에 실패했습니다. 값을 확인한 뒤 다시 저장하세요.</p>
           )}
           {saveSetting.isSuccess && (
-            <p style={{ margin: 0, fontSize: 12, color: '#1d9e75' }}>설정을 저장했습니다.</p>
+            <p style={{ margin: 0, fontSize: 12, color: 'var(--color-success)' }}>설정을 저장했습니다.</p>
           )}
 
           <button
             type="button"
             onClick={handleSaveSetting}
             disabled={saveSetting.isPending}
-            style={{ ...buttonStyle, alignSelf: 'flex-start', background: saveSetting.isPending ? '#bfe3cd' : '#27a859' }}
+            style={{
+              ...buttonStyle,
+              alignSelf: 'flex-start',
+              background: saveSetting.isPending ? 'var(--color-border)' : 'var(--color-primary-500)',
+              color: saveSetting.isPending ? 'var(--color-text-muted)' : 'var(--color-surface)',
+            }}
           >
             {saveSetting.isPending ? '저장 중...' : '설정 저장'}
           </button>
         </div>
       )}
 
-      <p style={{ margin: '24px 0 12px', fontSize: 14, fontWeight: 600, color: '#2c2c2a' }}>교시 목록</p>
+      <p style={{ margin: '24px 0 12px', fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>교시 목록</p>
       {periodsQuery.isLoading && (
-        <p style={{ margin: 0, fontSize: 13, color: '#888' }}>교시를 불러오는 중...</p>
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-muted)' }}>교시를 불러오는 중...</p>
       )}
       {periodsQuery.isError && (
-        <p style={{ margin: 0, fontSize: 13, color: '#d85a30' }}>교시 목록을 불러오지 못했습니다.</p>
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--color-danger)' }}>교시 목록을 불러오지 못했습니다. 새로고침 후 다시 확인하세요.</p>
       )}
       {!periodsQuery.isLoading && !periodsQuery.isError && rows.length === 0 && (
-        <p style={{ margin: '0 0 12px', fontSize: 13, color: '#b4b2a9' }}>등록된 교시가 없습니다.</p>
+        <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--color-text-muted)' }}>등록된 교시가 없습니다. 아래에서 교시를 추가하세요.</p>
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -208,7 +213,7 @@ export default function SchoolSettingPanel() {
               }
               style={{ ...inputStyle, width: 72 }}
             />
-            <span style={{ fontSize: 13, color: '#888' }}>교시</span>
+            <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>교시</span>
             <input
               type="time"
               aria-label="시작 시각"
@@ -241,7 +246,7 @@ export default function SchoolSettingPanel() {
             <button
               type="button"
               onClick={() => deletePeriod.mutate(row.id)}
-              style={{ ...buttonStyle, background: '#fff', color: '#d85a30', border: '0.5px solid #d85a30' }}
+              style={{ ...buttonStyle, background: 'var(--color-surface)', color: 'var(--color-danger)', border: '1px solid var(--color-danger)' }}
             >
               삭제
             </button>
@@ -278,7 +283,7 @@ export default function SchoolSettingPanel() {
         </button>
       </div>
       {(addPeriod.isError || updatePeriod.isError || deletePeriod.isError) && (
-        <p style={{ margin: '10px 0 0', fontSize: 12, color: '#d85a30' }}>교시 저장에 실패했습니다.</p>
+        <p style={{ margin: '10px 0 0', fontSize: 12, color: 'var(--color-danger)' }}>교시 저장에 실패했습니다. 시간을 확인한 뒤 다시 저장하세요.</p>
       )}
     </div>
   )
@@ -287,7 +292,7 @@ export default function SchoolSettingPanel() {
 function Field({ label, children }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-      <label style={{ fontSize: 13, color: '#888', width: 120 }}>{label}</label>
+      <label style={{ fontSize: 13, color: 'var(--color-text-muted)', width: 120 }}>{label}</label>
       {children}
     </div>
   )

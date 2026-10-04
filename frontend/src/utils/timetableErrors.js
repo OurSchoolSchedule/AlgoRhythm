@@ -12,5 +12,5 @@ export function getTimetableErrorMessage(error) {
   if (status === 401) {
     return '로그인이 필요합니다. 다시 로그인해 주세요.'
   }
-  return '시간표를 불러오지 못했습니다.'
+  return '시간표를 불러오지 못했습니다. 새로고침 후 다시 확인하세요.'
 }

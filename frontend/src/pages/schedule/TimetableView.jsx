@@ -14,14 +14,14 @@ export default function TimetableView() {
 
   const tabStyle = (active) => ({
     padding: '10px 28px',
-    border: '0.5px solid #e8e6e0',
-    borderBottom: active ? '0.5px solid #fff' : '0.5px solid #e8e6e0',
-    background: active ? '#fff' : '#f1efe8',
-    color: active ? '#2c2c2a' : '#888',
+    border: '1px solid var(--color-border)',
+    borderBottom: active ? '1px solid var(--color-surface)' : '1px solid var(--color-border)',
+    background: active ? 'var(--color-surface)' : 'var(--color-border-light)',
+    color: active ? 'var(--color-text)' : 'var(--color-text-muted)',
     fontWeight: active ? 600 : 400,
     fontSize: 14,
     cursor: 'pointer',
-    borderRadius: active && tab === 'weekly' ? '8px 8px 0 0' : active ? '8px 8px 0 0' : '8px 8px 0 0',
+    borderRadius: '8px 8px 0 0',
     marginBottom: active ? -1 : 0,
     position: 'relative',
     zIndex: active ? 1 : 0,
@@ -36,7 +36,6 @@ export default function TimetableView() {
           lineHeight: '32px',
           fontWeight: 700,
           color: 'var(--color-text)',
-          letterSpacing: '-0.5px',
         }}
       >
         시간표
@@ -54,8 +53,8 @@ export default function TimetableView() {
 
         <div
           style={{
-            background: '#fff',
-            border: '0.5px solid #e8e6e0',
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
             borderRadius: '0 12px 12px 12px',
             padding: '28px 32px',
           }}
@@ -63,16 +62,16 @@ export default function TimetableView() {
           {tab === 'weekly' ? (
             <>
               {isLoading && (
-                <p style={{ margin: 0, fontSize: 13, color: '#888' }}>시간표 불러오는 중...</p>
+                <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-muted)' }}>시간표 불러오는 중...</p>
               )}
               {isError && !previewOnly && (
-                <p style={{ margin: 0, fontSize: 13, color: '#d85a30' }}>
+                <p style={{ margin: 0, fontSize: 13, color: 'var(--color-danger)' }}>
                   {getTimetableErrorMessage(error)}
                 </p>
               )}
               {!isLoading && (previewOnly || !isError) && timetable.weekClassCount === 0 && (
-                <p style={{ margin: 0, fontSize: 13, color: '#b4b2a9' }}>
-                  등록된 수업이 없습니다.
+                <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-muted)' }}>
+                  등록된 수업이 없습니다. 시간표를 만들면 여기에 표시됩니다.
                 </p>
               )}
               {!isLoading && !isError && timetable.weekClassCount > 0 && (

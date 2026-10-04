@@ -92,23 +92,23 @@ export default function NotificationActionCard({ notification, position, compact
     <div
       style={{
         marginTop: compact ? 8 : 10,
-        background: '#faeeda',
+        background: 'var(--color-warning-light)',
         borderRadius: 8,
         padding: compact ? '10px 12px' : '12px 14px',
       }}
     >
       {tag && (
-        <p style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 600, color: '#f09500' }}>
+        <p style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 600, color: 'var(--color-warning)' }}>
           {tag}
         </p>
       )}
       {!compact && (
-        <p style={{ margin: '0 0 8px', fontSize: 12, color: '#633806', lineHeight: 1.5 }}>
+        <p style={{ margin: '0 0 8px', fontSize: 12, color: 'var(--color-text)', lineHeight: 1.5 }}>
           {localizeNotificationMessage(notification.message)}
         </p>
       )}
       {notification.storeName && (
-        <p style={{ margin: '0 0 8px', fontSize: 11, color: '#888' }}>
+        <p style={{ margin: '0 0 8px', fontSize: 12, color: 'var(--color-text-muted)' }}>
           {DOMAIN.school}: {notification.storeName}
         </p>
       )}
@@ -119,7 +119,7 @@ export default function NotificationActionCard({ notification, position, compact
               type="button"
               disabled={pending}
               onClick={onApprove}
-              style={{ ...btnBase, border: 'none', background: '#27a859', color: '#fff' }}
+              style={{ ...btnBase, border: 'none', background: 'var(--color-primary-500)', color: 'var(--color-surface)' }}
             >
               승인
             </button>
@@ -129,9 +129,9 @@ export default function NotificationActionCard({ notification, position, compact
               onClick={onManagerReject}
               style={{
                 ...btnBase,
-                border: '0.5px solid #d3d1c7',
-                background: '#fff',
-                color: '#888',
+                border: '1px solid var(--color-border-input)',
+                background: 'var(--color-surface)',
+                color: 'var(--color-text-muted)',
               }}
             >
               거절
@@ -143,7 +143,7 @@ export default function NotificationActionCard({ notification, position, compact
               type="button"
               disabled={pending}
               onClick={onAccept}
-              style={{ ...btnBase, border: 'none', background: '#27a859', color: '#fff' }}
+              style={{ ...btnBase, border: 'none', background: 'var(--color-primary-500)', color: 'var(--color-surface)' }}
             >
               수락
             </button>
@@ -153,9 +153,9 @@ export default function NotificationActionCard({ notification, position, compact
               onClick={onReject}
               style={{
                 ...btnBase,
-                border: '0.5px solid #d3d1c7',
-                background: '#fff',
-                color: '#888',
+                border: '1px solid var(--color-border-input)',
+                background: 'var(--color-surface)',
+                color: 'var(--color-text-muted)',
               }}
             >
               거절
@@ -164,7 +164,7 @@ export default function NotificationActionCard({ notification, position, compact
         )}
       </div>
       {err && (
-        <p style={{ margin: '8px 0 0', fontSize: 11, color: '#d85a30' }}>
+        <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--color-danger)' }}>
           처리에 실패했습니다. 다시 시도해 주세요.
         </p>
       )}

@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 
-function UserIcon({ size = 20, dark = false }) {
+function UserIcon({ dark = false }) {
   return (
     <div
       style={{
-        width: size,
-        height: size,
-        borderRadius: '50%',
-        background: dark ? '#2c2c2a' : '#e8e6e0',
+        width: 20,
+        height: 20,
+        borderRadius: 'var(--radius-sm)',
+        background: dark ? 'var(--color-text)' : 'var(--color-border)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -15,10 +15,10 @@ function UserIcon({ size = 20, dark = false }) {
       }}
     >
       <svg
-        width={size * 0.55}
-        height={size * 0.55}
+        width="16"
+        height="16"
         viewBox="0 0 24 24"
-        fill={dark ? '#fff' : '#888'}
+        fill={dark ? 'var(--color-surface)' : 'var(--color-text-muted)'}
       >
         <circle cx="12" cy="8" r="4" />
         <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
@@ -92,14 +92,14 @@ export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onL
         aria-pressed={alarmOpen}
         onClick={onAlarmToggle}
         style={{
-          background: alarmOpen ? '#e8f7ee' : 'none',
+          background: alarmOpen ? 'var(--color-primary-50)' : 'none',
           border: 'none',
           cursor: 'pointer',
           padding: 6,
           borderRadius: 8,
           display: 'flex',
           alignItems: 'center',
-          color: alarmOpen ? '#27a859' : '#444',
+          color: alarmOpen ? 'var(--color-primary-500)' : 'var(--color-text-secondary)',
         }}
       >
         <BellIcon />
@@ -120,8 +120,8 @@ export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onL
           padding: 0,
         }}
       >
-        <UserIcon size={28} />
-        <span style={{ fontSize: 14, color: '#2c2c2a', fontWeight: 500 }}>
+        <UserIcon />
+        <span style={{ fontSize: 14, color: 'var(--color-text)', fontWeight: 500 }}>
           {profile.label}
         </span>
       </button>
@@ -135,10 +135,10 @@ export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onL
             top: 'calc(100% + 12px)',
             right: 0,
             width: 280,
-            background: '#fff',
-            border: '0.5px solid #e8e6e0',
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
             borderRadius: 12,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            boxShadow: 'var(--shadow-md)',
             zIndex: 60,
             overflow: 'hidden',
           }}
@@ -152,35 +152,35 @@ export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onL
               textAlign: 'center',
             }}
           >
-            <UserIcon size={56} dark />
+            <UserIcon dark />
             <p
               style={{
                 margin: '14px 0 16px',
-                fontSize: 15,
+                fontSize: 14,
                 fontWeight: 600,
-                color: '#2c2c2a',
+                color: 'var(--color-text)',
               }}
             >
               {profile.name}
             </p>
-            <p style={{ margin: '0 0 6px', fontSize: 13, color: '#5f5e5a', lineHeight: 1.5 }}>
+            <p style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--color-text-subtle)', lineHeight: 1.5 }}>
               담당 과목 | {profile.subjects}
             </p>
-            <p style={{ margin: 0, fontSize: 13, color: '#5f5e5a', lineHeight: 1.5 }}>
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-subtle)', lineHeight: 1.5 }}>
               담당 학급 | {profile.homeroom}
             </p>
           </div>
 
-          <div style={{ borderTop: '0.5px solid #e8e6e0', padding: '16px 24px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ borderTop: '1px solid var(--color-border)', padding: '16px 24px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
             <button
               type="button"
               style={{
                 width: '100%',
                 padding: '10px 0',
                 borderRadius: 8,
-                border: '0.5px solid #d3d1c7',
-                background: '#fff',
-                color: '#2c2c2a',
+                border: '1px solid var(--color-border-input)',
+                background: 'var(--color-surface)',
+                color: 'var(--color-text)',
                 fontSize: 14,
                 fontWeight: 500,
                 cursor: 'pointer',
@@ -199,9 +199,9 @@ export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onL
                   width: '100%',
                   padding: '10px 0',
                   borderRadius: 8,
-                  border: '0.5px solid #e3b9a8',
-                  background: '#fff',
-                  color: '#d85a30',
+                  border: '1px solid var(--color-danger)',
+                  background: 'var(--color-surface)',
+                  color: 'var(--color-danger)',
                   fontSize: 14,
                   fontWeight: 500,
                   cursor: 'pointer',
