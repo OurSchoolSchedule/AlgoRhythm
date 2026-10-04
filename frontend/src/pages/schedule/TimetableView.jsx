@@ -29,17 +29,7 @@ export default function TimetableView() {
 
   return (
     <div>
-      <h1
-        style={{
-          margin: '0 0 24px',
-          fontSize: 'var(--font-display)',
-          lineHeight: '32px',
-          fontWeight: 700,
-          color: 'var(--color-text)',
-        }}
-      >
-        시간표
-      </h1>
+      <h1 className="sr-only">시간표</h1>
 
       <div>
         <div style={{ display: 'flex', gap: 4, paddingLeft: 4 }}>

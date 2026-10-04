@@ -1,15 +1,159 @@
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useStoreStaffSummary } from "@/hooks";
 import SchoolSettingPanel from "@/components/schedule/SchoolSettingPanel.jsx";
+import {
+  HISTORY_PAGE_SIZE,
+  HISTORY_TYPES,
+  countByType,
+  countPending,
+  emptyMonthMessage,
+  filterHistory,
+  formatGroupDate,
+  formatInlineDate,
+  formatMonthTitle,
+  groupHistoryByDate,
+  monthsWithData,
+  recordsInMonth,
+  shiftMonth,
+  usesInlineDates,
+} from "@/utils/historyList.js";
 
 const historyData = [
-  { id: 1, date: "2026.05.28", type: "보결", detail: "3교시 · 2-3반 · 수학 → 김민지 선생님 보결 처리", status: "완료" },
-  { id: 2, date: "2026.05.27", type: "변경", detail: "6교시 1-4반 장소: 본관 3층 → 시청각실", status: "완료" },
-  { id: 3, date: "2026.05.26", type: "생성", detail: "2026년 1학기 시간표 최종 확정 (대안 A 선택)", status: "완료" },
-  { id: 4, date: "2026.05.23", type: "보결", detail: "5교시 · 3-1반 · 영어 → 이철수 선생님 보결", status: "완료" },
-  { id: 5, date: "2026.05.20", type: "수정", detail: "2-2반 월요일 2교시 수업 시간 조정", status: "완료" },
-  { id: 6, date: "2026.05.15", type: "교환", detail: "박지은 ↔ 최영호 화요일 3교시 시프트 교환", status: "완료" },
-  { id: 7, date: "2026.05.10", type: "보결", detail: "1교시 · 1-2반 · 수학 → 신청자 없음", status: "미처리" },
+  {
+    id: 1,
+    date: "2026-05-28",
+    type: "보결",
+    status: "완료",
+    title: "3교시 · 2-3반 · 수학",
+    before: "박철수 선생님",
+    after: "김민지 선생님 보결 처리",
+    actor: "김OO",
+    time: "14:20",
+    search: "김민지 박철수 2-3반 수학",
+    requester: { name: "박철수", at: "09:10" },
+    acceptor: { name: "김민지", at: "11:02" },
+    approver: { name: "관리자", at: "14:20" },
+  },
+  {
+    id: 2,
+    date: "2026-05-28",
+    type: "보결",
+    status: "완료",
+    title: "5교시 · 3-1반 · 영어",
+    before: "최영호 선생님",
+    after: "이철수 선생님 보결",
+    actor: "최OO",
+    time: "09:30",
+    search: "이철수 최영호 3-1반 영어",
+    requester: { name: "최영호", at: "08:40" },
+    acceptor: { name: "이철수", at: "09:05" },
+    approver: { name: "관리자", at: "09:30" },
+  },
+  {
+    id: 3,
+    date: "2026-05-27",
+    type: "변경",
+    status: "완료",
+    title: "6교시 · 1-4반",
+    before: "본관 3층",
+    after: "시청각실",
+    actor: "이OO",
+    time: "10:05",
+    search: "1-4반 본관 시청각실",
+    requester: { name: "이OO", at: "09:50" },
+    acceptor: null,
+    approver: { name: "관리자", at: "10:05" },
+  },
+  {
+    id: 4,
+    date: "2026-05-26",
+    type: "생성",
+    status: "완료",
+    title: "2026년 1학기 시간표",
+    before: "",
+    after: "최종 확정 (대안 A 선택)",
+    actor: "관리자",
+    time: "16:40",
+    search: "시간표 1학기",
+    requester: { name: "관리자", at: "15:00" },
+    acceptor: null,
+    approver: { name: "관리자", at: "16:40" },
+  },
+  {
+    id: 5,
+    date: "2026-05-20",
+    type: "수정",
+    status: "취소됨",
+    title: "2-2반 · 월요일 2교시",
+    before: "09:30",
+    after: "수업 시간 조정",
+    actor: "박OO",
+    time: "13:15",
+    search: "2-2반 박OO",
+    requester: { name: "박OO", at: "12:10" },
+    acceptor: null,
+    approver: { name: "관리자", at: "13:15" },
+  },
+  {
+    id: 6,
+    date: "2026-05-15",
+    type: "교환",
+    status: "대기 중",
+    title: "화요일 3교시",
+    before: "박지은",
+    after: "최영호",
+    actor: "박OO",
+    time: "11:48",
+    search: "박지은 최영호 화요일",
+    requester: { name: "박지은", at: "11:20" },
+    acceptor: { name: "최영호", at: "11:40" },
+    approver: null,
+  },
+  {
+    id: 7,
+    date: "2026-05-10",
+    type: "보결",
+    status: "미처리",
+    title: "1교시 · 1-2반 · 수학",
+    before: "김민지 선생님",
+    after: "신청자 없음",
+    actor: "",
+    time: "08:10",
+    search: "김민지 1-2반 수학",
+    requester: { name: "김민지", at: "08:10" },
+    acceptor: null,
+    approver: null,
+  },
+  {
+    id: 8,
+    date: "2026-04-12",
+    type: "보결",
+    status: "완료",
+    title: "2교시 · 2-1반 · 과학",
+    before: "이수진 선생님",
+    after: "김민지 선생님 보결 처리",
+    actor: "김OO",
+    time: "15:00",
+    search: "김민지 이수진 2-1반 과학",
+    requester: { name: "이수진", at: "10:00" },
+    acceptor: { name: "김민지", at: "14:10" },
+    approver: { name: "관리자", at: "15:00" },
+  },
+  {
+    id: 9,
+    date: "2026-04-03",
+    type: "변경",
+    status: "완료",
+    title: "4교시 · 1-1반",
+    before: "음악실",
+    after: "본관 2층",
+    actor: "최OO",
+    time: "09:00",
+    search: "1-1반 음악실",
+    requester: { name: "최OO", at: "08:30" },
+    acceptor: null,
+    approver: { name: "관리자", at: "09:00" },
+  },
 ];
 
 const typeColor = {
@@ -27,58 +171,288 @@ const typeBg = {
   교환: "var(--color-surface-hover)",
 };
 
-export function HistoryView({ navigate }) {
-  const [filter, setFilter] = useState("전체");
-  const types = ["전체", "보결", "변경", "생성", "수정", "교환"];
-  const filtered = filter === "전체" ? historyData : historyData.filter(h => h.type === filter);
+const STATUS_BADGE = {
+  미처리: { color: "var(--color-danger)", background: "var(--color-danger-light)" },
+  "대기 중": { color: "var(--color-warning)", background: "var(--color-warning-light)" },
+  취소됨: { color: "var(--color-text-muted)", background: "var(--color-surface-hover)" },
+};
+
+function SearchIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M20 20l-3.5-3.5" />
+    </svg>
+  );
+}
+
+function personLine(person) {
+  return person ? `${person.name} · ${person.at}` : "없음";
+}
+
+function HistoryDetail({ record, onClose }) {
+  const titleId = useId();
+  const closeRef = useRef(null);
+
+  useEffect(() => {
+    closeRef.current?.focus();
+    const onKey = (event) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   return (
-    <div>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-        <button onClick={() => navigate("home")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-muted)", fontSize: 13, padding: 0 }}>← 뒤로</button>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--color-text)" }}>내역</h1>
-      </div>
-
-      <div style={{ background: "var(--color-surface)", borderRadius: 12, border: "1px solid var(--color-border)", padding: "20px 24px" }}>
-        <div style={{ display: "flex", gap: 6, marginBottom: 18, flexWrap: "wrap" }}>
-          {types.map(t => (
-            <button key={t} onClick={() => setFilter(t)} style={{
-              padding: "5px 14px", borderRadius: 8, border: "1px solid", fontSize: 13, cursor: "pointer",
-              background: filter === t ? "var(--color-primary-button)" : "transparent",
-              borderColor: filter === t ? "var(--color-primary-button)" : "var(--color-border-input)",
-              color: filter === t ? "var(--color-on-primary)" : "var(--color-text-subtle)",
-            }}>{t}</button>
-          ))}
+    <>
+      <button type="button" className="history-scrim" aria-label="상세 닫기" onClick={onClose} />
+      <aside className="history-detail" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+        <div className="history-detail-head">
+          <span className="day-badge" style={{ background: typeBg[record.type], color: typeColor[record.type] }}>{record.type}</span>
+          <button ref={closeRef} type="button" className="panel-close" onClick={onClose}>닫기</button>
         </div>
+        <h2 id={titleId}>{record.title}</h2>
+        <p className="history-detail-change">
+          {record.before ? <s>{record.before}</s> : <span className="is-muted">없음</span>}
+          <span> → {record.after || "없음"}</span>
+        </p>
+        <dl>
+          <div>
+            <dt>요청자</dt>
+            <dd>{personLine(record.requester)}</dd>
+          </div>
+          <div>
+            <dt>수락자</dt>
+            <dd>{personLine(record.acceptor)}</dd>
+          </div>
+          <div>
+            <dt>승인자</dt>
+            <dd>{personLine(record.approver)}</dd>
+          </div>
+        </dl>
+      </aside>
+    </>
+  );
+}
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-          {filtered.map((h, i) => (
-            <div key={h.id} style={{
-              display: "flex", alignItems: "center", gap: 14,
-              padding: "12px 0", borderBottom: i < filtered.length - 1 ? "1px solid var(--color-border-light)" : "none",
-            }}>
-              <span style={{ fontSize: 12, color: "var(--color-text-muted)", flexShrink: 0, width: 80 }}>{h.date}</span>
-              <span style={{
-                fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 6, flexShrink: 0,
-                background: typeBg[h.type] || "var(--color-border-light)", color: typeColor[h.type] || "var(--color-text-muted)",
-              }}>{h.type}</span>
-              <span style={{ flex: 1, fontSize: 13, color: "var(--color-text)" }}>{h.detail}</span>
-              <span style={{
-                fontSize: 12,
-                fontWeight: 600,
-                padding: "2px 8px",
-                borderRadius: 6,
-                flexShrink: 0,
-                background: h.status === "완료" ? "var(--color-success-light)" : "var(--color-danger-light)",
-                color: h.status === "완료" ? "var(--color-success)" : "var(--color-danger)",
-              }}>
-                {h.status}
-              </span>
+export function HistoryView() {
+  const months = monthsWithData(historyData);
+  const [month, setMonth] = useState(months[0] ?? "");
+  const [monthOpen, setMonthOpen] = useState(false);
+  const [type, setType] = useState("전체");
+  const [query, setQuery] = useState("");
+  const [pendingOnly, setPendingOnly] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(HISTORY_PAGE_SIZE);
+  const [selectedId, setSelectedId] = useState(null);
+  const monthRef = useRef(null);
+
+  const monthItems = recordsInMonth(historyData, month);
+  const counts = countByType(monthItems);
+  const pending = countPending(monthItems);
+  const filtered = filterHistory(monthItems, { type, query, pendingOnly });
+  const visible = filtered.slice(0, visibleCount);
+  const inlineDates = usesInlineDates(visible);
+  const groups = inlineDates ? [] : groupHistoryByDate(visible);
+  const reserveDate = !inlineDates && groups.some((group) => group.items.length === 1);
+  const selected = historyData.find((record) => record.id === selectedId) ?? null;
+  const narrowed = type !== "전체" || query.trim() !== "" || pendingOnly;
+
+  useEffect(() => {
+    if (!monthOpen) return undefined;
+    const onPointer = (event) => {
+      if (monthRef.current && !monthRef.current.contains(event.target)) setMonthOpen(false);
+    };
+    document.addEventListener("mousedown", onPointer);
+    return () => document.removeEventListener("mousedown", onPointer);
+  }, [monthOpen]);
+
+  const resetFilters = () => {
+    setType("전체");
+    setQuery("");
+    setPendingOnly(false);
+    setVisibleCount(HISTORY_PAGE_SIZE);
+  };
+
+  const changeMonth = (next) => {
+    setMonth(next);
+    setMonthOpen(false);
+    setVisibleCount(HISTORY_PAGE_SIZE);
+    setSelectedId(null);
+  };
+
+  const openRecord = (id) => setSelectedId(id);
+
+  const renderRow = (record, showDate) => {
+    const status = STATUS_BADGE[record.status];
+    return (
+      <div
+        key={record.id}
+        className={`history-row${record.status === "미처리" ? " is-pending" : ""}`}
+        role="button"
+        tabIndex={0}
+        onClick={() => openRecord(record.id)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openRecord(record.id);
+          }
+        }}
+      >
+        {(showDate || reserveDate) && (
+          <span className="history-date">{showDate ? formatInlineDate(record.date) : ""}</span>
+        )}
+        <span className="day-badge" style={{ background: typeBg[record.type], color: typeColor[record.type] }}>{record.type}</span>
+        <div className="history-main">
+          <div className="history-line1">
+            <span className="history-title">{record.title}</span>
+            {status && (
+              <span className="day-badge" style={{ color: status.color, background: status.background }}>{record.status}</span>
+            )}
+          </div>
+          <p className="history-line2">
+            {record.before && <s>{record.before}</s>}
+            {record.after && <span> → {record.after}</span>}
+            {record.time && <span className="history-time-mobile"> · {record.time}</span>}
+          </p>
+        </div>
+        <div className="history-side">
+          {(record.actor || record.time) && (
+            <span className="history-actor">{[record.actor, record.time].filter(Boolean).join(" · ")}</span>
+          )}
+          {record.status === "미처리" && (
+            <button
+              type="button"
+              className="history-link"
+              onClick={(event) => {
+                event.stopPropagation();
+                openRecord(record.id);
+              }}
+            >
+              처리하기
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="history-page">
+      <h1 className="sr-only">내역</h1>
+      <div className="history-head">
+        <div className="history-month" ref={monthRef}>
+          <button type="button" aria-label="이전 월" onClick={() => changeMonth(shiftMonth(month, -1))}>‹</button>
+          <button
+            type="button"
+            className="history-month-label"
+            aria-expanded={monthOpen}
+            aria-haspopup="listbox"
+            onClick={() => setMonthOpen((open) => !open)}
+          >
+            {month ? formatMonthTitle(month) : "월 선택"} ▾
+          </button>
+          <button type="button" aria-label="다음 월" onClick={() => changeMonth(shiftMonth(month, 1))}>›</button>
+          {monthOpen && (
+            <div className="dropdown-panel dropdown-panel-top" role="listbox" aria-label="월 선택">
+              {months.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  role="option"
+                  aria-selected={item === month}
+                  className="menu-item"
+                  onClick={() => changeMonth(item)}
+                >
+                  {formatMonthTitle(item)}
+                </button>
+              ))}
             </div>
-          ))}
+          )}
         </div>
-        <p style={{ margin: "12px 0 0", fontSize: 12, color: "var(--color-text-muted)" }}>{filtered.length}개 항목</p>
+        <label className="history-search">
+          <SearchIcon />
+          <input
+            type="search"
+            value={query}
+            placeholder="교사·학급·과목 검색"
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setVisibleCount(HISTORY_PAGE_SIZE);
+            }}
+          />
+        </label>
       </div>
+
+      <p className="history-summary">
+        변동 <strong>{monthItems.length}</strong>건
+        <span aria-hidden="true"> · </span>
+        {pending > 0 ? (
+          <>
+            미처리 <strong className="is-danger">{pending}</strong>건
+            <button type="button" className="history-link" onClick={() => setPendingOnly(true)}>미처리만 보기</button>
+          </>
+        ) : (
+          <span className="is-muted">미처리 없음</span>
+        )}
+      </p>
+
+      {monthItems.length === 0 ? (
+        <p className="history-empty">{month ? emptyMonthMessage(month) : "변동 내역이 없습니다"}</p>
+      ) : (
+        <>
+          <div className="history-tabs" role="tablist" aria-label="내역 종류">
+            {HISTORY_TYPES.map((item) => (
+              <button
+                key={item}
+                type="button"
+                role="tab"
+                aria-selected={type === item}
+                className={counts[item] === 0 ? "is-zero" : undefined}
+                onClick={() => {
+                  setType(item);
+                  setVisibleCount(HISTORY_PAGE_SIZE);
+                }}
+              >
+                {item}
+                <span>{counts[item]}</span>
+              </button>
+            ))}
+          </div>
+
+          {filtered.length === 0 ? (
+            <p className="history-empty">
+              조건에 맞는 내역이 없습니다
+              {narrowed && (
+                <button type="button" className="history-link" onClick={resetFilters}>필터 초기화</button>
+              )}
+            </p>
+          ) : (
+            <div className="history-list">
+              {inlineDates
+                ? visible.map((record) => renderRow(record, true))
+                : groups.flatMap((group) => {
+                  const repeated = group.items.length > 1
+                  return [
+                    repeated ? <h2 key={`${group.date}-day`} className="history-day">{formatGroupDate(group.date)}</h2> : null,
+                    ...group.items.map((record) => renderRow(record, !repeated)),
+                  ]
+                })}
+            </div>
+          )}
+
+          {filtered.length > visibleCount && (
+            <button
+              type="button"
+              className="history-more"
+              onClick={() => setVisibleCount((count) => count + HISTORY_PAGE_SIZE)}
+            >
+              더 보기
+            </button>
+          )}
+        </>
+      )}
+
+      {selected && <HistoryDetail record={selected} onClose={() => setSelectedId(null)} />}
     </div>
   );
 }
