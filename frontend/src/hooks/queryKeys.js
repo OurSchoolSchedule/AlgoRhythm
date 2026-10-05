@@ -31,6 +31,9 @@ export const queryKeys = {
     me: () => ['availability', 'me'],
     store: (storeId) => ['availability', 'store', storeId],
   },
+  unavailability: {
+    me: () => ['unavailability', 'me'],
+  },
   schedule: {
     submissionStatus: () => ['schedule', 'without-availability'],
     candidates: (key) => ['schedule', 'candidates', key],

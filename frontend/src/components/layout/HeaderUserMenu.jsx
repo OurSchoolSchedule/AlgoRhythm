@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { useNotifications } from '@/hooks'
+import UnavailabilityDialog from '@/components/schedule/UnavailabilityDialog.jsx'
 import { getStoredTheme, setThemePreference } from '@/theme'
 
 const THEME_OPTIONS = [
@@ -134,6 +135,7 @@ function moveMenuFocus(menu, direction) {
 
 export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onLogout }) {
   const [profileOpen, setProfileOpen] = useState(false)
+  const [unavailabilityOpen, setUnavailabilityOpen] = useState(false)
   const [themePreference, setThemeChoice] = useState(() => getStoredTheme())
   const menuRef = useRef(null)
   const triggerRef = useRef(null)
@@ -278,7 +280,15 @@ export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onL
 
           <div style={{ height: 1, background: 'var(--color-border)', margin: '8px 0' }} />
 
-          <button type="button" role="menuitem" className="menu-item">
+          <button
+            type="button"
+            role="menuitem"
+            className="menu-item"
+            onClick={() => {
+              setProfileOpen(false)
+              setUnavailabilityOpen(true)
+            }}
+          >
             시간대 선호도 제출
           </button>
 
@@ -297,6 +307,9 @@ export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onL
             </button>
           )}
         </div>
+      )}
+      {unavailabilityOpen && (
+        <UnavailabilityDialog onClose={() => setUnavailabilityOpen(false)} />
       )}
     </div>
   )
