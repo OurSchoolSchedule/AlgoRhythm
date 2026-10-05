@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { useNotifications } from '@/hooks'
+import { useNotifications, useOwnerProfile, useStaffProfile, useStoreStaffSummary } from '@/hooks'
 import UnavailabilityDialog from '@/components/schedule/UnavailabilityDialog.jsx'
 import { getStoredTheme, setThemePreference } from '@/theme'
 
@@ -105,20 +105,18 @@ function BellIcon() {
 }
 
 const PROFILE = {
-  admin: {
-    label: '관리자',
-    name: '관리자',
-    initial: '관',
-    subjects: '전체 과목 관리',
-    homeroom: '없음',
-  },
-  worker: {
-    label: '김민지 선생님',
-    name: '김민지 선생님',
-    initial: '김',
-    subjects: '국어',
-    homeroom: '2-3',
-  },
+  admin: { label: '관리자', initial: '관' },
+  worker: { label: '교사', initial: '교' },
+}
+
+function formatHomeroom(classes) {
+  if (!classes?.length) return '없음'
+  return classes.map((item) => `${item.grade}-${item.classNumber}`).join(', ')
+}
+
+function formatSubjects(subjects) {
+  if (!subjects?.length) return '없음'
+  return subjects.map((item) => item.subjectName).filter(Boolean).join(', ') || '없음'
 }
 
 function moveMenuFocus(menu, direction) {
@@ -142,6 +140,26 @@ export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onL
   const panelRef = useRef(null)
   const menuId = useId()
   const profile = PROFILE[userRole] ?? PROFILE.worker
+  const isAdmin = userRole === 'admin'
+  const ownerProfile = useOwnerProfile({ enabled: isAdmin })
+  const staffProfile = useStaffProfile({ enabled: !isAdmin })
+  const teachers = useStoreStaffSummary()
+  const me = isAdmin ? ownerProfile.data : staffProfile.data
+  const assignment = teachers.data?.staffList?.find((teacher) => teacher.userId != null && teacher.userId === me?.userId)
+  const profileQuery = isAdmin ? ownerProfile : staffProfile
+  const profileLoading = teachers.isLoading || profileQuery.isLoading
+  const profileFailed = teachers.isError || profileQuery.isError
+  const subjectLabel = profileLoading
+    ? '불러오는 중...'
+    : profileFailed
+      ? '불러오지 못했습니다'
+      : formatSubjects(assignment?.subjects)
+  const homeroomLabel = profileLoading
+    ? '불러오는 중...'
+    : profileFailed
+      ? '불러오지 못했습니다'
+      : formatHomeroom(assignment?.homeroomClasses)
+  const displayName = me?.username || profile.label
   const { data: notifications = [] } = useNotifications()
   const hasUnread = notifications.some((item) => item?.isRead === false)
 
@@ -268,13 +286,13 @@ export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onL
         >
           <div style={{ padding: '12px 12px 8px' }}>
             <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>
-              {profile.name}
+              {displayName}
             </p>
             <p style={{ margin: '0 0 4px', fontSize: 13, color: 'var(--color-text-subtle)', lineHeight: 1.5 }}>
-              담당 과목 | {profile.subjects}
+              담당 과목 | {subjectLabel}
             </p>
             <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-subtle)', lineHeight: 1.5 }}>
-              담당 학급 | {profile.homeroom}
+              담당 학급 | {homeroomLabel}
             </p>
           </div>
 

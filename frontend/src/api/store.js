@@ -26,6 +26,7 @@ export async function getStoreStaffSummary() {
     totalStaffCount: teachers.length,
     staffList: teachers.map((teacher) => ({
       userStoreId: teacher.schoolUserId,
+      userId: teacher.userId,
       username: teacher.username,
       role: teacher.position,
       employmentStatus: teacher.employmentStatus,

@@ -11,6 +11,7 @@
 /**
  * @typedef {Object} StaffSummaryDto
  * @property {number} userStoreId
+ * @property {number} [userId]
  * @property {string} username
  * @property {string} profileImageUrl
  * @property {string} role
