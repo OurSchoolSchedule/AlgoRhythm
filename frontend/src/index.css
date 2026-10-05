@@ -1871,6 +1871,12 @@ body {
   flex-wrap: wrap;
 }
 
+.tt-reject {
+  margin: 0 0 8px;
+  font-size: var(--font-caption);
+  color: var(--color-warning);
+}
+
 .tt-savebar {
   position: fixed;
   left: 0;

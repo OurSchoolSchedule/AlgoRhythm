@@ -1,5 +1,13 @@
 import { TIMETABLE_DAYS } from '@/constants/schoolTimetable.js'
 
+const KEY_TO_API_DAY = {
+  월: 'MON',
+  화: 'TUE',
+  수: 'WED',
+  목: 'THU',
+  금: 'FRI',
+}
+
 const STATUS_KIND = {
   '대타 대기': 'wait',
   대기: 'wait',
@@ -68,6 +76,49 @@ export function dropRejection(byDay, from, to, holiday = '') {
     return '이 교시에 같은 교사 수업이 있습니다'
   }
   return ''
+}
+
+/**
+ * 옮긴 칸만 PATCH 본문으로 만든다.
+ * 도착 교시의 periodSettingId는 같은 교시 번호의 기존 칸에서 가져온다.
+ * @param {Record<string, Record<number, object | null>>} originalByDay
+ * @param {Record<string, Record<number, object | null>>} movedByDay
+ * @returns {{ error: string, patches: { timetableId: number, payload: object }[] }}
+ */
+export function changedTimetablePatches(originalByDay, movedByDay) {
+  const periodSettingByNumber = new Map()
+  const originalPlace = new Map()
+  for (const day of TIMETABLE_DAYS) {
+    for (const [period, cell] of Object.entries(originalByDay?.[day] || {})) {
+      if (!cell?.id) continue
+      const periodNumber = Number(period)
+      originalPlace.set(cell.id, { day, period: periodNumber })
+      if (cell.periodSettingId != null) periodSettingByNumber.set(periodNumber, cell.periodSettingId)
+    }
+  }
+
+  const patches = []
+  for (const day of TIMETABLE_DAYS) {
+    for (const [period, cell] of Object.entries(movedByDay?.[day] || {})) {
+      if (!cell?.id) continue
+      const periodNumber = Number(period)
+      const before = originalPlace.get(cell.id)
+      if (!before || (before.day === day && before.period === periodNumber)) continue
+      const dayOfWeek = KEY_TO_API_DAY[day]
+      const periodSettingId = periodSettingByNumber.get(periodNumber)
+      if (!dayOfWeek || periodSettingId == null) {
+        return { error: '옮긴 칸에 저장할 교시 번호가 없습니다.', patches: [] }
+      }
+      const payload = { periodSettingId, dayOfWeek }
+      if (cell.academicYear != null) payload.academicYear = cell.academicYear
+      if (cell.semester != null) payload.semester = cell.semester
+      if (cell.schoolClassId != null) payload.schoolClassId = cell.schoolClassId
+      if (cell.subjectId != null) payload.subjectId = cell.subjectId
+      if (cell.teacherId != null) payload.teacherSchoolUserId = cell.teacherId
+      patches.push({ timetableId: cell.id, payload })
+    }
+  }
+  return { error: '', patches }
 }
 
 /**

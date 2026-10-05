@@ -85,6 +85,12 @@ export function entryToTimetableCell(entry) {
     location: entry.location || entry.roomName || '',
     status: entry.status || '',
     previousTeacher: entry.previousTeacherName || '',
+    academicYear: entry.academicYear,
+    semester: entry.semester,
+    schoolClassId: entry.schoolClassId,
+    periodSettingId: entry.periodSettingId,
+    subjectId: entry.subjectId,
+    teacherId: entry.teacherId,
   }
 }
 

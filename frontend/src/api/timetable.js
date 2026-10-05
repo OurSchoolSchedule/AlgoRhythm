@@ -17,3 +17,13 @@ export async function getSchoolTimetable() {
   const { data } = await client.get('/api/timetable')
   return Array.isArray(data) ? data : []
 }
+
+/**
+ * 시간표 칸 수정 (PATCH /api/timetable/{timetableId}).
+ * @param {number} timetableId
+ * @param {import('@/types/timetable.js').TimetableCreateDto} payload
+ */
+export async function updateTimetable(timetableId, payload) {
+  const { data } = await client.patch(`/api/timetable/${timetableId}`, payload)
+  return data
+}

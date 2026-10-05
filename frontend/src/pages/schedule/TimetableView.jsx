@@ -4,7 +4,7 @@ import CreateShiftSwapForm from '@/components/schedule/CreateShiftSwapForm.jsx'
 import CreateSubstituteForm from '@/components/schedule/CreateSubstituteForm.jsx'
 import WeeklyTimetableGrid from '@/components/schedule/WeeklyTimetableGrid.jsx'
 import { SCHOOL_PERIOD_SLOTS, TIMETABLE_DAYS } from '@/constants/schoolTimetable.js'
-import { useSchoolTimetable } from '@/hooks'
+import { useSchoolTimetable, useUpdateTimetable } from '@/hooks'
 import { formatClassName, formatClock } from '@/utils/homeFocus.js'
 import { toISODate } from '@/utils'
 import {
@@ -18,11 +18,13 @@ import {
   startOfSchoolWeek,
   weekBreakLabel,
 } from '@/utils/schoolWeek.js'
+import { getApiErrorMessage } from '@/utils/timetableGeneration.js'
 import {
   STATUS_BADGE,
   applyCellMoves,
   cellSlotKey,
   cellStatusKind,
+  changedTimetablePatches,
   dropRejection,
 } from '@/utils/timetableBoard.js'
 
@@ -73,8 +75,10 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [pickerQuery, setPickerQuery] = useState('')
   const [moreOpen, setMoreOpen] = useState(false)
-  const editing = false
+  const [editing, setEditing] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const [moves, setMoves] = useState([])
+  const updateTimetable = useUpdateTimetable()
   const [selected, setSelected] = useState(null)
   const [requestMode, setRequestMode] = useState('')
   const [dragFrom, setDragFrom] = useState(null)
@@ -165,6 +169,40 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
     requestLeave(() => navigate?.('schedule-create'))
   }
 
+  const toggleEditing = () => {
+    if (editing) {
+      requestLeave(() => {
+        setEditing(false)
+        setSaveError('')
+      })
+      return
+    }
+    setEditing(true)
+    setSaveError('')
+  }
+
+  const saveMoves = async () => {
+    const moved = applyCellMoves(source.byDay, moves)
+    const result = changedTimetablePatches(source.byDay, moved)
+    if (result.error) {
+      setSaveError(result.error)
+      return
+    }
+    if (result.patches.length === 0) {
+      setMoves([])
+      setEditing(false)
+      return
+    }
+    try {
+      await updateTimetable.mutateAsync(result.patches)
+      setMoves([])
+      setEditing(false)
+      setSaveError('')
+    } catch (error) {
+      setSaveError(getApiErrorMessage(error, '시간표를 저장하지 못했습니다.'))
+    }
+  }
+
   const emptyCopy = isAdmin
     ? '아직 등록된 시간표가 없습니다'
     : '시간표가 확정되면 알림으로 알려드립니다'
@@ -248,6 +286,14 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
               )}
             </div>
 
+            <button
+              type="button"
+              className="tt-text"
+              aria-pressed={editing}
+              onClick={toggleEditing}
+            >
+              수정
+            </button>
             <button type="button" className="tt-create" onClick={openCreate}>시간표 생성</button>
 
             <div className="tt-more" ref={moreRef}>
@@ -293,6 +339,8 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
               {emptyCopy}
             </div>
           )}
+
+          {editing && hoverReason && <p className="tt-reject">{hoverReason}</p>}
 
           <WeeklyTimetableGrid
             timetable={shown}
@@ -394,6 +442,18 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
             ) : null}
           </aside>
         </>
+      )}
+
+      {editing && moves.length > 0 && (
+        <div className="tt-savebar">
+          <span>{saveError || `${moves.length}칸을 옮겼습니다`}</span>
+          <div>
+            <button type="button" className="tt-secondary" onClick={() => { setMoves([]); setSaveError('') }}>되돌리기</button>
+            <button type="button" className="tt-create" disabled={updateTimetable.isPending} onClick={saveMoves}>
+              {updateTimetable.isPending ? '저장 중...' : '저장'}
+            </button>
+          </div>
+        </div>
       )}
 
       {confirmLeave && (

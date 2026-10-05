@@ -19,4 +19,17 @@
  * @property {string} teacherName
  */
 
+/**
+ * 시간표 칸 수정 (PATCH /api/timetable/{timetableId}).
+ * 목록의 teacherId를 teacherSchoolUserId로 보낸다.
+ * @typedef {Object} TimetableCreateDto
+ * @property {number} [academicYear]
+ * @property {number} [semester]
+ * @property {number} [schoolClassId]
+ * @property {number} periodSettingId
+ * @property {string} dayOfWeek
+ * @property {number} [subjectId]
+ * @property {number} [teacherSchoolUserId]
+ */
+
 export {}

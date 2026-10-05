@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
-import { getMyTimetable, getSchoolTimetable } from '@/api'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { getMyTimetable, getSchoolTimetable, updateTimetable } from '@/api'
 import { queryKeys } from './queryKeys.js'
 
 export function useMyTimetable(options = {}) {
@@ -15,5 +15,15 @@ export function useSchoolTimetableList(options = {}) {
     queryKey: queryKeys.timetable.school(),
     queryFn: getSchoolTimetable,
     ...options,
+  })
+}
+
+export function useUpdateTimetable() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (patches) => Promise.all(
+      patches.map((patch) => updateTimetable(patch.timetableId, patch.payload)),
+    ),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['timetable'] }),
   })
 }
