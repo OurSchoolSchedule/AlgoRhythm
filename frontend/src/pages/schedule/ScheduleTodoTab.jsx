@@ -24,7 +24,9 @@ const CREATE_TYPE_OPTIONS = [
 
 function canModifyTodo(todo, isAdmin, userId) {
   if (todo.todoType === 'SCHOOL') return isAdmin
-  if (todo.todoType === 'HANDOVER') return isAdmin || todo.authorId === userId
+  if (isAdmin) return true
+  if (userId == null) return todo.todoType !== 'SCHOOL'
+  if (todo.todoType === 'HANDOVER') return todo.authorId === userId
   if (todo.todoType === 'PERSONAL') return todo.authorId === userId
   return false
 }
@@ -170,19 +172,19 @@ function actionBtnStyle(color) {
   }
 }
 
-export default function ScheduleTodoTab({ date }) {
+export default function ScheduleTodoTab({ date, userRole }) {
   const [content, setContent] = useState('')
   const [todoType, setTodoType] = useState('PERSONAL')
 
   const { data: activeStore } = useActiveStore()
-  const isAdmin = activeStore?.position === 'ADMIN'
+  const isAdmin = activeStore?.position === 'ADMIN' || userRole === 'admin'
   const { data: ownerProfile } = useOwnerProfile({ enabled: isAdmin })
   const { data: staffProfile } = useStaffProfile({
     enabled: Boolean(activeStore) && !isAdmin,
   })
   const userId = isAdmin ? ownerProfile?.userId : staffProfile?.userId
 
-  const { data: todoData, isLoading, isError } = useTodos(date)
+  const { data: todoData, isLoading, isError, refetch } = useTodos(date)
   const createTodo = useCreateTodo()
   const updateTodo = useUpdateTodo()
   const deleteTodo = useDeleteTodo()
@@ -271,14 +273,30 @@ export default function ScheduleTodoTab({ date }) {
 
       {createTodo.isError && (
         <p style={{ margin: 0, fontSize: 13, color: 'var(--color-danger)' }}>
-          할 일 추가에 실패했습니다. 권한을 확인해 주세요.
+          할 일 추가에 실패했습니다.{' '}
+          <button type="button" className="history-link" onClick={() => createTodo.reset()}>다시 시도</button>
+        </p>
+      )}
+      {(updateTodo.isError || deleteTodo.isError || toggleTodo.isError) && (
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--color-danger)' }}>
+          할 일을 바꾸지 못했습니다.{' '}
+          <button
+            type="button"
+            className="history-link"
+            onClick={() => {
+              updateTodo.reset()
+              deleteTodo.reset()
+              toggleTodo.reset()
+            }}
+          >다시 시도</button>
         </p>
       )}
 
       {isLoading && <p style={{ margin: 0, fontSize: 14, color: 'var(--color-text-muted)' }}>불러오는 중...</p>}
       {isError && (
         <p style={{ margin: 0, fontSize: 14, color: 'var(--color-danger)' }}>
-          할 일을 불러오지 못했습니다. 새로고침 후 다시 확인하세요.
+          할 일을 불러오지 못했습니다.{' '}
+          <button type="button" className="history-link" onClick={() => refetch()}>다시 시도</button>
         </p>
       )}
 

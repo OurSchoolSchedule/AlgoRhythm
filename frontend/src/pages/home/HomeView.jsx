@@ -1,4 +1,6 @@
-import { useTodos, useToggleTodo, useNotifications, useSchoolTimetable, useSubstituteRequests } from "@/hooks";
+import { useState } from "react";
+import { useTodos, useNotifications, useSchoolTimetable, useSubstituteRequests } from "@/hooks";
+import ScheduleTodoTab from "@/pages/schedule/ScheduleTodoTab.jsx";
 import DayTimetableList from "@/components/schedule/DayTimetableList.jsx";
 import NotificationActionButtons from "@/components/schedule/NotificationActionButtons.jsx";
 import SubstituteRequestList from "@/components/schedule/SubstituteRequestList.jsx";
@@ -129,6 +131,7 @@ function HomeStats({ lessons, substitutes, alerts, loading }) {
  * @param {'admin'|'worker'} props.userRole 화면 구성용 (권한과 무관)
  */
 export default function HomeView({ navigate, userRole = "admin" }) {
+  const [todoListOpen, setTodoListOpen] = useState(false);
   const isAdmin = userRole === "admin";
   const position = isAdmin ? "ADMIN" : "TEACHER";
   const {
@@ -158,11 +161,8 @@ export default function HomeView({ navigate, userRole = "admin" }) {
   const todayDateStr = toISODate();
   const {
     data: todoData,
-    isLoading: todoLoading,
     isError: todoError,
-    refetch: refetchTodos,
   } = useTodos(todayDateStr);
-  const toggleTodo = useToggleTodo();
   const todoItems = todoData
     ? [...todoData.schoolTodos, ...todoData.handoverTodos, ...todoData.personalTodos]
     : [];
@@ -256,19 +256,14 @@ export default function HomeView({ navigate, userRole = "admin" }) {
 
         <div className="home-side">
           <section className="home-tasks">
-            <SectionHeader title="처리할 일" count={todoError ? 0 : taskCount} onViewAll={() => navigate("history")} />
-            {(todoLoading || notificationsLoading) && !todoError && (
+            <SectionHeader title="처리할 일" count={todoError ? 0 : taskCount} onViewAll={() => setTodoListOpen(true)} />
+            {notificationsLoading && (
               <div className="home-skeleton-list" aria-hidden="true">
-                <SkeletonBlock width="100%" height={64} />
                 <SkeletonBlock width="100%" height={64} />
               </div>
             )}
-            {todoError && <LoadError onRetry={() => refetchTodos()} />}
-            {!todoLoading && !notificationsLoading && !todoError && !openSubstitutes.isLoading && !openSubstitutes.isError && taskCount === 0 && (
-              <p className="home-empty">처리할 일이 없습니다</p>
-            )}
             <SubstituteRequestList position={position} notifications={notifications} />
-            {!todoError && actionable.map((item) => (
+            {actionable.map((item) => (
               <div key={item.id ?? item.createdAt} className="home-row">
                 <p className="home-item-title">{localizeNotificationMessage(item.message)}</p>
                 {formatBriefTime(item.createdAt) && (
@@ -277,17 +272,7 @@ export default function HomeView({ navigate, userRole = "admin" }) {
                 <NotificationActionButtons notification={item} position={position} />
               </div>
             ))}
-            {!todoError && todoItems.map((todo) => (
-              <label key={todo.id} className="home-row home-todo">
-                <input
-                  type="checkbox"
-                  checked={Boolean(todo.completed)}
-                  disabled={toggleTodo.isPending}
-                  onChange={() => toggleTodo.mutate(todo.id)}
-                />
-                <span className={todo.completed ? "is-done" : undefined}>{todo.content}</span>
-              </label>
-            ))}
+            <ScheduleTodoTab date={todayDateStr} userRole={userRole} />
           </section>
 
           <section className="home-changes">
@@ -321,6 +306,43 @@ export default function HomeView({ navigate, userRole = "admin" }) {
           </section>
         </div>
       </div>
+      {todoListOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="할 일 전체"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 80,
+            background: "rgba(0,0,0,0.35)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+        >
+          <div
+            style={{
+              width: "min(560px, 100%)",
+              maxHeight: "80vh",
+              overflow: "auto",
+              padding: 20,
+              borderRadius: 12,
+              background: "var(--color-surface)",
+              border: "1px solid var(--color-border)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <h2 style={{ margin: 0, fontSize: 16 }}>할 일</h2>
+              <button type="button" className="panel-close" aria-label="할 일 닫기" onClick={() => setTodoListOpen(false)}>
+                닫기
+              </button>
+            </div>
+            <ScheduleTodoTab date={todayDateStr} userRole={userRole} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
