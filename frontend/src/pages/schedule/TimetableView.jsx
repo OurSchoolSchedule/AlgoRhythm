@@ -73,9 +73,8 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [pickerQuery, setPickerQuery] = useState('')
   const [moreOpen, setMoreOpen] = useState(false)
-  const [editing, setEditing] = useState(false)
+  const editing = false
   const [moves, setMoves] = useState([])
-  const [overlay, setOverlay] = useState(null)
   const [selected, setSelected] = useState(null)
   const [requestMode, setRequestMode] = useState('')
   const [dragFrom, setDragFrom] = useState(null)
@@ -93,7 +92,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
   const breakLabel = weekBreakLabel(weekStart)
   const alternativeCount = Number(timetable?.alternativeCount) || 0
   const thisWeek = isSameSchoolWeek(weekStart, now)
-  const source = overlay ?? timetable
+  const source = timetable
 
   const accept = activeScope === 'class' && target
     ? (cell) => cell.class === target
@@ -164,26 +163,6 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
 
   const openCreate = () => {
     requestLeave(() => navigate?.('schedule-create'))
-  }
-
-  const toggleEdit = () => {
-    if (editing) {
-      requestLeave(() => {
-        setEditing(false)
-        setMoves([])
-        setDragFrom(null)
-      })
-      return
-    }
-    setEditing(true)
-    setSelected(null)
-  }
-
-  const saveMoves = () => {
-    setOverlay({ ...source, byDay: applyCellMoves(source.byDay, moves) })
-    setMoves([])
-    setEditing(false)
-    setDragFrom(null)
   }
 
   const emptyCopy = isAdmin
@@ -269,23 +248,6 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
               )}
             </div>
 
-            <button
-              type="button"
-              className="tt-text tt-edit"
-              aria-pressed={editing}
-              aria-label="수정"
-              title="수정"
-              onClick={toggleEdit}
-            >
-              <span className="tt-edit-label">수정</span>
-              <span className="tt-edit-icon" aria-hidden="true">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 20h9" />
-                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                </svg>
-              </span>
-            </button>
-
             <button type="button" className="tt-create" onClick={openCreate}>시간표 생성</button>
 
             <div className="tt-more" ref={moreRef}>
@@ -293,7 +255,6 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
               {moreOpen && (
                 <div className="dropdown-panel dropdown-panel-top">
                   <button type="button" className="menu-item" onClick={() => { setMoreOpen(false); openCreate() }}>시간표 생성</button>
-                  <button type="button" className="menu-item" onClick={() => { setMoreOpen(false); toggleEdit() }}>시간표 수정</button>
                 </div>
               )}
             </div>
@@ -301,9 +262,6 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
         )}
       </div>
 
-      {editing && (
-        <p className="tt-note">수정 중 · 셀을 끌어서 옮길 수 있습니다</p>
-      )}
       {!failed && !isLoading && alternativeCount > 0 && (
         <div className="tt-note">
           생성된 시간표 대안 {alternativeCount}개가 있습니다
@@ -432,23 +390,10 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
               <div className="tt-actions">
                 <button type="button" className="tt-secondary" onClick={() => setRequestMode('substitute')}>대타 요청</button>
                 <button type="button" className="tt-secondary" onClick={() => setRequestMode('swap')}>교환 요청</button>
-                {isAdmin && (
-                  <button type="button" className="tt-create" onClick={() => { setSelected(null); toggleEdit() }}>수정</button>
-                )}
               </div>
             ) : null}
           </aside>
         </>
-      )}
-
-      {editing && moves.length > 0 && (
-        <div className="tt-savebar">
-          <span>변경 {moves.length}건</span>
-          <div>
-            <button type="button" className="tt-secondary" onClick={() => setMoves([])}>되돌리기</button>
-            <button type="button" className="tt-create" onClick={saveMoves}>저장</button>
-          </div>
-        </div>
       )}
 
       {confirmLeave && (
@@ -464,7 +409,6 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
                 leaveAction.current = null
                 setConfirmLeave(false)
                 setMoves([])
-                setEditing(false)
                 action?.()
               }}
             >
