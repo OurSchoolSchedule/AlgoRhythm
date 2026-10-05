@@ -18,15 +18,10 @@ function cellKey(day, period) {
 export default function UnavailabilityDialog({ onClose }) {
   const query = useMyUnavailabilities()
   const save = useSaveUnavailabilities()
-  const [selected, setSelected] = useState(() => new Set())
-  const [ready, setReady] = useState(false)
+  const [draft, setDraft] = useState(null)
   const [toast, setToast] = useState('')
-
-  useEffect(() => {
-    if (!query.data || ready) return
-    setSelected(new Set(query.data.map((item) => cellKey(item.dayOfWeek, item.periodNumber))))
-    setReady(true)
-  }, [query.data, ready])
+  const loaded = new Set((query.data ?? []).map((item) => cellKey(item.dayOfWeek, item.periodNumber)))
+  const selected = draft ?? loaded
 
   useEffect(() => {
     if (!toast) return undefined
@@ -36,12 +31,10 @@ export default function UnavailabilityDialog({ onClose }) {
 
   const toggle = (day, period) => {
     const key = cellKey(day, period)
-    setSelected((current) => {
-      const next = new Set(current)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
-    })
+    const next = new Set(selected)
+    if (next.has(key)) next.delete(key)
+    else next.add(key)
+    setDraft(next)
   }
 
   const handleSave = () => {
@@ -56,7 +49,10 @@ export default function UnavailabilityDialog({ onClose }) {
     save.mutate(
       { replace: (query.data ?? []).length > 0, unavailabilities },
       {
-        onSuccess: () => setToast('근무 불가 시간을 저장했습니다.'),
+        onSuccess: () => {
+          setDraft(null)
+          setToast('근무 불가 시간을 저장했습니다.')
+        },
         onError: (error) => setToast(getApiErrorMessage(error, '저장에 실패했습니다.')),
       },
     )

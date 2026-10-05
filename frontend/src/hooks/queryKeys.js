@@ -12,12 +12,7 @@ export const queryKeys = {
     staffStores: () => ['mypage', 'staff', 'stores'],
   },
   store: {
-    staff: () => ['store', 'staff'],
     staffSummary: () => ['store', 'teachers'],
-  },
-  storeSettings: {
-    detail: () => ['store-settings'],
-    temporary: (key) => ['store-settings', 'temporary', key],
   },
   schoolSetting: {
     detail: () => ['school-setting'],
@@ -26,10 +21,6 @@ export const queryKeys = {
   schoolCatalog: {
     subjects: () => ['school', 'subjects'],
     classes: (academicYear) => ['school', 'classes', academicYear ?? 'all'],
-  },
-  availability: {
-    me: () => ['availability', 'me'],
-    store: (storeId) => ['availability', 'store', storeId],
   },
   unavailability: {
     me: () => ['unavailability', 'me'],
@@ -41,37 +32,6 @@ export const queryKeys = {
   timetable: {
     mine: () => ['timetable', 'me'],
     school: () => ['timetable', 'school'],
-  },
-  workShift: {
-    all: () => ['work-shift', 'all'],
-    storeWeek: (range) => ['work-shift', 'store-week', range],
-    myWeek: (range) => ['work-shift', 'my-week', range],
-  },
-  attendance: {
-    today: () => ['attendance', 'today'],
-  },
-  payroll: {
-    storeSummary: (params) => ['payroll', 'store', 'summary', params ?? {}],
-    storeTotal: (params) => ['payroll', 'store', 'total', params ?? {}],
-    staffDetail: (userStoreId, params) => [
-      'payroll',
-      'store',
-      'staff',
-      userStoreId,
-      params ?? {},
-    ],
-    employeeDetail: (userStoreId, params) => [
-      'payroll',
-      'store',
-      'employee',
-      userStoreId,
-      params ?? {},
-    ],
-    storeWages: () => ['payroll', 'store', 'wages'],
-    me: (params) => ['payroll', 'me', params ?? {}],
-    meTotal: (params) => ['payroll', 'me', 'total', params ?? {}],
-    minimumWage: (params) => ['payroll', 'minimum-wage', params ?? {}],
-    currentMinimumWage: () => ['payroll', 'minimum-wage', 'current'],
   },
   todo: {
     byDate: (date) => ['todo', date],

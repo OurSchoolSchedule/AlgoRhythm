@@ -104,7 +104,8 @@ export function HistoryView() {
     [historyQuery.data],
   );
   const months = monthsWithData(historyData);
-  const [month, setMonth] = useState("");
+  const [monthChoice, setMonthChoice] = useState("");
+  const month = months.includes(monthChoice) ? monthChoice : (months[0] ?? "");
   const [monthOpen, setMonthOpen] = useState(false);
   const [type, setType] = useState("전체");
   const [query, setQuery] = useState("");
@@ -120,10 +121,6 @@ export function HistoryView() {
   const visible = filtered.slice(0, visibleCount);
   const groups = groupHistoryByDate(visible);
   const selected = historyData.find((record) => record.id === selectedId) ?? null;
-
-  useEffect(() => {
-    if (!month && months[0]) setMonth(months[0]);
-  }, [month, months]);
   const narrowed = type !== "전체" || query.trim() !== "" || status !== "";
 
   useEffect(() => {
@@ -143,7 +140,7 @@ export function HistoryView() {
   };
 
   const changeMonth = (next) => {
-    setMonth(next);
+    setMonthChoice(next);
     setMonthOpen(false);
     setVisibleCount(HISTORY_PAGE_SIZE);
     setSelectedId(null);

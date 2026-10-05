@@ -2,15 +2,6 @@
 import client from './client.js'
 
 /**
- * 활성 매장 직원 목록 조회 (GET /api/store/staff).
- * @returns {Promise<import('@/types/store.js').StoreStaffResponse[]>}
- */
-export async function getStoreStaff() {
-  const { data } = await client.get('/api/store/staff')
-  return data
-}
-
-/**
  * 교사 목록 (GET /api/school/teachers)과 활성 학교 이름 (GET /api/school/me).
  * 담당 과목, 담임 학급, 주간 시수를 포함한다. 지각·결근은 응답에 없다.
  * @returns {Promise<import('@/types/store.js').AllStaffSummaryResponseDto>}
