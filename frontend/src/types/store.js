@@ -20,9 +20,12 @@
  * @property {string} [tel]
  * @property {string} bankName
  * @property {string} accountNumber
- * @property {number} lateCount
- * @property {number} absenceCount
- * @property {number} totalShiftCount
+ * @property {number} [lateCount]
+ * @property {number} [absenceCount]
+ * @property {number} [totalShiftCount]
+ * @property {{ subjectId: number, subjectName: string }[]} [subjects]
+ * @property {{ classId: number, academicYear: number, grade: number, classNumber: number }[]} [homeroomClasses]
+ * @property {number|null} [weeklyLessonCount]
  */
 
 /**

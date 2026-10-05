@@ -10,7 +10,8 @@ export async function getSchoolSetting() {
 }
 
 /**
- * 학교 교시 설정 생성 또는 수정 (POST /api/school-setting).
+ * 학교 교시 설정 upsert (POST /api/school-setting).
+ * 없으면 만들고 있으면 고친다. 시각은 HH:mm:ss. 교시는 이 저장과 따로 CRUD한다.
  * @param {import('@/types/schoolSetting.js').SchoolSettingRequest} payload
  * @returns {Promise<import('@/types/schoolSetting.js').SchoolSettingResponse>}
  */

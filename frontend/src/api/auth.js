@@ -69,6 +69,7 @@ export async function logout() {
 
 /**
  * 개발용 토큰 발급 (POST /api/auth/dev-token).
+ * 응답은 accessToken 문자열만 있고 refreshToken은 없다.
  * @param {string} email
  * @returns {Promise<string>} accessToken
  */

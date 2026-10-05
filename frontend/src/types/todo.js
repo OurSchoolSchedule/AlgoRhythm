@@ -21,7 +21,7 @@
  * 날짜별 할일 목록 (GET /api/todos?date=).
  * @typedef {Object} TodoListResponseDto
  * @property {string} date
- * @property {TodoResponseDto[]} storeTodos 학교 전체 할일 (응답 키 이름은 storeTodos)
+ * @property {TodoResponseDto[]} schoolTodos 학교 전체 할일
  * @property {TodoResponseDto[]} handoverTodos 인수인계
  * @property {TodoResponseDto[]} personalTodos 내 할일
  */

@@ -67,8 +67,8 @@ export default function NotificationActionCard({ notification, position, compact
       approveSwap.mutate({ requestId: action.requestId, payload: { action: 'APPROVE' } })
     } else if (action.kind === 'extra-shift-approve') {
       approveExtra.mutate({
-        requestId: action.requestId,
-        payload: { responseId: action.responseId, action: 'approve' },
+        responseId: action.responseId,
+        payload: { action: 'APPROVE' },
       })
     }
   }
@@ -78,8 +78,8 @@ export default function NotificationActionCard({ notification, position, compact
       approveSwap.mutate({ requestId: action.requestId, payload: { action: 'REJECT' } })
     } else if (action.kind === 'extra-shift-approve') {
       approveExtra.mutate({
-        requestId: action.requestId,
-        payload: { responseId: action.responseId, action: 'reject' },
+        responseId: action.responseId,
+        payload: { action: 'REJECT' },
       })
     }
   }

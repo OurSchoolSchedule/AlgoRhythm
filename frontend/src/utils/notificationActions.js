@@ -32,6 +32,27 @@ export function getNotificationAction(n, position) {
     return { kind: 'shift-swap-approve', requestId: n.timetableSwapRequestId }
   }
 
+  if (
+    type === 'SUBSTITUTE_REQUEST_INVITE' &&
+    role === 'TEACHER' &&
+    n.substituteRequestId &&
+    (!n.substituteStatus || n.substituteStatus === 'OPEN')
+  ) {
+    return { kind: 'extra-shift-respond', requestId: n.substituteRequestId }
+  }
+
+  if (
+    type === 'SUBSTITUTE_NOTIFY_ADMIN' &&
+    role === 'ADMIN' &&
+    n.substituteResponseId
+  ) {
+    return {
+      kind: 'extra-shift-approve',
+      requestId: n.substituteRequestId,
+      responseId: n.substituteResponseId,
+    }
+  }
+
   return null
 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useStoreStaffSummary } from "@/hooks";
+import SchoolClassPanel from "@/components/schedule/SchoolClassPanel.jsx";
 import SchoolSettingPanel from "@/components/schedule/SchoolSettingPanel.jsx";
 import {
   HISTORY_PAGE_SIZE,
@@ -542,7 +543,7 @@ export function AdminView({ navigate }) {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
-                  {["이름", "역할", "재직상태"].map(h => (
+                  {["이름", "역할", "재직상태", "담당 과목", "담임", "주간 시수"].map(h => (
                     <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "var(--color-text-muted)" }}>{h}</th>
                   ))}
                 </tr>
@@ -559,6 +560,17 @@ export function AdminView({ navigate }) {
                           {STATUS_LABEL[s.employmentStatus] ?? s.employmentStatus}
                         </span>
                       </td>
+                      <td style={{ padding: "10px 12px", color: "var(--color-text-secondary)" }}>
+                        {s.subjects?.length ? s.subjects.map((item) => item.subjectName).join(", ") : "—"}
+                      </td>
+                      <td style={{ padding: "10px 12px", color: "var(--color-text-secondary)" }}>
+                        {s.homeroomClasses?.length
+                          ? s.homeroomClasses.map((item) => `${item.grade}-${item.classNumber}`).join(", ")
+                          : "—"}
+                      </td>
+                      <td style={{ padding: "10px 12px", color: "var(--color-text-secondary)", fontVariantNumeric: "tabular-nums" }}>
+                        {s.weeklyLessonCount ?? "—"}
+                      </td>
                     </tr>
                   );
                 })}
@@ -568,23 +580,7 @@ export function AdminView({ navigate }) {
         </div>
       )}
 
-      {tab === "학급" && (
-        <div style={{ background: "var(--color-surface)", borderRadius: 12, border: "1px solid var(--color-border)", padding: "20px 24px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-            {[1, 2, 3].map(grade => (
-              <div key={grade}>
-                <p style={{ margin: "0 0 8px", fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>{grade}학년</p>
-                {["1", "2", "3", "4"].map(cls => (
-                  <div key={cls} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid var(--color-border-light)" }}>
-                    <span style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>{grade}-{cls}반</span>
-                    <span style={{ fontSize: 12, color: "var(--color-text)", fontVariantNumeric: "tabular-nums" }}>30명</span>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {tab === "학급" && <SchoolClassPanel />}
 
       {tab === "설정" && <SchoolSettingPanel />}
     </div>

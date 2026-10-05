@@ -8,7 +8,12 @@ import client from './client.js'
  */
 export async function getTodos(date) {
   const { data } = await client.get('/api/todos', { params: { date } })
-  return data
+  return {
+    ...data,
+    schoolTodos: data?.schoolTodos ?? data?.storeTodos ?? [],
+    handoverTodos: data?.handoverTodos ?? [],
+    personalTodos: data?.personalTodos ?? [],
+  }
 }
 
 /**

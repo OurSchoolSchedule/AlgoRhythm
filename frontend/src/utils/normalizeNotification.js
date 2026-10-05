@@ -11,6 +11,7 @@ export function normalizeNotification(raw) {
   const schoolName = raw.schoolName ?? raw.storeName ?? ''
   const timetableSwapRequestId = raw.timetableSwapRequestId ?? raw.shiftSwapRequestId ?? null
   const substituteRequestId = raw.substituteRequestId ?? raw.extraShiftRequestId ?? null
+  const substituteResponseId = raw.substituteResponseId ?? null
   const timetableSwapStatus = normalizeEnum(raw.timetableSwapStatus ?? raw.shiftSwapStatus)
   const timetableSwapManagerApprovalStatus = normalizeEnum(
     raw.timetableSwapManagerApprovalStatus ?? raw.shiftSwapManagerApprovalStatus,
@@ -24,8 +25,10 @@ export function normalizeNotification(raw) {
     targetType: normalizeEnum(raw.targetType),
     schoolName,
     storeName: schoolName,
+    id: raw.id ?? null,
     timetableSwapRequestId,
     substituteRequestId,
+    substituteResponseId,
     timetableSwapStatus,
     timetableSwapManagerApprovalStatus,
     substituteStatus,

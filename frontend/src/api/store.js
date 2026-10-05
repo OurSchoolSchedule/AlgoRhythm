@@ -12,7 +12,7 @@ export async function getStoreStaff() {
 
 /**
  * 교사 목록 (GET /api/school/teachers)과 활성 학교 이름 (GET /api/school/me).
- * 화면이 쓰던 요약 형태로 맞춘다. 지각·결근·시수는 응답에 없다.
+ * 담당 과목, 담임 학급, 주간 시수를 포함한다. 지각·결근은 응답에 없다.
  * @returns {Promise<import('@/types/store.js').AllStaffSummaryResponseDto>}
  */
 export async function getStoreStaffSummary() {
@@ -29,6 +29,9 @@ export async function getStoreStaffSummary() {
       username: teacher.username,
       role: teacher.position,
       employmentStatus: teacher.employmentStatus,
+      subjects: Array.isArray(teacher.subjects) ? teacher.subjects : [],
+      homeroomClasses: Array.isArray(teacher.homeroomClasses) ? teacher.homeroomClasses : [],
+      weeklyLessonCount: teacher.weeklyLessonCount ?? null,
     })),
   }
 }

@@ -23,12 +23,16 @@ export const queryKeys = {
     detail: () => ['school-setting'],
     periods: () => ['school-setting', 'periods'],
   },
+  schoolCatalog: {
+    subjects: () => ['school', 'subjects'],
+    classes: (academicYear) => ['school', 'classes', academicYear ?? 'all'],
+  },
   availability: {
     me: () => ['availability', 'me'],
     store: (storeId) => ['availability', 'store', storeId],
   },
   schedule: {
-    submissionStatus: (storeId) => ['schedule', 'submission-status', storeId],
+    submissionStatus: () => ['schedule', 'without-availability'],
     candidates: (key) => ['schedule', 'candidates', key],
   },
   timetable: {

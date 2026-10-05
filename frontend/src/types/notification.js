@@ -16,10 +16,11 @@
  * @property {string} createdAt
  * @property {number|null} timetableSwapRequestId
  * @property {number|null} substituteRequestId
+ * @property {number|null} substituteResponseId 관리자 승인에 쓰는 응답 id
  * @property {string|null} timetableSwapStatus
  * @property {string|null} timetableSwapManagerApprovalStatus
  * @property {string|null} substituteStatus
- * @property {boolean} isRead
+ * @property {boolean} isRead 응답 필드 read. 읽음 처리 API는 없다
  */
 
 export {}

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   createScheduleRequest,
-  getSubmissionStatus,
+  getTeachersWithoutAvailability,
   generateSchedule,
   getCandidateSchedules,
   confirmSchedule,
@@ -10,16 +10,15 @@ import { queryKeys } from './queryKeys.js'
 
 export function useCreateScheduleRequest() {
   return useMutation({
-    mutationFn: (payload) => createScheduleRequest(payload),
+    mutationFn: () => createScheduleRequest(),
   })
 }
 
-/** @param {number} storeId */
-export function useSubmissionStatus(storeId, options = {}) {
+/** 불가 교시 미제출 교사. 예전 제출 현황 API는 없다. */
+export function useTeachersWithoutAvailability(options = {}) {
   return useQuery({
-    queryKey: queryKeys.schedule.submissionStatus(storeId),
-    queryFn: () => getSubmissionStatus(storeId),
-    enabled: storeId != null,
+    queryKey: queryKeys.schedule.submissionStatus(),
+    queryFn: getTeachersWithoutAvailability,
     ...options,
   })
 }
@@ -31,7 +30,7 @@ export function useGenerateSchedule() {
   })
 }
 
-/** @param {string} key candidateScheduleKey */
+/** @param {string} key candidateTimetableKey */
 export function useCandidateSchedules(key, options = {}) {
   return useQuery({
     queryKey: queryKeys.schedule.candidates(key),
@@ -47,7 +46,7 @@ export function useConfirmSchedule() {
     mutationFn: ({ scheduleRequestId, payload }) =>
       confirmSchedule(scheduleRequestId, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['work-shift'] })
+      queryClient.invalidateQueries({ queryKey: ['timetable'] })
     },
   })
 }

@@ -34,8 +34,8 @@ export function useRespondExtraShift() {
 export function useApproveExtraShift() {
   const invalidate = useInvalidateAfterExtraShift()
   return useMutation({
-    mutationFn: ({ requestId, payload }) =>
-      approveExtraShift(requestId, payload),
+    mutationFn: ({ responseId, payload }) =>
+      approveExtraShift(responseId, payload),
     onSuccess: invalidate,
   })
 }

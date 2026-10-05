@@ -163,7 +163,7 @@ export default function HomeView({ navigate, userRole = "admin" }) {
   } = useTodos(todayDateStr);
   const toggleTodo = useToggleTodo();
   const todoItems = todoData
-    ? [...todoData.storeTodos, ...todoData.handoverTodos, ...todoData.personalTodos]
+    ? [...todoData.schoolTodos, ...todoData.handoverTodos, ...todoData.personalTodos]
     : [];
 
   const todayClassCount = timetable.todayClassCount;

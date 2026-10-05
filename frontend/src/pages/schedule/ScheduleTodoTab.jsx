@@ -11,7 +11,7 @@ import {
 } from '@/hooks'
 
 const TODO_SECTIONS = [
-  { key: 'storeTodos', label: '전체 공지', type: 'SCHOOL' },
+  { key: 'schoolTodos', label: '전체 공지', type: 'SCHOOL' },
   { key: 'handoverTodos', label: '인수인계', type: 'HANDOVER' },
   { key: 'personalTodos', label: '내 할 일', type: 'PERSONAL' },
 ]
