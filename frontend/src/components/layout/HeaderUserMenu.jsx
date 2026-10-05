@@ -54,6 +54,7 @@ function ThemeSwitch({ value, onChange }) {
         : -1
     if (next < 0) return
     event.preventDefault()
+    event.stopPropagation()
     onChange(THEME_OPTIONS[next].id)
     event.currentTarget.querySelectorAll('[role="radio"]')[next]?.focus()
   }
@@ -235,14 +236,6 @@ export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onL
         {hasUnread && <span className="alarm-dot" />}
       </button>
 
-      <ThemeSwitch
-        value={themePreference}
-        onChange={(id) => {
-          setThemeChoice(id)
-          setThemePreference(id)
-        }}
-      />
-
       <button
         ref={triggerRef}
         type="button"
@@ -297,6 +290,17 @@ export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onL
           </div>
 
           <div style={{ height: 1, background: 'var(--color-border)', margin: '8px 0' }} />
+
+          <div className="profile-theme">
+            <span className="profile-theme-label">화면 테마</span>
+            <ThemeSwitch
+              value={themePreference}
+              onChange={(id) => {
+                setThemeChoice(id)
+                setThemePreference(id)
+              }}
+            />
+          </div>
 
           <button
             type="button"

@@ -270,7 +270,7 @@ export default function HomeView({ navigate, userRole = "admin" }) {
                 <NotificationActionButtons notification={item} position={position} />
               </div>
             ))}
-            <ScheduleTodoTab date={todayDateStr} userRole={userRole} />
+            <ScheduleTodoTab embedded date={todayDateStr} userRole={userRole} />
           </section>
 
           <section className="home-changes">

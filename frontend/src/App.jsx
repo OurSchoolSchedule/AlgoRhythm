@@ -76,10 +76,7 @@ export default function App() {
         return <TimetableView navigate={navigate} userRole={userRole} />
       case 'todos':
         return (
-          <div>
-            <h1 style={{ margin: '0 0 16px', fontSize: 20, fontWeight: 700, color: 'var(--color-text)' }}>오늘 할 일</h1>
-            <ScheduleTodoTab date={toISODate()} userRole={userRole} />
-          </div>
+          <ScheduleTodoTab date={toISODate()} userRole={userRole} />
         )
       case 'schedule-create':
         return <ScheduleCreateView navigate={navigate} />

@@ -9,6 +9,7 @@ import {
   useOwnerProfile,
   useStaffProfile,
 } from '@/hooks'
+import TodoPage from '@/pages/schedule/TodoPage.jsx'
 
 const TODO_SECTIONS = [
   { key: 'schoolTodos', label: '전체 공지', type: 'SCHOOL' },
@@ -172,7 +173,7 @@ function actionBtnStyle(color) {
   }
 }
 
-export default function ScheduleTodoTab({ date, userRole }) {
+function TodoEmbed({ date, userRole }) {
   const [content, setContent] = useState('')
   const [todoType, setTodoType] = useState('PERSONAL')
 
@@ -343,4 +344,9 @@ export default function ScheduleTodoTab({ date, userRole }) {
       )}
     </div>
   )
+}
+
+export default function ScheduleTodoTab({ embedded = false, date, userRole }) {
+  if (embedded) return <TodoEmbed date={date} userRole={userRole} />
+  return <TodoPage date={date} userRole={userRole} />
 }
