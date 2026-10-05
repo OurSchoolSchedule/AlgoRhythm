@@ -120,12 +120,6 @@ const PROFILE = {
   },
 }
 
-function showDevRoleSwitch() {
-  if (import.meta.env.DEV) return true
-  if (typeof window === 'undefined') return false
-  return new URLSearchParams(window.location.search).get('dev') === '1'
-}
-
 function moveMenuFocus(menu, direction) {
   const items = [...menu.querySelectorAll('[role="menuitem"]')]
   if (items.length === 0) return
@@ -138,7 +132,7 @@ function moveMenuFocus(menu, direction) {
   items[next]?.focus()
 }
 
-export default function HeaderUserMenu({ userRole, setUserRole, alarmOpen, onAlarmToggle, onLogout }) {
+export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onLogout }) {
   const [profileOpen, setProfileOpen] = useState(false)
   const [themePreference, setThemeChoice] = useState(() => getStoredTheme())
   const menuRef = useRef(null)
@@ -146,7 +140,6 @@ export default function HeaderUserMenu({ userRole, setUserRole, alarmOpen, onAla
   const panelRef = useRef(null)
   const menuId = useId()
   const profile = PROFILE[userRole] ?? PROFILE.worker
-  const devRoleSwitch = showDevRoleSwitch()
   const { data: notifications = [] } = useNotifications()
   const hasUnread = notifications.some((item) => item?.isRead === false)
 
@@ -288,35 +281,6 @@ export default function HeaderUserMenu({ userRole, setUserRole, alarmOpen, onAla
           <button type="button" role="menuitem" className="menu-item">
             시간대 선호도 제출
           </button>
-
-          {devRoleSwitch && setUserRole && (
-            <>
-              <button
-                type="button"
-                role="menuitem"
-                className="menu-item"
-                onClick={() => {
-                  setUserRole('admin')
-                  setProfileOpen(false)
-                }}
-                style={{ fontWeight: userRole === 'admin' ? 600 : 400, color: userRole === 'admin' ? 'var(--color-primary)' : 'var(--color-text)' }}
-              >
-                관리자 화면
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                className="menu-item"
-                onClick={() => {
-                  setUserRole('worker')
-                  setProfileOpen(false)
-                }}
-                style={{ fontWeight: userRole === 'worker' ? 600 : 400, color: userRole === 'worker' ? 'var(--color-primary)' : 'var(--color-text)' }}
-              >
-                교사 화면
-              </button>
-            </>
-          )}
 
           {onLogout && (
             <button

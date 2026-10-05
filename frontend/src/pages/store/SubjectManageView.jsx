@@ -15,7 +15,7 @@ const initialSubjects = [
 
 const GRADES = ["전체", "1학년", "2학년", "3학년"];
 
-export default function SubjectManageView({ navigate }) {
+export default function SubjectManageView() {
   const [subjects, setSubjects] = useState(initialSubjects);
   const [filterGrade, setFilterGrade] = useState("전체");
   const [csvStatus, setCsvStatus] = useState(null);
@@ -53,8 +53,7 @@ export default function SubjectManageView({ navigate }) {
 
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-        <button onClick={() => navigate("home")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-muted)", fontSize: 13, padding: 0 }}>← 뒤로</button>
+      <div style={{ marginBottom: 24 }}>
         <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--color-text)" }}>과목·수업 관리</h1>
       </div>
 

@@ -177,9 +177,9 @@ export default function HomeView({ navigate, userRole = "admin" }) {
   return (
     <div>
       <div className="home-title-row">
-        <h1>오늘</h1>
-        <div className="home-title-side">
-          {isAdmin && (
+        <h1>{displayDate}</h1>
+        {isAdmin && (
+          <div className="home-title-side">
             <button
               type="button"
               onClick={() => navigate("schedule-create")}
@@ -187,9 +187,8 @@ export default function HomeView({ navigate, userRole = "admin" }) {
             >
               시간표 생성
             </button>
-          )}
-          <p>{displayDate}</p>
-        </div>
+          </div>
+        )}
       </div>
 
       {isAdmin ? (

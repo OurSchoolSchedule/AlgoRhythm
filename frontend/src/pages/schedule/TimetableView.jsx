@@ -1,16 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { getAccessToken } from '@/api'
 import CreateShiftSwapForm from '@/components/schedule/CreateShiftSwapForm.jsx'
-import DayTimetableList from '@/components/schedule/DayTimetableList.jsx'
 import WeeklyTimetableGrid from '@/components/schedule/WeeklyTimetableGrid.jsx'
 import { SCHOOL_PERIOD_SLOTS, TIMETABLE_DAYS } from '@/constants/schoolTimetable.js'
 import { useSchoolTimetable } from '@/hooks'
 import { formatClassName, formatClock } from '@/utils/homeFocus.js'
-import { getKoreanWeekdayKey } from '@/utils/schoolTimetable.js'
 import {
   formatWeekCaption,
+  formatWeekMonthLabel,
   formatWeekShort,
-  formatWeekTitle,
   isSameSchoolWeek,
   nextOpenWeek,
   schoolWeekDays,
@@ -68,10 +66,6 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
   const refetch = query.refetch
 
   const [weekStart, setWeekStart] = useState(() => startOfSchoolWeek(new Date()))
-  const [view, setView] = useState(() => (
-    typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches ? 'day' : 'week'
-  ))
-  const [dayKey, setDayKey] = useState(() => getKoreanWeekdayKey(new Date()) ?? '월')
   const [scope, setScope] = useState(isAdmin ? 'class' : 'mine')
   const [target, setTarget] = useState('')
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -89,7 +83,6 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
   const leaveAction = useRef(null)
   const pickerRef = useRef(null)
   const moreRef = useRef(null)
-  const swipeX = useRef(null)
 
   const activeScope = !isAdmin
     ? (scope === 'class' ? 'class' : 'mine')
@@ -98,7 +91,6 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
   const breakLabel = weekBreakLabel(weekStart)
   const alternativeCount = Number(timetable?.alternativeCount) || 0
   const thisWeek = isSameSchoolWeek(weekStart, now)
-  const boardView = editing ? 'week' : view
   const source = overlay ?? timetable
 
   const accept = activeScope === 'class' && target
@@ -116,7 +108,6 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
   const options = activeScope === 'teacher' ? teachers : classes
   const filteredOptions = options.filter((item) => item.includes(pickerQuery.trim()))
   const detailMode = activeScope === 'class' ? 'class' : activeScope === 'all' ? 'all' : 'teacher'
-  const selectedDay = days.find((day) => day.key === dayKey) ?? days[0]
   const selectedCell = selected ? shown.byDay?.[selected.day]?.[selected.period] ?? null : null
   const selectedDate = days.find((day) => day.key === selected?.day)
   const hoverReason = dragFrom && hover
@@ -182,7 +173,6 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
       })
       return
     }
-    setView('week')
     setEditing(true)
     setSelected(null)
   }
@@ -192,13 +182,6 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
     setMoves([])
     setEditing(false)
     setDragFrom(null)
-  }
-
-  const shiftDay = (delta) => {
-    const index = TIMETABLE_DAYS.indexOf(dayKey)
-    const next = index + delta
-    if (next < 0 || next >= TIMETABLE_DAYS.length) return
-    setDayKey(TIMETABLE_DAYS[next])
   }
 
   const emptyCopy = isAdmin
@@ -211,123 +194,109 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
 
       <div className="tt-head">
         <div className="tt-head-main">
-          <div className="tt-week">
-            <button type="button" className="tt-arrow" aria-label="이전 주" onClick={() => goWeek(-1)}>‹</button>
-            <div>
-              <div className="tt-week-title">
-                <span className="tt-week-long">{formatWeekTitle(weekStart)}</span>
-                <span className="tt-week-short">{formatWeekShort(weekStart)}</span>
-              </div>
-              <p className="tt-week-caption">{formatWeekCaption(weekStart)}</p>
+          <div className="tt-week-heading">
+            <div className="tt-week-title">
+              <span className="tt-week-month tt-week-long">{formatWeekMonthLabel(weekStart)}</span>
+              <span className="tt-week-short">{formatWeekShort(weekStart)}</span>
             </div>
-            <button type="button" className="tt-arrow" aria-label="다음 주" onClick={() => goWeek(1)}>›</button>
+            <p className="tt-week-caption">{formatWeekCaption(weekStart)}</p>
           </div>
-          <button
-            type="button"
-            className="tt-secondary"
-            disabled={thisWeek}
-            onClick={() => {
-              requestLeave(() => {
-                setWeekStart(startOfSchoolWeek(now))
-                setDayKey(getKoreanWeekdayKey(now) ?? '월')
-              })
-            }}
-          >
-            오늘
-          </button>
-        </div>
-
-        <div className="tt-head-tools">
-          <div className="tt-view" role="group" aria-label="보기">
-            {[['week', '주간'], ['day', '일간']].map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                aria-pressed={boardView === id}
-                onClick={() => {
-                  if (editing && id === 'day') return
-                  setView(id)
-                }}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          <div className="tt-picker" ref={pickerRef}>
+          <div className="tt-nav" role="group" aria-label="주 이동">
+            <button type="button" className="tt-nav-arrow" aria-label="이전 주" onClick={() => goWeek(-1)}>‹</button>
             <button
               type="button"
-              className="tt-secondary"
-              aria-expanded={pickerOpen}
-              aria-haspopup="listbox"
+              className="tt-nav-today"
+              disabled={thisWeek}
               onClick={() => {
-                setPickerOpen((open) => !open)
-                setPickerQuery('')
+                requestLeave(() => {
+                  setWeekStart(startOfSchoolWeek(now))
+                })
               }}
             >
-              {targetLabel} ▾
+              오늘
             </button>
-            {pickerOpen && (
-              <div className="dropdown-panel dropdown-panel-top tt-picker-panel" role="listbox" aria-label="시간표 대상">
-                {!isAdmin && (
-                  <button type="button" role="option" className="menu-item" aria-selected={activeScope === 'mine'} onClick={() => { setScope('mine'); setTarget(''); setPickerOpen(false) }}>
-                    내 시간표
-                  </button>
-                )}
-                {isAdmin && (
-                  <>
-                    <button type="button" role="option" className="menu-item" aria-selected={activeScope === 'class'} onClick={() => { setScope('class'); setTarget('') }}>학급별</button>
-                    <button type="button" role="option" className="menu-item" aria-selected={activeScope === 'teacher'} onClick={() => { setScope('teacher'); setTarget('') }}>교사별</button>
-                    <button type="button" role="option" className="menu-item" aria-selected={activeScope === 'all'} onClick={() => { setScope('all'); setTarget(''); setPickerOpen(false) }}>전체</button>
-                  </>
-                )}
-                {activeScope !== 'mine' && activeScope !== 'all' && (
-                  <>
-                    <input
-                      className="tt-picker-search"
-                      value={pickerQuery}
-                      placeholder={activeScope === 'teacher' ? '교사 검색' : '학급 검색'}
-                      onChange={(event) => setPickerQuery(event.target.value)}
-                    />
-                    {filteredOptions.length === 0 ? (
-                      <p className="tt-picker-empty">목록이 없습니다</p>
-                    ) : filteredOptions.map((item) => (
-                      <button
-                        key={item}
-                        type="button"
-                        role="option"
-                        className="menu-item"
-                        aria-selected={target === item}
-                        onClick={() => { setTarget(item); setPickerOpen(false) }}
-                      >
-                        {activeScope === 'class' ? formatClassName(item) : item}
-                      </button>
-                    ))}
-                  </>
-                )}
-              </div>
-            )}
+            <button type="button" className="tt-nav-arrow" aria-label="다음 주" onClick={() => goWeek(1)}>›</button>
           </div>
+        </div>
 
-          {isAdmin && (
-            <div className="tt-admin-actions">
-              <button type="button" className="tt-create" onClick={openCreate}>시간표 생성</button>
-              <button type="button" className="tt-secondary" aria-pressed={editing} onClick={toggleEdit}>수정</button>
-            </div>
-          )}
-
-          {isAdmin && (
-            <div className="tt-more" ref={moreRef}>
-              <button type="button" className="tt-secondary tt-more-button" aria-label="시간표 메뉴" aria-expanded={moreOpen} onClick={() => setMoreOpen((open) => !open)}>⋯</button>
-              {moreOpen && (
-                <div className="dropdown-panel dropdown-panel-top">
-                  <button type="button" className="menu-item" onClick={() => { setMoreOpen(false); openCreate() }}>시간표 생성</button>
-                  <button type="button" className="menu-item" onClick={() => { setMoreOpen(false); toggleEdit() }}>수정</button>
+        {isAdmin && (
+          <div className="tt-head-tools">
+            <div className="tt-picker" ref={pickerRef}>
+              <button
+                type="button"
+                className="tt-text"
+                aria-expanded={pickerOpen}
+                aria-haspopup="listbox"
+                onClick={() => {
+                  setPickerOpen((open) => !open)
+                  setPickerQuery('')
+                }}
+              >
+                {targetLabel} ▾
+              </button>
+              {pickerOpen && (
+                <div className="dropdown-panel dropdown-panel-top tt-picker-panel" role="listbox" aria-label="시간표 대상">
+                  <button type="button" role="option" className="menu-item" aria-selected={activeScope === 'class'} onClick={() => { setScope('class'); setTarget('') }}>학급별</button>
+                  <button type="button" role="option" className="menu-item" aria-selected={activeScope === 'teacher'} onClick={() => { setScope('teacher'); setTarget('') }}>교사별</button>
+                  <button type="button" role="option" className="menu-item" aria-selected={activeScope === 'all'} onClick={() => { setScope('all'); setTarget(''); setPickerOpen(false) }}>전체</button>
+                  {activeScope !== 'all' && (
+                    <>
+                      <input
+                        className="tt-picker-search"
+                        value={pickerQuery}
+                        placeholder={activeScope === 'teacher' ? '교사 검색' : '학급 검색'}
+                        onChange={(event) => setPickerQuery(event.target.value)}
+                      />
+                      {filteredOptions.length === 0 ? (
+                        <p className="tt-picker-empty">목록이 없습니다</p>
+                      ) : filteredOptions.map((item) => (
+                        <button
+                          key={item}
+                          type="button"
+                          role="option"
+                          className="menu-item"
+                          aria-selected={target === item}
+                          onClick={() => { setTarget(item); setPickerOpen(false) }}
+                        >
+                          {activeScope === 'class' ? formatClassName(item) : item}
+                        </button>
+                      ))}
+                    </>
+                  )}
                 </div>
               )}
             </div>
-          )}
-        </div>
+
+            <button
+              type="button"
+              className="tt-text tt-edit"
+              aria-pressed={editing}
+              aria-label="수정"
+              title="수정"
+              onClick={toggleEdit}
+            >
+              <span className="tt-edit-label">수정</span>
+              <span className="tt-edit-icon" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                </svg>
+              </span>
+            </button>
+
+            <button type="button" className="tt-create" onClick={openCreate}>시간표 생성</button>
+
+            <div className="tt-more" ref={moreRef}>
+              <button type="button" className="tt-text tt-more-button" aria-label="시간표 메뉴" aria-expanded={moreOpen} onClick={() => setMoreOpen((open) => !open)}>⋯</button>
+              {moreOpen && (
+                <div className="dropdown-panel dropdown-panel-top">
+                  <button type="button" className="menu-item" onClick={() => { setMoreOpen(false); openCreate() }}>시간표 생성</button>
+                  <button type="button" className="menu-item" onClick={() => { setMoreOpen(false); toggleEdit() }}>시간표 수정</button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {editing && (
@@ -362,90 +331,51 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
           {timetable.weekClassCount === 0 && (
             <div className="tt-note tt-note-plain">
               {emptyCopy}
-              {isAdmin && (
-                <>
-                  <span aria-hidden="true"> · </span>
-                  <button type="button" className="history-link" onClick={openCreate}>시간표 생성</button>
-                </>
-              )}
             </div>
           )}
 
-          {boardView === 'week' ? (
-            <WeeklyTimetableGrid
-              timetable={shown}
-              days={days}
-              detailMode={detailMode}
-              selectedKey={selected ? cellSlotKey(selected.day, selected.period) : ''}
-              editing={editing}
-              dragFrom={dragFrom}
-              hoverKey={hover ? cellSlotKey(hover.day, hover.period) : ''}
-              hoverReason={hoverReason}
-              onSelect={(slot) => {
-                setSelected(slot)
-                setRequestMode('')
-              }}
-              onDragStart={(slot) => {
-                dragRef.current = slot
-                setDragFrom(slot)
-              }}
-              onDragHover={setHover}
-              onDrop={(slot) => {
-                const from = dragRef.current
-                if (!from) return
-                const reason = dropRejection(
-                  shown.byDay,
-                  from,
-                  slot,
-                  days.find((day) => day.key === slot.day)?.holiday || '',
-                )
-                if (!reason && (from.day !== slot.day || from.period !== slot.period)) {
-                  setMoves((list) => [...list, { from, to: slot }])
-                }
-                dragRef.current = null
-                setDragFrom(null)
-                setHover(null)
-              }}
-              onDragEnd={() => {
-                dragRef.current = null
-                setDragFrom(null)
-                setHover(null)
-              }}
-            />
-          ) : (
-            <>
-              <div
-                className="tt-days"
-                onPointerDown={(event) => { swipeX.current = event.clientX }}
-                onPointerUp={(event) => {
-                  if (swipeX.current == null) return
-                  const delta = event.clientX - swipeX.current
-                  swipeX.current = null
-                  if (delta > 48) shiftDay(-1)
-                  if (delta < -48) shiftDay(1)
-                }}
-              >
-                {days.map((day) => (
-                  <button
-                    key={day.key}
-                    type="button"
-                    className={day.isToday ? 'is-today' : undefined}
-                    aria-selected={day.key === selectedDay.key}
-                    onClick={() => setDayKey(day.key)}
-                  >
-                    <span>{day.key}</span>
-                    <span>{day.dayNum}</span>
-                  </button>
-                ))}
-              </div>
-              <DayTimetableList timetable={shown} now={now} dayKey={selectedDay.key} date={selectedDay.date} />
-              {!shown.byDay?.[selectedDay.key] || source.periods.every((period) => !shown.byDay[selectedDay.key][period]) ? (
-                <p className="home-empty">{selectedDay.key}요일은 수업이 없는 날입니다</p>
-              ) : null}
-            </>
-          )}
+          <WeeklyTimetableGrid
+            timetable={shown}
+            days={days}
+            detailMode={detailMode}
+            selectedKey={selected ? cellSlotKey(selected.day, selected.period) : ''}
+            editing={editing}
+            dragFrom={dragFrom}
+            hoverKey={hover ? cellSlotKey(hover.day, hover.period) : ''}
+            hoverReason={hoverReason}
+            onSelect={(slot) => {
+              setSelected(slot)
+              setRequestMode('')
+            }}
+            onDragStart={(slot) => {
+              dragRef.current = slot
+              setDragFrom(slot)
+            }}
+            onDragHover={setHover}
+            onDrop={(slot) => {
+              const from = dragRef.current
+              if (!from) return
+              const reason = dropRejection(
+                shown.byDay,
+                from,
+                slot,
+                days.find((day) => day.key === slot.day)?.holiday || '',
+              )
+              if (!reason && (from.day !== slot.day || from.period !== slot.period)) {
+                setMoves((list) => [...list, { from, to: slot }])
+              }
+              dragRef.current = null
+              setDragFrom(null)
+              setHover(null)
+            }}
+            onDragEnd={() => {
+              dragRef.current = null
+              setDragFrom(null)
+              setHover(null)
+            }}
+          />
 
-          {boardView === 'week' && hasStatus && (
+          {hasStatus && (
             <p className="tt-legend">
               <span className="is-wait">대기</span>
               <span aria-hidden="true"> · </span>

@@ -75,7 +75,7 @@ export default function App() {
       case 'schedule-create':
         return <ScheduleCreateView navigate={navigate} />
       case 'subject-manage':
-        return <SubjectManageView navigate={navigate} />
+        return <SubjectManageView />
       case 'history':
         return <HistoryView navigate={navigate} />
       case 'admin':
@@ -100,7 +100,6 @@ export default function App() {
         navigate={navigate}
         currentView={currentView}
         userRole={userRole}
-        setUserRole={setUserRole}
         alarmOpen={alarmOpen}
         onAlarmToggle={() => setAlarmOpen((open) => !open)}
         onLogout={handleLogout}

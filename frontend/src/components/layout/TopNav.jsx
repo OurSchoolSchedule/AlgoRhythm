@@ -178,7 +178,6 @@ export default function TopNav({
   navigate,
   currentView,
   userRole,
-  setUserRole,
   alarmOpen,
   onAlarmToggle,
   onLogout,
@@ -226,7 +225,6 @@ export default function TopNav({
         <div style={{ marginLeft: 'auto' }}>
           <HeaderUserMenu
             userRole={userRole}
-            setUserRole={setUserRole}
             alarmOpen={alarmOpen}
             onAlarmToggle={onAlarmToggle}
             onLogout={onLogout}

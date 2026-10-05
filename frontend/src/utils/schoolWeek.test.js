@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   formatWeekCaption,
+  formatWeekMonthLabel,
   formatWeekTitle,
   holidayOn,
   startOfSchoolWeek,
@@ -11,6 +12,7 @@ describe('school week', () => {
   it('2026-10-05 주를 10월 1주차로 보여준다', () => {
     const monday = startOfSchoolWeek(new Date(2026, 9, 5))
     expect(formatWeekTitle(monday)).toBe('2026년 10월 1주차')
+    expect(formatWeekMonthLabel(monday)).toBe('10월 1주차')
     expect(formatWeekCaption(monday)).toBe('10.05 – 10.09')
   })
 

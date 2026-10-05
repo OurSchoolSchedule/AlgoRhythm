@@ -86,8 +86,13 @@ export function formatWeekTitle(monday) {
 }
 
 /** @param {Date} monday */
-export function formatWeekShort(monday) {
+export function formatWeekMonthLabel(monday) {
   return `${monday.getMonth() + 1}월 ${weekOrdinal(monday)}주차`
+}
+
+/** @param {Date} monday */
+export function formatWeekShort(monday) {
+  return formatWeekMonthLabel(monday)
 }
 
 function monthDay(date) {
