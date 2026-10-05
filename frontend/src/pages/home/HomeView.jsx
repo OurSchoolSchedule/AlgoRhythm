@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useTodos, useNotifications, useSchoolTimetable, useSubstituteRequests } from "@/hooks";
 import ScheduleTodoTab from "@/pages/schedule/ScheduleTodoTab.jsx";
 import DayTimetableList from "@/components/schedule/DayTimetableList.jsx";
@@ -131,7 +130,6 @@ function HomeStats({ lessons, substitutes, alerts, loading }) {
  * @param {'admin'|'worker'} props.userRole 화면 구성용 (권한과 무관)
  */
 export default function HomeView({ navigate, userRole = "admin" }) {
-  const [todoListOpen, setTodoListOpen] = useState(false);
   const isAdmin = userRole === "admin";
   const position = isAdmin ? "ADMIN" : "TEACHER";
   const {
@@ -256,7 +254,7 @@ export default function HomeView({ navigate, userRole = "admin" }) {
 
         <div className="home-side">
           <section className="home-tasks">
-            <SectionHeader title="처리할 일" count={todoError ? 0 : taskCount} onViewAll={() => setTodoListOpen(true)} />
+            <SectionHeader title="오늘 할 일" count={todoError ? 0 : taskCount} onViewAll={() => navigate("todos")} />
             {notificationsLoading && (
               <div className="home-skeleton-list" aria-hidden="true">
                 <SkeletonBlock width="100%" height={64} />
@@ -306,43 +304,6 @@ export default function HomeView({ navigate, userRole = "admin" }) {
           </section>
         </div>
       </div>
-      {todoListOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="할 일 전체"
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 80,
-            background: "rgba(0,0,0,0.35)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 16,
-          }}
-        >
-          <div
-            style={{
-              width: "min(560px, 100%)",
-              maxHeight: "80vh",
-              overflow: "auto",
-              padding: 20,
-              borderRadius: 12,
-              background: "var(--color-surface)",
-              border: "1px solid var(--color-border)",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <h2 style={{ margin: 0, fontSize: 16 }}>할 일</h2>
-              <button type="button" className="panel-close" aria-label="할 일 닫기" onClick={() => setTodoListOpen(false)}>
-                닫기
-              </button>
-            </div>
-            <ScheduleTodoTab date={todayDateStr} userRole={userRole} />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

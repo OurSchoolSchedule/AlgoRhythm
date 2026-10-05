@@ -5,6 +5,8 @@ import AIFloatingChat from '@/components/common/AIFloatingChat'
 import HomeView from '@/pages/home/HomeView'
 import ScheduleCreateView from '@/pages/schedule/ScheduleCreateView'
 import TimetableView from '@/pages/schedule/TimetableView'
+import ScheduleTodoTab from '@/pages/schedule/ScheduleTodoTab.jsx'
+import { toISODate } from '@/utils'
 import SubjectManageView from '@/pages/store/SubjectManageView'
 import HistoryView, { AdminView } from '@/pages/history/HistoryView'
 import { DevLoginView } from '@/pages/auth'
@@ -72,6 +74,13 @@ export default function App() {
         return <HomeView navigate={navigate} userRole={userRole} />
       case 'timetable':
         return <TimetableView navigate={navigate} userRole={userRole} />
+      case 'todos':
+        return (
+          <div>
+            <h1 style={{ margin: '0 0 16px', fontSize: 20, fontWeight: 700, color: 'var(--color-text)' }}>오늘 할 일</h1>
+            <ScheduleTodoTab date={toISODate()} userRole={userRole} />
+          </div>
+        )
       case 'schedule-create':
         return <ScheduleCreateView navigate={navigate} />
       case 'subject-manage':

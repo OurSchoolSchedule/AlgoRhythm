@@ -4,6 +4,7 @@ import HeaderUserMenu from '@/components/layout/HeaderUserMenu.jsx'
 const MAIN_ITEMS = [
   { id: 'home', label: '홈', icon: 'home' },
   { id: 'timetable', label: '시간표', icon: 'timetable' },
+  { id: 'todos', label: '할 일', icon: 'todos' },
   { id: 'history', label: '내역', icon: 'history' },
 ]
 
@@ -31,6 +32,14 @@ function TabIcon({ name }) {
       <svg {...common}>
         <rect x="4" y="5" width="16" height="15" rx="1.5" />
         <path d="M4 9h16M8 3.5V6.5M16 3.5V6.5" />
+      </svg>
+    )
+  }
+  if (name === 'todos') {
+    return (
+      <svg {...common}>
+        <path d="M9 7h10M9 12h10M9 17h10" />
+        <path d="M4.5 7.2 5.6 8.3 7.4 6.2M4.5 12.2 5.6 13.3 7.4 11.2M4.5 17.2 5.6 18.3 7.4 16.2" />
       </svg>
     )
   }
