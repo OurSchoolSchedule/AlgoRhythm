@@ -1,6 +1,7 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   createExtraShiftRequest,
+  getSubstituteRequests,
   respondExtraShift,
   approveExtraShift,
 } from '@/api'
@@ -10,8 +11,17 @@ function useInvalidateAfterExtraShift() {
   const queryClient = useQueryClient()
   return () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.notification.list() })
-    queryClient.invalidateQueries({ queryKey: ['work-shift'] })
+    queryClient.invalidateQueries({ queryKey: ['substitute'] })
   }
+}
+
+/** @param {'OPEN'|'FILLED'|'CANCELLED'|'EXPIRED'} [status] */
+export function useSubstituteRequests(status = 'OPEN', options = {}) {
+  return useQuery({
+    queryKey: queryKeys.substitute.requests(status),
+    queryFn: () => getSubstituteRequests(status),
+    ...options,
+  })
 }
 
 export function useCreateExtraShiftRequest() {

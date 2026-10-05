@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { getAccessToken } from '@/api'
 import CreateShiftSwapForm from '@/components/schedule/CreateShiftSwapForm.jsx'
+import CreateSubstituteForm from '@/components/schedule/CreateSubstituteForm.jsx'
 import WeeklyTimetableGrid from '@/components/schedule/WeeklyTimetableGrid.jsx'
 import { SCHOOL_PERIOD_SLOTS, TIMETABLE_DAYS } from '@/constants/schoolTimetable.js'
 import { useSchoolTimetable } from '@/hooks'
 import { formatClassName, formatClock } from '@/utils/homeFocus.js'
+import { toISODate } from '@/utils'
 import {
   formatWeekCaption,
   formatWeekMonthLabel,
@@ -418,11 +420,17 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
             ) : (
               <p className="home-empty">상태 이력이 없습니다</p>
             )}
-            {selectedCell && requestMode === 'swap' ? (
+            {selectedCell && requestMode === 'substitute' ? (
+              <CreateSubstituteForm
+                timetableId={selectedCell.id}
+                defaultDate={selectedDate ? toISODate(selectedDate.date) : toISODate()}
+                periodLabel={`${selected.period}교시`}
+              />
+            ) : selectedCell && requestMode === 'swap' ? (
               <CreateShiftSwapForm />
             ) : selectedCell ? (
               <div className="tt-actions">
-                <button type="button" className="tt-secondary" onClick={() => setRequestMode('swap')}>대타 요청</button>
+                <button type="button" className="tt-secondary" onClick={() => setRequestMode('substitute')}>대타 요청</button>
                 <button type="button" className="tt-secondary" onClick={() => setRequestMode('swap')}>교환 요청</button>
                 {isAdmin && (
                   <button type="button" className="tt-create" onClick={() => { setSelected(null); toggleEdit() }}>수정</button>

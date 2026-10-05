@@ -1,6 +1,7 @@
-import { useTodos, useToggleTodo, useNotifications, useSchoolTimetable } from "@/hooks";
+import { useTodos, useToggleTodo, useNotifications, useSchoolTimetable, useSubstituteRequests } from "@/hooks";
 import DayTimetableList from "@/components/schedule/DayTimetableList.jsx";
 import NotificationActionButtons from "@/components/schedule/NotificationActionButtons.jsx";
+import SubstituteRequestList from "@/components/schedule/SubstituteRequestList.jsx";
 import { toISODate } from "@/utils";
 import { DOMAIN, localizeNotificationMessage, categoryLabel } from "@/constants/domainLabels.js";
 import {
@@ -170,8 +171,10 @@ export default function HomeView({ navigate, userRole = "admin" }) {
   const hasClass = todayClassCount > 0;
   const substituteCount = notifications.filter((n) => n.category === "SUBSTITUTE").length;
   const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const openSubstitutes = useSubstituteRequests("OPEN");
+  const openSubstituteCount = openSubstitutes.data?.length ?? 0;
   const focus = resolveHomeFocus(timetable, now);
-  const taskCount = actionable.length + todoItems.length;
+  const taskCount = actionable.length + todoItems.length + openSubstituteCount;
   const summaryLoading = timetableLoading || notificationsLoading;
 
   return (
@@ -261,9 +264,10 @@ export default function HomeView({ navigate, userRole = "admin" }) {
               </div>
             )}
             {todoError && <LoadError onRetry={() => refetchTodos()} />}
-            {!todoLoading && !notificationsLoading && !todoError && taskCount === 0 && (
+            {!todoLoading && !notificationsLoading && !todoError && !openSubstitutes.isLoading && !openSubstitutes.isError && taskCount === 0 && (
               <p className="home-empty">처리할 일이 없습니다</p>
             )}
+            <SubstituteRequestList position={position} notifications={notifications} />
             {!todoError && actionable.map((item) => (
               <div key={item.id ?? item.createdAt} className="home-row">
                 <p className="home-item-title">{localizeNotificationMessage(item.message)}</p>

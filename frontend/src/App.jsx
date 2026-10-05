@@ -123,6 +123,7 @@ export default function App() {
         <NotificationSidebar
           open={alarmOpen}
           onClose={() => setAlarmOpen(false)}
+          userRole={userRole}
         />
       </div>
 

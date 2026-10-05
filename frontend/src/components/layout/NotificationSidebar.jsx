@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useNotifications, useActiveStore } from '@/hooks'
 import NotificationActionButtons from '@/components/schedule/NotificationActionButtons.jsx'
+import SubstituteRequestList from '@/components/schedule/SubstituteRequestList.jsx'
 import {
   localizeNotificationMessage,
   categoryLabel,
@@ -74,9 +75,10 @@ function NotificationItem({ notification, position }) {
  * @param {boolean} props.open
  * @param {() => void} props.onClose
  */
-export default function NotificationSidebar({ open, onClose }) {
+export default function NotificationSidebar({ open, onClose, userRole }) {
   const { data: activeStore } = useActiveStore({ enabled: open })
-  const position = resolvePosition(activeStore?.position)
+  const previewPosition = userRole === 'admin' ? 'ADMIN' : userRole === 'worker' ? 'TEACHER' : undefined
+  const position = resolvePosition(activeStore?.position) ?? previewPosition
   const { data: notifications = [], isLoading, isError } = useNotifications({
     enabled: open,
   })
@@ -158,6 +160,8 @@ export default function NotificationSidebar({ open, onClose }) {
               알림을 불러오지 못했습니다. 잠시 후 다시 열어 주세요.
             </p>
           )}
+
+          <SubstituteRequestList position={position} notifications={notifications} />
 
           {!isLoading && !isError && actionable.length > 0 && (
             <section style={{ marginBottom: 20 }}>

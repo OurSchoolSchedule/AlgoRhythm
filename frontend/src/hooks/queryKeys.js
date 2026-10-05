@@ -76,4 +76,7 @@ export const queryKeys = {
   notification: {
     list: () => ['notification', 'list'],
   },
+  substitute: {
+    requests: (status) => ['substitute', 'requests', status ?? 'all'],
+  },
 }
