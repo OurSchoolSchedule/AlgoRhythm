@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   countByType,
+  substituteToHistoryRecord,
   countPending,
   emptyMonthMessage,
   filterHistory,
@@ -19,6 +20,27 @@ const records = [
   { date: '2026-04-03', type: '생성', status: '완료', title: '4월 시간표', search: '시간표' },
 ]
 
+describe('substitute history rows', () => {
+  it('uses only fields from the substitute list', () => {
+    expect(substituteToHistoryRecord({
+      id: 4,
+      substituteDate: '2026-05-10',
+      dayOfWeek: 'MON',
+      periodNumber: 1,
+      status: 'OPEN',
+      note: '출장',
+      createdAt: '2026-05-09T23:10:00Z',
+    })).toMatchObject({
+      id: 4,
+      date: '2026-05-10',
+      type: '보결',
+      status: '미처리',
+      title: '1교시 · 월 · 출장',
+      requester: null,
+    })
+  })
+})
+
 describe('history months', () => {
   it('lists only months that have records, newest first', () => {
     expect(monthsWithData(records)).toEqual(['2026-5', '2026-4'])
@@ -35,7 +57,6 @@ describe('history filters', () => {
     expect(countByType(records.filter((item) => item.date.startsWith('2026-05')))).toMatchObject({
       전체: 3,
       보결: 2,
-      변경: 1,
     })
     expect(countPending(records)).toBe(1)
   })

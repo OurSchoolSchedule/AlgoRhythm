@@ -1,6 +1,6 @@
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
 
-export const HISTORY_TYPES = ['전체', '보결', '변경', '생성', '수정', '교환']
+export const HISTORY_TYPES = ['전체', '보결']
 export const HISTORY_STATUSES = ['미처리', '대기 중', '완료', '취소됨']
 export const HISTORY_PAGE_SIZE = 30
 
@@ -74,6 +74,43 @@ export function countByType(records) {
     counts[type] = records.filter((record) => record.type === type).length
   }
   return counts
+}
+
+const SUBSTITUTE_DAY = { MON: '월', TUE: '화', WED: '수', THU: '목', FRI: '금', SAT: '토', SUN: '일' }
+const SUBSTITUTE_STATUS = {
+  OPEN: '미처리',
+  FILLED: '완료',
+  CANCELLED: '취소됨',
+  EXPIRED: '취소됨',
+}
+
+/** 보결 목록에 있는 필드만 내역 행으로 만든다. 요청자 이름은 응답에 없다. */
+export function substituteToHistoryRecord(item) {
+  const date = item.substituteDate || String(item.createdAt || '').slice(0, 10)
+  const created = item.createdAt ? new Date(item.createdAt) : null
+  const time = created && !Number.isNaN(created.getTime())
+    ? created.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+    : ''
+  const title = [
+    item.periodNumber != null ? `${item.periodNumber}교시` : '',
+    SUBSTITUTE_DAY[item.dayOfWeek],
+    item.note,
+  ].filter(Boolean).join(' · ') || '보결'
+  return {
+    id: item.id,
+    date,
+    type: '보결',
+    status: SUBSTITUTE_STATUS[item.status] || '미처리',
+    title,
+    before: '',
+    after: item.note || '',
+    actor: '',
+    time,
+    search: title,
+    requester: null,
+    acceptor: null,
+    approver: null,
+  }
 }
 
 /** @param {{ status?: string }[]} records */

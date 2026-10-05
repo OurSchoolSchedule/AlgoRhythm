@@ -1,5 +1,5 @@
-import { useEffect, useId, useRef, useState } from "react";
-import { useStoreStaffSummary } from "@/hooks";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useStoreStaffSummary, useSubstituteHistory } from "@/hooks";
 import SchoolClassPanel from "@/components/schedule/SchoolClassPanel.jsx";
 import SchoolSettingPanel from "@/components/schedule/SchoolSettingPanel.jsx";
 import {
@@ -15,145 +15,8 @@ import {
   groupHistoryByDate,
   monthsWithData,
   recordsInMonth,
+  substituteToHistoryRecord,
 } from "@/utils/historyList.js";
-
-const historyData = [
-  {
-    id: 1,
-    date: "2026-05-28",
-    type: "보결",
-    status: "완료",
-    title: "3교시 · 2-3반 · 수학",
-    before: "박철수 선생님",
-    after: "김민지 선생님 보결 처리",
-    actor: "김OO",
-    time: "14:20",
-    search: "김민지 박철수 2-3반 수학",
-    requester: { name: "박철수", at: "09:10" },
-    acceptor: { name: "김민지", at: "11:02" },
-    approver: { name: "관리자", at: "14:20" },
-  },
-  {
-    id: 2,
-    date: "2026-05-28",
-    type: "보결",
-    status: "완료",
-    title: "5교시 · 3-1반 · 영어",
-    before: "최영호 선생님",
-    after: "이철수 선생님 보결",
-    actor: "최OO",
-    time: "09:30",
-    search: "이철수 최영호 3-1반 영어",
-    requester: { name: "최영호", at: "08:40" },
-    acceptor: { name: "이철수", at: "09:05" },
-    approver: { name: "관리자", at: "09:30" },
-  },
-  {
-    id: 3,
-    date: "2026-05-27",
-    type: "변경",
-    status: "완료",
-    title: "6교시 · 1-4반",
-    before: "본관 3층",
-    after: "시청각실",
-    actor: "이OO",
-    time: "10:05",
-    search: "1-4반 본관 시청각실",
-    requester: { name: "이OO", at: "09:50" },
-    acceptor: null,
-    approver: { name: "관리자", at: "10:05" },
-  },
-  {
-    id: 4,
-    date: "2026-05-26",
-    type: "생성",
-    status: "완료",
-    title: "2026년 1학기 시간표",
-    before: "",
-    after: "최종 확정 (대안 A 선택)",
-    actor: "관리자",
-    time: "16:40",
-    search: "시간표 1학기",
-    requester: { name: "관리자", at: "15:00" },
-    acceptor: null,
-    approver: { name: "관리자", at: "16:40" },
-  },
-  {
-    id: 5,
-    date: "2026-05-20",
-    type: "수정",
-    status: "취소됨",
-    title: "2-2반 · 월요일 2교시",
-    before: "09:30",
-    after: "수업 시간 조정",
-    actor: "박OO",
-    time: "13:15",
-    search: "2-2반 박OO",
-    requester: { name: "박OO", at: "12:10" },
-    acceptor: null,
-    approver: { name: "관리자", at: "13:15" },
-  },
-  {
-    id: 6,
-    date: "2026-05-15",
-    type: "교환",
-    status: "대기 중",
-    title: "화요일 3교시",
-    before: "박지은",
-    after: "최영호",
-    actor: "박OO",
-    time: "11:48",
-    search: "박지은 최영호 화요일",
-    requester: { name: "박지은", at: "11:20" },
-    acceptor: { name: "최영호", at: "11:40" },
-    approver: null,
-  },
-  {
-    id: 7,
-    date: "2026-05-10",
-    type: "보결",
-    status: "미처리",
-    title: "1교시 · 1-2반 · 수학",
-    before: "김민지 선생님",
-    after: "신청자 없음",
-    actor: "",
-    time: "08:10",
-    search: "김민지 1-2반 수학",
-    requester: { name: "김민지", at: "08:10" },
-    acceptor: null,
-    approver: null,
-  },
-  {
-    id: 8,
-    date: "2026-04-12",
-    type: "보결",
-    status: "완료",
-    title: "2교시 · 2-1반 · 과학",
-    before: "이수진 선생님",
-    after: "김민지 선생님 보결 처리",
-    actor: "김OO",
-    time: "15:00",
-    search: "김민지 이수진 2-1반 과학",
-    requester: { name: "이수진", at: "10:00" },
-    acceptor: { name: "김민지", at: "14:10" },
-    approver: { name: "관리자", at: "15:00" },
-  },
-  {
-    id: 9,
-    date: "2026-04-03",
-    type: "변경",
-    status: "완료",
-    title: "4교시 · 1-1반",
-    before: "음악실",
-    after: "본관 2층",
-    actor: "최OO",
-    time: "09:00",
-    search: "1-1반 음악실",
-    requester: { name: "최OO", at: "08:30" },
-    acceptor: null,
-    approver: { name: "관리자", at: "09:00" },
-  },
-];
 
 const typeColor = {
   보결: "var(--color-warning)",
@@ -235,8 +98,13 @@ function HistoryDetail({ record, onClose }) {
 }
 
 export function HistoryView() {
+  const historyQuery = useSubstituteHistory();
+  const historyData = useMemo(
+    () => (historyQuery.data ?? []).map(substituteToHistoryRecord).filter((record) => record.date),
+    [historyQuery.data],
+  );
   const months = monthsWithData(historyData);
-  const [month, setMonth] = useState(months[0] ?? "");
+  const [month, setMonth] = useState("");
   const [monthOpen, setMonthOpen] = useState(false);
   const [type, setType] = useState("전체");
   const [query, setQuery] = useState("");
@@ -252,6 +120,10 @@ export function HistoryView() {
   const visible = filtered.slice(0, visibleCount);
   const groups = groupHistoryByDate(visible);
   const selected = historyData.find((record) => record.id === selectedId) ?? null;
+
+  useEffect(() => {
+    if (!month && months[0]) setMonth(months[0]);
+  }, [month, months]);
   const narrowed = type !== "전체" || query.trim() !== "" || status !== "";
 
   useEffect(() => {
@@ -366,7 +238,7 @@ export function HistoryView() {
           <input
             type="search"
             value={query}
-            placeholder="교사·학급·과목 검색"
+            placeholder="교시·사유 검색"
             onChange={(event) => {
               setQuery(event.target.value);
               setVisibleCount(HISTORY_PAGE_SIZE);
@@ -404,7 +276,18 @@ export function HistoryView() {
         )}
       </div>
 
-      {monthItems.length === 0 ? (
+      {historyQuery.isLoading && <p className="history-empty">불러오는 중...</p>}
+      {historyQuery.isError && (
+        <p className="history-empty">
+          보결 내역을 불러오지 못했습니다.{" "}
+          <button type="button" className="history-link" onClick={() => historyQuery.refetch()}>다시 시도</button>
+        </p>
+      )}
+      {!historyQuery.isLoading && !historyQuery.isError && historyData.length === 0 && (
+        <p className="history-empty">보결 내역이 없습니다</p>
+      )}
+
+      {!historyQuery.isLoading && !historyQuery.isError && historyData.length > 0 && (monthItems.length === 0 ? (
         <p className="history-empty">{month ? emptyMonthMessage(month) : "변동 내역이 없습니다"}</p>
       ) : (
         <>
@@ -453,7 +336,7 @@ export function HistoryView() {
             </button>
           )}
         </>
-      )}
+      ))}
 
       {selected && <HistoryDetail record={selected} onClose={() => setSelectedId(null)} />}
     </div>
