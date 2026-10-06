@@ -1,5 +1,5 @@
 /**
- * 대타(Shift Swap) 타입.
+ * 수업 교환(Timetable Swap) 타입.
  */
 
 /**
@@ -25,11 +25,17 @@
  */
 
 /**
- * @typedef {Object} ShiftSwapResponseDto
- * @property {number} requestId
- * @property {number} shiftId
- * @property {number} requesterId
- * @property {number} receiverId
+ * @typedef {Object} TimetableSwapResponseDto
+ * @property {number} id
+ * @property {number} [schoolId]
+ * @property {number} requesterTimetableId
+ * @property {string} requesterDate
+ * @property {number} [requesterSchoolUserId]
+ * @property {string} [requesterUsername]
+ * @property {number} receiverTimetableId
+ * @property {string} receiverDate
+ * @property {number} [receiverSchoolUserId]
+ * @property {string} [receiverUsername]
  * @property {string} reason
  * @property {string} status
  * @property {string} managerApprovalStatus

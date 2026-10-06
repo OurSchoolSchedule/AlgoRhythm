@@ -24,14 +24,26 @@ export const queryKeys = {
   },
   unavailability: {
     me: () => ['unavailability', 'me'],
+    school: () => ['unavailability', 'school'],
   },
   schedule: {
     submissionStatus: () => ['schedule', 'without-availability'],
     candidates: (key) => ['schedule', 'candidates', key],
   },
   timetable: {
-    mine: () => ['timetable', 'me'],
-    school: () => ['timetable', 'school'],
+    mine: (year, semester) => (
+      year != null && semester != null
+        ? ['timetable', 'me', year, semester]
+        : ['timetable', 'me']
+    ),
+    school: (year, semester) => (
+      year != null && semester != null
+        ? ['timetable', 'school', year, semester]
+        : ['timetable', 'school']
+    ),
+  },
+  swap: {
+    mine: () => ['timetable-swap', 'me'],
   },
   todo: {
     byDate: (date) => ['todo', date],

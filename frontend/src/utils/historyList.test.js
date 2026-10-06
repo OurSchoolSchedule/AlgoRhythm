@@ -31,7 +31,7 @@ describe('substitute history rows', () => {
       note: '출장',
       createdAt: '2026-05-09T23:10:00Z',
     })).toMatchObject({
-      id: 4,
+      id: 'sub-4',
       date: '2026-05-10',
       type: '보결',
       status: '미처리',

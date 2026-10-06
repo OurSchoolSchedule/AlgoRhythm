@@ -20,7 +20,7 @@
  */
 
 /**
- * 시간표 칸 수정 (PATCH /api/timetable/{timetableId}).
+ * 시간표 칸 생성·수정 (POST /api/timetable, PATCH /api/timetable/{timetableId}).
  * 목록의 teacherId를 teacherSchoolUserId로 보낸다.
  * @typedef {Object} TimetableCreateDto
  * @property {number} [academicYear]

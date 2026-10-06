@@ -1,5 +1,10 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { useStoreStaffSummary, useSubstituteHistory } from "@/hooks";
+import {
+  useMySwapRequests,
+  useSchoolUnavailabilities,
+  useStoreStaffSummary,
+  useSubstituteHistory,
+} from "@/hooks";
 import SchoolClassPanel from "@/components/schedule/SchoolClassPanel.jsx";
 import SchoolSettingPanel from "@/components/schedule/SchoolSettingPanel.jsx";
 import {
@@ -16,7 +21,9 @@ import {
   monthsWithData,
   recordsInMonth,
   substituteToHistoryRecord,
+  swapToHistoryRecord,
 } from "@/utils/historyList.js";
+import { getApiErrorMessage } from "@/utils/timetableGeneration.js";
 
 const typeColor = {
   보결: "var(--color-warning)",
@@ -95,10 +102,18 @@ function HistoryDetail({ record, onClose }) {
 
 export function HistoryView() {
   const historyQuery = useSubstituteHistory();
-  const historyData = useMemo(
-    () => (historyQuery.data ?? []).map(substituteToHistoryRecord).filter((record) => record.date),
-    [historyQuery.data],
-  );
+  const swapQuery = useMySwapRequests();
+  const historyData = useMemo(() => {
+    const substitutes = (historyQuery.data ?? []).map(substituteToHistoryRecord);
+    const swaps = (swapQuery.data ?? []).map(swapToHistoryRecord);
+    return [...substitutes, ...swaps].filter((record) => record.date);
+  }, [historyQuery.data, swapQuery.data]);
+  const listLoading = historyQuery.isLoading || swapQuery.isLoading;
+  const listError = historyQuery.isError || swapQuery.isError;
+  const refetchList = () => {
+    historyQuery.refetch();
+    swapQuery.refetch();
+  };
   const months = monthsWithData(historyData);
   const [monthChoice, setMonthChoice] = useState("");
   const month = months.includes(monthChoice) ? monthChoice : (months[0] ?? "");
@@ -269,18 +284,18 @@ export function HistoryView() {
         )}
       </div>
 
-      {historyQuery.isLoading && <p className="history-empty">불러오는 중...</p>}
-      {historyQuery.isError && (
+      {listLoading && <p className="history-empty">불러오는 중...</p>}
+      {listError && (
         <p className="history-empty">
-          보결 내역을 불러오지 못했습니다.{" "}
-          <button type="button" className="history-link" onClick={() => historyQuery.refetch()}>다시 시도</button>
+          내역을 불러오지 못했습니다.{" "}
+          <button type="button" className="history-link" onClick={refetchList}>다시 시도</button>
         </p>
       )}
-      {!historyQuery.isLoading && !historyQuery.isError && historyData.length === 0 && (
-        <p className="history-empty">보결 내역이 없습니다</p>
+      {!listLoading && !listError && historyData.length === 0 && (
+        <p className="history-empty">변동 내역이 없습니다</p>
       )}
 
-      {!historyQuery.isLoading && !historyQuery.isError && historyData.length > 0 && (monthItems.length === 0 ? (
+      {!listLoading && !listError && historyData.length > 0 && (monthItems.length === 0 ? (
         <p className="history-empty">{month ? emptyMonthMessage(month) : "변동 내역이 없습니다"}</p>
       ) : (
         <>
@@ -346,7 +361,7 @@ const ROLE_LABEL = { ADMIN: "관리자", TEACHER: "교사" };
 
 export function AdminView({ navigate }) {
   const [tab, setTab] = useState("교사");
-  const tabs = ["교사", "학급", "설정"];
+  const tabs = ["교사", "학급", "불가", "설정"];
 
   const {
     data: staffSummary,
@@ -354,6 +369,12 @@ export function AdminView({ navigate }) {
     isError: staffError,
   } = useStoreStaffSummary();
   const staffList = staffSummary?.staffList ?? [];
+  const schoolUnavail = useSchoolUnavailabilities({ enabled: tab === "불가" });
+  const DAY_LABEL = { MON: "월", TUE: "화", WED: "수", THU: "목", FRI: "금" };
+  const memberName = (schoolUserId) => (
+    staffList.find((item) => item.userStoreId === schoolUserId)?.username
+    || `구성원 ${schoolUserId ?? ""}`
+  );
 
   return (
     <div>
@@ -396,7 +417,7 @@ export function AdminView({ navigate }) {
         <div style={{ background: "var(--color-surface)", borderRadius: 12, border: "1px solid var(--color-border)", padding: "20px 24px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
             <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>
-              교사 목록{staffSummary ? ` · 총 ${staffSummary.totalStaffCount}명` : ""}
+              구성원 목록{staffSummary ? ` · 총 ${staffSummary.totalStaffCount}명` : ""}
             </p>
             {staffSummary?.storeName && (
               <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{staffSummary.storeName}</span>
@@ -412,7 +433,7 @@ export function AdminView({ navigate }) {
             </p>
           )}
           {!staffLoading && !staffError && staffList.length === 0 && (
-            <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>등록된 교사가 없습니다.</p>
+            <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>등록된 구성원이 없습니다.</p>
           )}
 
           {!staffLoading && !staffError && staffList.length > 0 && (
@@ -457,6 +478,47 @@ export function AdminView({ navigate }) {
       )}
 
       {tab === "학급" && <SchoolClassPanel />}
+
+      {tab === "불가" && (
+        <div style={{ background: "var(--color-surface)", borderRadius: 12, border: "1px solid var(--color-border)", padding: "20px 24px" }}>
+          <p style={{ margin: "0 0 14px", fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>
+            학교 전체 근무 불가
+          </p>
+          {schoolUnavail.isLoading && (
+            <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>불러오는 중...</p>
+          )}
+          {schoolUnavail.isError && (
+            <p style={{ margin: 0, fontSize: 13, color: "var(--color-danger)" }}>
+              {getApiErrorMessage(schoolUnavail.error, "근무 불가를 불러오지 못했습니다.")}{" "}
+              <button type="button" className="history-link" onClick={() => schoolUnavail.refetch()}>다시 시도</button>
+            </p>
+          )}
+          {!schoolUnavail.isLoading && !schoolUnavail.isError && (schoolUnavail.data?.length ?? 0) === 0 && (
+            <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>등록된 근무 불가가 없습니다.</p>
+          )}
+          {!schoolUnavail.isLoading && !schoolUnavail.isError && (schoolUnavail.data?.length ?? 0) > 0 && (
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
+                  {["교사", "요일", "교시", "사유"].map((h) => (
+                    <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "var(--color-text-muted)" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {schoolUnavail.data.map((item) => (
+                  <tr key={item.id ?? `${item.schoolUserId}-${item.dayOfWeek}-${item.periodNumber}`} style={{ borderBottom: "1px solid var(--color-border-light)" }}>
+                    <td style={{ padding: "10px 12px", fontWeight: 600 }}>{memberName(item.schoolUserId)}</td>
+                    <td style={{ padding: "10px 12px" }}>{DAY_LABEL[item.dayOfWeek] || item.dayOfWeek}</td>
+                    <td style={{ padding: "10px 12px" }}>{item.periodNumber}교시</td>
+                    <td style={{ padding: "10px 12px", color: "var(--color-text-secondary)" }}>{item.reason || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
 
       {tab === "설정" && <SchoolSettingPanel />}
     </div>

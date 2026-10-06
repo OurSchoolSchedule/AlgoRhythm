@@ -1,6 +1,7 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   createShiftSwapRequest,
+  getMySwapRequests,
   respondShiftSwap,
   approveShiftSwap,
 } from '@/api'
@@ -11,7 +12,16 @@ function useInvalidateAfterSwap() {
   return () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.notification.list() })
     queryClient.invalidateQueries({ queryKey: ['timetable'] })
+    queryClient.invalidateQueries({ queryKey: queryKeys.swap.mine() })
   }
+}
+
+export function useMySwapRequests(options = {}) {
+  return useQuery({
+    queryKey: queryKeys.swap.mine(),
+    queryFn: getMySwapRequests,
+    ...options,
+  })
 }
 
 export function useCreateShiftSwapRequest() {
