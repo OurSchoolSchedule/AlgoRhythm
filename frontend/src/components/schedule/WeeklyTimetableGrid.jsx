@@ -1,93 +1,143 @@
-import { Fragment } from 'react'
-import { TIMETABLE_DAYS, TIMETABLE_PERIODS } from '@/constants/schoolTimetable.js'
+import { SCHOOL_PERIOD_SLOTS } from '@/constants/schoolTimetable.js'
+import { formatClassName } from '@/utils/homeFocus.js'
+import {
+  STATUS_BADGE,
+  boardPeriods,
+  cellSlotKey,
+  cellStatusKind,
+  periodsWithLunch,
+} from '@/utils/timetableBoard.js'
+
+function clockOf(period) {
+  const slot = SCHOOL_PERIOD_SLOTS.find((item) => item.period === period)
+  return shortClock(slot?.start)
+}
+
+function shortClock(value) {
+  if (!value) return ''
+  const [hour, minute] = String(value).split(':')
+  if (hour == null || minute == null) return ''
+  return `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`
+}
+
+function subline(cell, detailMode) {
+  const klass = formatClassName(cell.class)
+  if (detailMode === 'class') return [cell.teacher, cell.location].filter(Boolean).join(' · ')
+  if (detailMode === 'all') return [klass, cell.teacher].filter(Boolean).join(' · ')
+  return [klass, cell.location].filter(Boolean).join(' · ')
+}
 
 /**
  * @param {Object} props
  * @param {ReturnType<import('@/utils/schoolTimetable.js').buildSchoolTimetable>} props.timetable
+ * @param {{ key: string, dayNum: number, holiday: string, isToday: boolean, isPast: boolean }[]} props.days
  */
-export default function WeeklyTimetableGrid({ timetable }) {
-  const { byDay } = timetable
+export default function WeeklyTimetableGrid({
+  timetable,
+  days,
+  detailMode = 'teacher',
+  selectedKey = '',
+  editing = false,
+  dragFrom = null,
+  hoverKey = '',
+  hoverReason = '',
+  onSelect,
+  onDragStart,
+  onDragHover,
+  onDrop,
+  onDragEnd,
+}) {
+  const periods = boardPeriods(timetable.periods, timetable.byDay)
+  const rows = periodsWithLunch(periods)
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '72px repeat(5, 1fr)',
-        gap: '10px 12px',
-        alignItems: 'stretch',
-      }}
-    >
-      <div />
-      {TIMETABLE_DAYS.map((day) => (
+    <div className="tt-board show-scrollbar">
+      <div className="tt-head-row">
+      <div className="tt-corner" />
+      {days.map((day) => (
         <div
-          key={day}
-          style={{
-            textAlign: 'center',
-            fontSize: 14,
-            fontWeight: 600,
-            color: '#2c2c2a',
-            paddingBottom: 4,
-          }}
+          key={day.key}
+          className={`tt-headcell${day.isToday ? ' is-today' : ''}${day.holiday ? ' is-off' : ''}${day.isPast ? ' is-past' : ''}`}
         >
-          {day}
+          <span className="tt-dow">{day.key}</span>
+          <span className={`tt-dom${day.isToday ? ' is-today' : ''}`}>{day.dayNum}</span>
+          {day.holiday ? <span className="tt-holiday">{day.holiday}</span> : null}
         </div>
       ))}
+      </div>
 
-      {TIMETABLE_PERIODS.map((period) => (
-        <Fragment key={period}>
-          <div
-            style={{
-              fontSize: 13,
-              color: '#888',
-              textAlign: 'right',
-              paddingRight: 8,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-            }}
-          >
-            {period}교시
+      {rows.map((row) => {
+        if (row.kind === 'lunch') {
+          return (
+            <div key="lunch" className="tt-lunch-row">
+              <div className="tt-time" />
+              <div className="tt-lunch">점심시간</div>
+            </div>
+          )
+        }
+        return (
+          <div key={row.period} className="tt-period-row">
+            <div className="tt-time">
+              <span className="tt-period-num">{row.period}교시</span>
+              <span className="tt-period-clock">{clockOf(row.period)}</span>
+            </div>
+            {days.map((day) => {
+              const cell = timetable.byDay?.[day.key]?.[row.period] ?? null
+              const key = cellSlotKey(day.key, row.period)
+              const kind = cell ? cellStatusKind(cell.status) : ''
+              const dragging = dragFrom && cellSlotKey(dragFrom.day, dragFrom.period) === key
+              const hovered = hoverKey === key && dragFrom
+              const rejected = hovered && hoverReason
+              const className = [
+                'tt-slot',
+                day.isToday ? 'is-today' : '',
+                day.holiday ? 'is-off' : '',
+                day.isPast ? 'is-past' : '',
+                selectedKey === key ? 'is-selected' : '',
+                dragging ? 'is-drag' : '',
+                hovered && !rejected ? 'is-allow' : '',
+                rejected ? 'is-reject' : '',
+              ].filter(Boolean).join(' ')
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className={className}
+                  draggable={editing && Boolean(cell)}
+                  title={rejected ? hoverReason : undefined}
+                  onClick={() => onSelect?.({ day: day.key, period: row.period })}
+                  onDragStart={(event) => {
+                    event.dataTransfer.effectAllowed = 'move'
+                    event.dataTransfer.setData('text/plain', key)
+                    onDragStart?.({ day: day.key, period: row.period })
+                  }}
+                  onDragOver={(event) => {
+                    if (!editing || !dragFrom) return
+                    event.preventDefault()
+                    onDragHover?.({ day: day.key, period: row.period })
+                  }}
+                  onDrop={(event) => {
+                    if (!editing) return
+                    event.preventDefault()
+                    onDrop?.({ day: day.key, period: row.period })
+                  }}
+                  onDragEnd={() => onDragEnd?.()}
+                >
+                  {cell ? (
+                    <>
+                      <span className="tt-subject">{cell.subject || '수업'}</span>
+                      {subline(cell, detailMode) ? <span className="tt-sub">{subline(cell, detailMode)}</span> : null}
+                      {kind ? <span className={`tt-badge is-${kind}`}>{STATUS_BADGE[kind]}</span> : null}
+                    </>
+                  ) : (
+                    <span className="tt-free">공강</span>
+                  )}
+                </button>
+              )
+            })}
           </div>
-          {TIMETABLE_DAYS.map((day) => {
-            const cell = byDay[day][period]
-            return (
-              <div
-                key={`${day}-${period}`}
-                style={{
-                  minHeight: 52,
-                  borderRadius: 10,
-                  background: cell ? '#eceae4' : '#fff',
-                  border: cell ? 'none' : '0.5px solid #eceae4',
-                  padding: cell ? '6px 8px' : 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  gap: 2,
-                }}
-              >
-                {cell ? (
-                  <>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: '#2c2c2a',
-                        lineHeight: 1.3,
-                        wordBreak: 'break-all',
-                      }}
-                    >
-                      {cell.class}
-                    </span>
-                    <span style={{ fontSize: 10, color: '#666', lineHeight: 1.2 }}>
-                      {cell.subject}
-                    </span>
-                  </>
-                ) : null}
-              </div>
-            )
-          })}
-        </Fragment>
-      ))}
+        )
+      })}
     </div>
   )
 }

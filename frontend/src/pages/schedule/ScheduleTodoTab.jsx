@@ -9,9 +9,10 @@ import {
   useOwnerProfile,
   useStaffProfile,
 } from '@/hooks'
+import TodoPage from '@/pages/schedule/TodoPage.jsx'
 
 const TODO_SECTIONS = [
-  { key: 'storeTodos', label: '전체 공지', type: 'STORE' },
+  { key: 'schoolTodos', label: '전체 공지', type: 'SCHOOL' },
   { key: 'handoverTodos', label: '인수인계', type: 'HANDOVER' },
   { key: 'personalTodos', label: '내 할 일', type: 'PERSONAL' },
 ]
@@ -19,20 +20,22 @@ const TODO_SECTIONS = [
 const CREATE_TYPE_OPTIONS = [
   { value: 'PERSONAL', label: '내 할 일' },
   { value: 'HANDOVER', label: '인수인계' },
-  { value: 'STORE', label: '전체 공지', ownerOnly: true },
+  { value: 'SCHOOL', label: '전체 공지', ownerOnly: true },
 ]
 
-function canModifyTodo(todo, isOwner, userId) {
-  if (todo.todoType === 'STORE') return isOwner
-  if (todo.todoType === 'HANDOVER') return isOwner || todo.authorId === userId
+function canModifyTodo(todo, isAdmin, userId) {
+  if (todo.todoType === 'SCHOOL') return isAdmin
+  if (isAdmin) return true
+  if (userId == null) return todo.todoType !== 'SCHOOL'
+  if (todo.todoType === 'HANDOVER') return todo.authorId === userId
   if (todo.todoType === 'PERSONAL') return todo.authorId === userId
   return false
 }
 
-function TodoRow({ todo, isOwner, userId, toggleTodo, updateTodo, deleteTodo }) {
+function TodoRow({ todo, isAdmin, userId, toggleTodo, updateTodo, deleteTodo }) {
   const [editing, setEditing] = useState(false)
   const [editContent, setEditContent] = useState(todo.content)
-  const canModify = canModifyTodo(todo, isOwner, userId)
+  const canModify = canModifyTodo(todo, isAdmin, userId)
   const isBusy = toggleTodo.isPending || updateTodo.isPending || deleteTodo.isPending
 
   const saveEdit = () => {
@@ -65,7 +68,7 @@ function TodoRow({ todo, isOwner, userId, toggleTodo, updateTodo, deleteTodo }) 
         alignItems: 'center',
         gap: 12,
         padding: '12px 4px',
-        borderBottom: '0.5px solid #f1efe8',
+        borderBottom: '1px solid var(--color-border-light)',
       }}
     >
       <input
@@ -73,7 +76,7 @@ function TodoRow({ todo, isOwner, userId, toggleTodo, updateTodo, deleteTodo }) 
         checked={Boolean(todo.completed)}
         disabled={isBusy || !canModify}
         onChange={() => toggleTodo.mutate(todo.id)}
-        style={{ accentColor: '#27a859', width: 16, height: 16, flexShrink: 0 }}
+        style={{ accentColor: 'var(--color-primary)', width: 16, height: 16, flexShrink: 0 }}
       />
 
       {editing ? (
@@ -91,9 +94,9 @@ function TodoRow({ todo, isOwner, userId, toggleTodo, updateTodo, deleteTodo }) 
             flex: 1,
             padding: '8px 10px',
             borderRadius: 8,
-            border: '0.5px solid #d3d1c7',
+            border: '1px solid var(--color-border-input)',
             fontSize: 14,
-            color: '#2c2c2a',
+            color: 'var(--color-text)',
             outline: 'none',
           }}
         />
@@ -103,7 +106,7 @@ function TodoRow({ todo, isOwner, userId, toggleTodo, updateTodo, deleteTodo }) 
             style={{
               display: 'block',
               fontSize: 14,
-              color: todo.completed ? '#b4b2a9' : '#2c2c2a',
+              color: todo.completed ? 'var(--color-text-muted)' : 'var(--color-text)',
               textDecoration: todo.completed ? 'line-through' : 'none',
               wordBreak: 'break-word',
             }}
@@ -111,7 +114,7 @@ function TodoRow({ todo, isOwner, userId, toggleTodo, updateTodo, deleteTodo }) 
             {todo.content}
           </span>
           {todo.authorName && (
-            <span style={{ fontSize: 11, color: '#b4b2a9' }}>{todo.authorName}</span>
+            <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{todo.authorName}</span>
           )}
         </div>
       )}
@@ -124,11 +127,11 @@ function TodoRow({ todo, isOwner, userId, toggleTodo, updateTodo, deleteTodo }) 
                 type="button"
                 disabled={isBusy || !editContent.trim()}
                 onClick={saveEdit}
-                style={actionBtnStyle('#27a859')}
+                style={actionBtnStyle('var(--color-primary)')}
               >
                 저장
               </button>
-              <button type="button" disabled={isBusy} onClick={cancelEdit} style={actionBtnStyle('#888')}>
+              <button type="button" disabled={isBusy} onClick={cancelEdit} style={actionBtnStyle('var(--color-text-muted)')}>
                 취소
               </button>
             </>
@@ -138,7 +141,7 @@ function TodoRow({ todo, isOwner, userId, toggleTodo, updateTodo, deleteTodo }) 
                 type="button"
                 disabled={isBusy}
                 onClick={() => setEditing(true)}
-                style={actionBtnStyle('#888')}
+                style={actionBtnStyle('var(--color-text-muted)')}
               >
                 수정
               </button>
@@ -146,7 +149,7 @@ function TodoRow({ todo, isOwner, userId, toggleTodo, updateTodo, deleteTodo }) 
                 type="button"
                 disabled={isBusy}
                 onClick={handleDelete}
-                style={actionBtnStyle('#d85a30')}
+                style={actionBtnStyle('var(--color-danger)')}
               >
                 삭제
               </button>
@@ -162,33 +165,33 @@ function actionBtnStyle(color) {
   return {
     padding: '5px 10px',
     borderRadius: 6,
-    border: `0.5px solid ${color}`,
-    background: '#fff',
+    border: `1px solid ${color}`,
+    background: 'var(--color-surface)',
     color,
     fontSize: 12,
     cursor: 'pointer',
   }
 }
 
-export default function ScheduleTodoTab({ date }) {
+function TodoEmbed({ date, userRole }) {
   const [content, setContent] = useState('')
   const [todoType, setTodoType] = useState('PERSONAL')
 
   const { data: activeStore } = useActiveStore()
-  const isOwner = activeStore?.position === 'OWNER'
-  const { data: ownerProfile } = useOwnerProfile({ enabled: isOwner })
+  const isAdmin = activeStore?.position === 'ADMIN' || userRole === 'admin'
+  const { data: ownerProfile } = useOwnerProfile({ enabled: isAdmin })
   const { data: staffProfile } = useStaffProfile({
-    enabled: Boolean(activeStore) && !isOwner,
+    enabled: Boolean(activeStore) && !isAdmin,
   })
-  const userId = isOwner ? ownerProfile?.userId : staffProfile?.userId
+  const userId = isAdmin ? ownerProfile?.userId : staffProfile?.userId
 
-  const { data: todoData, isLoading, isError } = useTodos(date)
+  const { data: todoData, isLoading, isError, refetch } = useTodos(date)
   const createTodo = useCreateTodo()
   const updateTodo = useUpdateTodo()
   const deleteTodo = useDeleteTodo()
   const toggleTodo = useToggleTodo()
 
-  const availableTypes = CREATE_TYPE_OPTIONS.filter((opt) => !opt.ownerOnly || isOwner)
+  const availableTypes = CREATE_TYPE_OPTIONS.filter((opt) => !opt.ownerOnly || isAdmin)
 
   const handleCreate = (e) => {
     e.preventDefault()
@@ -212,11 +215,8 @@ export default function ScheduleTodoTab({ date }) {
         style={{
           display: 'flex',
           flexWrap: 'wrap',
-          gap: 10,
-          padding: '16px',
-          borderRadius: 10,
-          background: '#f8f8f6',
-          border: '0.5px solid #eceae4',
+          gap: 8,
+          alignItems: 'center',
         }}
       >
         <select
@@ -225,10 +225,10 @@ export default function ScheduleTodoTab({ date }) {
           style={{
             padding: '9px 12px',
             borderRadius: 8,
-            border: '0.5px solid #d3d1c7',
+            border: '1px solid var(--color-border-input)',
             fontSize: 13,
-            color: '#2c2c2a',
-            background: '#fff',
+            color: 'var(--color-text)',
+            background: 'var(--color-surface)',
           }}
         >
           {availableTypes.map((opt) => (
@@ -248,9 +248,9 @@ export default function ScheduleTodoTab({ date }) {
             minWidth: 180,
             padding: '9px 12px',
             borderRadius: 8,
-            border: '0.5px solid #d3d1c7',
+            border: '1px solid var(--color-border-input)',
             fontSize: 14,
-            color: '#2c2c2a',
+            color: 'var(--color-text)',
             outline: 'none',
           }}
         />
@@ -261,8 +261,8 @@ export default function ScheduleTodoTab({ date }) {
             padding: '9px 18px',
             borderRadius: 8,
             border: 'none',
-            background: createTodo.isPending || !content.trim() ? '#bfe3cd' : '#27a859',
-            color: '#fff',
+            background: createTodo.isPending || !content.trim() ? 'var(--color-border)' : 'var(--color-primary-button)',
+            color: createTodo.isPending || !content.trim() ? 'var(--color-text-muted)' : 'var(--color-on-primary)',
             fontSize: 13,
             fontWeight: 600,
             cursor: createTodo.isPending || !content.trim() ? 'default' : 'pointer',
@@ -273,15 +273,31 @@ export default function ScheduleTodoTab({ date }) {
       </form>
 
       {createTodo.isError && (
-        <p style={{ margin: 0, fontSize: 13, color: '#d85a30' }}>
-          할 일 추가에 실패했습니다. 권한을 확인해 주세요.
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--color-danger)' }}>
+          할 일 추가에 실패했습니다.{' '}
+          <button type="button" className="history-link" onClick={() => createTodo.reset()}>다시 시도</button>
+        </p>
+      )}
+      {(updateTodo.isError || deleteTodo.isError || toggleTodo.isError) && (
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--color-danger)' }}>
+          할 일을 바꾸지 못했습니다.{' '}
+          <button
+            type="button"
+            className="history-link"
+            onClick={() => {
+              updateTodo.reset()
+              deleteTodo.reset()
+              toggleTodo.reset()
+            }}
+          >다시 시도</button>
         </p>
       )}
 
-      {isLoading && <p style={{ margin: 0, fontSize: 14, color: '#888' }}>불러오는 중...</p>}
+      {isLoading && <p style={{ margin: 0, fontSize: 14, color: 'var(--color-text-muted)' }}>불러오는 중...</p>}
       {isError && (
-        <p style={{ margin: 0, fontSize: 14, color: '#d85a30' }}>
-          할 일을 불러오지 못했습니다.
+        <p style={{ margin: 0, fontSize: 14, color: 'var(--color-danger)' }}>
+          할 일을 불러오지 못했습니다.{' '}
+          <button type="button" className="history-link" onClick={() => refetch()}>다시 시도</button>
         </p>
       )}
 
@@ -297,7 +313,7 @@ export default function ScheduleTodoTab({ date }) {
                     margin: '0 0 8px',
                     fontSize: 13,
                     fontWeight: 600,
-                    color: '#888',
+                    color: 'var(--color-text-muted)',
                   }}
                 >
                   {label}
@@ -307,7 +323,7 @@ export default function ScheduleTodoTab({ date }) {
                     <TodoRow
                       key={todo.id}
                       todo={todo}
-                      isOwner={isOwner}
+                      isAdmin={isAdmin}
                       userId={userId}
                       toggleTodo={toggleTodo}
                       updateTodo={updateTodo}
@@ -320,12 +336,17 @@ export default function ScheduleTodoTab({ date }) {
           })}
 
           {TODO_SECTIONS.every(({ key }) => (todoData[key] ?? []).length === 0) && (
-            <p style={{ margin: 0, fontSize: 14, color: '#b4b2a9' }}>
-              오늘 등록된 할 일이 없습니다. 위에서 추가해 보세요.
+            <p style={{ margin: 0, fontSize: 14, color: 'var(--color-text-muted)' }}>
+              오늘 할 일이 없습니다. 위에서 추가하세요.
             </p>
           )}
         </>
       )}
     </div>
   )
+}
+
+export default function ScheduleTodoTab({ embedded = false, date, userRole }) {
+  if (embedded) return <TodoEmbed date={date} userRole={userRole} />
+  return <TodoPage date={date} userRole={userRole} />
 }

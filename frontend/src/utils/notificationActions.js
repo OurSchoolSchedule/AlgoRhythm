@@ -1,11 +1,10 @@
 /**
- * 알림 액션 권한은 active-store의 position(OWNER/STAFF)만 사용.
- * 사이드바 userRole 토글과 분리한다.
+ * 알림 액션 권한은 active-school의 position(ADMIN/TEACHER)만 사용.
  * @param {import('@/types/notification.js').NotificationResponseDto} n
- * @param {'OWNER'|'STAFF'|undefined} position
+ * @param {'ADMIN'|'TEACHER'|undefined} position
  */
 export function resolvePosition(position) {
-  if (position === 'OWNER' || position === 'STAFF') return position
+  if (position === 'ADMIN' || position === 'TEACHER') return position
   return undefined
 }
 
@@ -14,46 +13,43 @@ export function getNotificationAction(n, position) {
   if (!n?.type || !role) return null
   const type = String(n.type)
 
-  // 교사: 1차 수락/거절만
   if (
-    type === 'SHIFT_SWAP_REQUEST' &&
-    role === 'STAFF' &&
-    n.shiftSwapRequestId &&
-    (!n.shiftSwapStatus || n.shiftSwapStatus === 'PENDING')
+    type === 'TIMETABLE_SWAP_REQUEST' &&
+    role === 'TEACHER' &&
+    n.timetableSwapRequestId &&
+    (!n.timetableSwapStatus || n.timetableSwapStatus === 'PENDING')
   ) {
-    return { kind: 'shift-swap-respond', requestId: n.shiftSwapRequestId }
+    return { kind: 'shift-swap-respond', requestId: n.timetableSwapRequestId }
   }
 
   if (
-    type === 'EXTRA_SHIFT_REQUEST_INVITE' &&
-    role === 'STAFF' &&
-    n.extraShiftRequestId &&
-    (!n.extraShiftStatus || n.extraShiftStatus === 'OPEN')
+    type === 'TIMETABLE_SWAP_NOTIFY_ADMIN' &&
+    role === 'ADMIN' &&
+    n.timetableSwapRequestId &&
+    (!n.timetableSwapManagerApprovalStatus ||
+      n.timetableSwapManagerApprovalStatus === 'PENDING')
   ) {
-    return { kind: 'extra-shift-respond', requestId: n.extraShiftRequestId }
-  }
-
-  // 관리자: 최종 승인/거절만
-  if (
-    type === 'SHIFT_SWAP_NOTIFY_MANAGER' &&
-    role === 'OWNER' &&
-    n.shiftSwapRequestId &&
-    (!n.shiftSwapManagerApprovalStatus ||
-      n.shiftSwapManagerApprovalStatus === 'PENDING')
-  ) {
-    return { kind: 'shift-swap-approve', requestId: n.shiftSwapRequestId }
+    return { kind: 'shift-swap-approve', requestId: n.timetableSwapRequestId }
   }
 
   if (
-    type === 'EXTRA_SHIFT_NOTIFY_MANAGER' &&
-    role === 'OWNER' &&
-    n.extraShiftRequestId &&
-    n.targetId
+    type === 'SUBSTITUTE_REQUEST_INVITE' &&
+    role === 'TEACHER' &&
+    n.substituteRequestId &&
+    (!n.substituteStatus || n.substituteStatus === 'OPEN')
+  ) {
+    return { kind: 'extra-shift-respond', requestId: n.substituteRequestId }
+  }
+
+  if (
+    type === 'SUBSTITUTE_NOTIFY_ADMIN' &&
+    role === 'ADMIN' &&
+    n.substituteResponseId
   ) {
     return {
       kind: 'extra-shift-approve',
-      requestId: n.extraShiftRequestId,
-      responseId: n.targetId,
+      requestId: n.substituteRequestId,
+      responseId: n.substituteResponseId,
     }
   }
 
@@ -67,13 +63,13 @@ export function filterActionableNotifications(notifications, position) {
 /** 브리핑 후보 알림 */
 export function filterBriefingNotifications(notifications) {
   return (notifications ?? []).filter((n) =>
-    ['SHIFT_SWAP', 'EXTRA_SHIFT', 'SCHEDULE_INPUT'].includes(n.category),
+    ['TIMETABLE_SWAP', 'SUBSTITUTE', 'SCHEDULE_INPUT'].includes(n.category),
   )
 }
 
-/** 교사 브리핑: 보결·추가 근무 알림 제외 */
+/** 교사 브리핑: 교환·보결 알림 제외 */
 export function filterTeacherBriefingNotifications(notifications) {
   return filterBriefingNotifications(notifications).filter(
-    (n) => n.category !== 'SHIFT_SWAP' && n.category !== 'EXTRA_SHIFT',
+    (n) => n.category !== 'TIMETABLE_SWAP' && n.category !== 'SUBSTITUTE',
   )
 }

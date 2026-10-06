@@ -1,109 +1,82 @@
 /**
- * 스케줄 생성(Schedule Generation) 타입.
- */
-
-/**
- * @typedef {Object} SegmentStaffDto
- * @property {number} segmentIndex 0부터 시작
- * @property {number} requiredStaff 해당 세그먼트 필요 인원수
- */
-
-/**
- * @typedef {Object} StaffRequirementDto
- * @property {SegmentStaffDto[]} [segmentStaffList] 세그먼트 사용 시
- * @property {number} [requiredStaff] 세그먼트 미사용 시 전체 동시 근무 인원
- */
-
-/**
- * 스케줄 요청 생성 (POST /api/schedules/requests).
- * @typedef {Object} ScheduleRequestDto
- * @property {string} startDate "YYYY-MM-DD"
- * @property {string} endDate "YYYY-MM-DD"
- * @property {StaffRequirementDto} staffRequirement
- */
-
-/**
- * @typedef {Object} ScheduleRequestResponseDto
- * @property {number} scheduleRequestId
- * @property {number} storeId
- * @property {string} startDate
- * @property {string} endDate
- * @property {'REQUESTED'|'GENERATED'|'CONFIRMED'} status
+ * 시간표 생성 타입.
  */
 
 /** @typedef {'BALANCED'|'COVERAGE_FIRST'|'SENIOR_PRIORITY'|'FAIR_DISTRIBUTION'} GenerationStrategy */
 
 /**
  * @typedef {Object} GenerationOptionsDto
- * @property {number} [candidateCount] 기본 4
- * @property {GenerationStrategy[]} [strategies] null이면 모든 전략
+ * @property {number} [candidateCount]
+ * @property {GenerationStrategy[]} [strategies]
  */
 
 /**
- * 후보안 생성 요청 (POST /api/schedules/requests/{id}/generate).
- * @typedef {Object} ScheduleGenerationRequestDto
- * @property {GenerationOptionsDto} generationOptions
+ * @typedef {Object} TimetableSlotRequirementDto
+ * @property {number} schoolClassId
+ * @property {import('./common.js').DayOfWeek} dayOfWeek
+ * @property {number} periodNumber
+ * @property {number} subjectId
  */
 
 /**
- * @typedef {Object} ScheduleSettingSegmentResponseDto
- * @property {number} [segmentIndex]
- * @property {string} [startTime]
- * @property {string} [endTime]
- * @property {number} [requiredStaff]
+ * 생성 실행 (POST /api/timetable-generation/requests/{id}/generate).
+ * @typedef {Object} TimetableGenerationRequestDto
+ * @property {number} academicYear
+ * @property {number} semester
+ * @property {TimetableSlotRequirementDto[]} slotRequirements
+ * @property {GenerationOptionsDto} [generationOptions]
  */
 
 /**
- * @typedef {Object} ScheduleGenerationResponseDto
- * @property {string} status "success" | "error"
- * @property {number} scheduleRequestId
- * @property {number} storeId
- * @property {ScheduleSettingSegmentResponseDto[]} timeSegments
- * @property {string} candidateScheduleKey Redis key
- * @property {number} generatedCount
- * @property {number[]} unsubmittedEmployeeIds
+ * @typedef {Object} TimetableRequestResponse
+ * @property {number} id
+ * @property {'REQUESTED'|'GENERATED'|'CONFIRMED'} status
+ * @property {string|null} [candidateTimetableKey]
  */
 
 /**
- * @typedef {Object} CandidateShift
- * @property {number} userStoreId
- * @property {string} username
- * @property {string} startTime "HH:mm:ss"
- * @property {string} endTime "HH:mm:ss"
- * @property {import('./common.js').DayOfWeek} day
- * @property {string|null} status "UNASSIGNED" 또는 null
+ * generate 응답. 명세 스키마는 비어 있고, 후보 조회 키는 candidateTimetableKey.
+ * @typedef {Object} TimetableGenerationResponse
+ * @property {string|null} candidateTimetableKey
  */
 
 /**
- * @typedef {Object} CandidateSchedule
- * @property {number} storeId
- * @property {CandidateShift[]} shifts
- * @property {string} strategyName
- * @property {string} strategyDescription
- * @property {number} totalShifts
- * @property {number} unassignedCount
- * @property {number} coverageRate 배정률 (%)
- */
-
-/**
- * 후보안 확정 요청 (POST /api/schedules/requests/{id}/confirm).
- * @typedef {Object} ConfirmScheduleRequestDto
- * @property {number} candidateIndex 0부터 시작
- */
-
-/**
- * 제출 현황 (GET /api/schedules/requests/{storeId}/submission-status).
- * @typedef {Object} SubmissionStatusResponse
+ * 미제출 교사 (GET /api/timetable-generation/teachers/without-availability).
+ * @typedef {Object} TeachersWithoutAvailabilityResponse
  * @property {boolean} allSubmitted
  * @property {number[]} unsubmittedUserIds
  */
 
 /**
- * 스케줄 확정 응답.
- * @typedef {Object} ConfirmScheduleResponse
- * @property {string} status
- * @property {string} message
- * @property {number} scheduleId
+ * @typedef {Object} CandidateShift
+ * @property {number} schoolUserId
+ * @property {string} teacherName
+ * @property {number} schoolClassId
+ * @property {import('./common.js').DayOfWeek} dayOfWeek
+ * @property {number} periodNumber
+ * @property {number} subjectId
+ * @property {string} [status]
+ */
+
+/**
+ * @typedef {Object} CandidateSchedule
+ * @property {number} schoolId
+ * @property {CandidateShift[]} shifts
+ * @property {string} strategyName
+ * @property {string} strategyDescription
+ * @property {number} totalShifts
+ * @property {number} unassignedCount
+ * @property {number} coverageRate
+ */
+
+/**
+ * 확정 (POST /api/timetable-generation/requests/{id}/confirm).
+ * @typedef {Object} ConfirmTimetableRequestDto
+ * @property {number} candidateIndex
+ * @property {number} academicYear
+ * @property {number} semester
+ * @property {string} startDate
+ * @property {string} endDate
  */
 
 export {}

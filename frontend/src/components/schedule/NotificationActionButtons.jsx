@@ -53,8 +53,8 @@ export default function NotificationActionButtons({ notification, position }) {
       approveSwap.mutate({ requestId: action.requestId, payload: { action: 'APPROVE' } })
     } else if (action.kind === 'extra-shift-approve') {
       approveExtra.mutate({
-        requestId: action.requestId,
-        payload: { responseId: action.responseId, action: 'approve' },
+        responseId: action.responseId,
+        payload: { action: 'APPROVE' },
       })
     }
   }
@@ -68,8 +68,8 @@ export default function NotificationActionButtons({ notification, position }) {
       approveSwap.mutate({ requestId: action.requestId, payload: { action: 'REJECT' } })
     } else if (action.kind === 'extra-shift-approve') {
       approveExtra.mutate({
-        requestId: action.requestId,
-        payload: { responseId: action.responseId, action: 'reject' },
+        responseId: action.responseId,
+        payload: { action: 'REJECT' },
       })
     }
   }
@@ -79,29 +79,31 @@ export default function NotificationActionButtons({ notification, position }) {
       <div style={{ display: 'flex', gap: 8 }}>
         <button
           type="button"
+          className="action-button"
           disabled={pending}
           onClick={onPrimary}
-          style={{ ...btnBase, border: 'none', background: '#27a859', color: '#fff' }}
+          style={{ ...btnBase, border: 'none', background: 'var(--color-primary-button)', color: 'var(--color-on-primary)' }}
         >
           {isManager ? '승인' : '수락'}
         </button>
         <button
           type="button"
+          className="action-button"
           disabled={pending}
           onClick={onSecondary}
           style={{
             ...btnBase,
-            border: '0.5px solid #d3d1c7',
-            background: '#fff',
-            color: '#5f5e5a',
+            border: '1px solid var(--color-border-input)',
+            background: 'var(--color-surface)',
+            color: 'var(--color-text-subtle)',
           }}
         >
           거절
         </button>
       </div>
       {err && (
-        <p style={{ margin: '6px 0 0', fontSize: 11, color: '#d85a30' }}>
-          처리에 실패했습니다.
+        <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--color-danger)' }}>
+          처리에 실패했습니다. 다시 시도하세요.
         </p>
       )}
     </div>

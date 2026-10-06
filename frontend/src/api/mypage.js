@@ -5,17 +5,17 @@ import client from './client.js'
 
 /** @returns {Promise<import('@/types/mypage.js').ActiveStoreResponse>} */
 export async function getActiveStore() {
-  const { data } = await client.get('/api/mypage/active-store')
+  const { data } = await client.get('/api/mypage/active-school')
   return data
 }
 
 /**
  * 활성 매장 전환.
- * @param {number} storeId
+ * @param {number} schoolId
  * @returns {Promise<import('@/types/mypage.js').ActiveStoreResponse>}
  */
-export async function updateActiveStore(storeId) {
-  const { data } = await client.patch(`/api/mypage/active-store/${storeId}`)
+export async function updateActiveStore(schoolId) {
+  const { data } = await client.patch(`/api/mypage/active-school/${schoolId}`)
   return data
 }
 
@@ -23,7 +23,7 @@ export async function updateActiveStore(storeId) {
 
 /** @returns {Promise<import('@/types/mypage.js').OwnerProfileResponse>} */
 export async function getOwnerProfile() {
-  const { data } = await client.get('/api/mypage/owner/profile')
+  const { data } = await client.get('/api/mypage/admin/profile')
   return data
 }
 
@@ -32,13 +32,13 @@ export async function getOwnerProfile() {
  * @returns {Promise<import('@/types/mypage.js').OwnerProfileResponse>}
  */
 export async function updateOwnerProfile(payload) {
-  const { data } = await client.put('/api/mypage/owner/profile', payload)
+  const { data } = await client.put('/api/mypage/admin/profile', payload)
   return data
 }
 
 /** @returns {Promise<import('@/types/mypage.js').OwnerStoreResponse>} */
 export async function getOwnerStore() {
-  const { data } = await client.get('/api/mypage/owner/store')
+  const { data } = await client.get('/api/mypage/admin/school')
   return data
 }
 
@@ -47,13 +47,13 @@ export async function getOwnerStore() {
  * @returns {Promise<import('@/types/mypage.js').OwnerStoreResponse>}
  */
 export async function updateOwnerStore(payload) {
-  const { data } = await client.put('/api/mypage/owner/store', payload)
+  const { data } = await client.put('/api/mypage/admin/school', payload)
   return data
 }
 
 /** @returns {Promise<import('@/types/mypage.js').StoreSimpleResponse[]>} */
 export async function getOwnerStores() {
-  const { data } = await client.get('/api/mypage/owner/stores')
+  const { data } = await client.get('/api/mypage/admin/schools')
   return data
 }
 
@@ -62,20 +62,20 @@ export async function getOwnerStores() {
  * @returns {Promise<import('@/types/mypage.js').StoreSimpleResponse>}
  */
 export async function createOwnerStore(payload) {
-  const { data } = await client.post('/api/mypage/owner/stores', payload)
+  const { data } = await client.post('/api/mypage/admin/schools', payload)
   return data
 }
 
-/** @param {number} storeId */
-export async function deleteOwnerStore(storeId) {
-  await client.delete(`/api/mypage/owner/stores/${storeId}`)
+/** @param {number} schoolId */
+export async function deleteOwnerStore(schoolId) {
+  await client.delete(`/api/mypage/admin/schools/${schoolId}`)
 }
 
 // ===== 알바(Staff) =====
 
 /** @returns {Promise<import('@/types/mypage.js').StaffProfileResponse>} */
 export async function getStaffProfile() {
-  const { data } = await client.get('/api/mypage/staff/profile')
+  const { data } = await client.get('/api/mypage/teacher/profile')
   return data
 }
 
@@ -84,13 +84,13 @@ export async function getStaffProfile() {
  * @returns {Promise<import('@/types/mypage.js').StaffProfileResponse>}
  */
 export async function updateStaffProfile(payload) {
-  const { data } = await client.put('/api/mypage/staff/profile', payload)
+  const { data } = await client.put('/api/mypage/teacher/profile', payload)
   return data
 }
 
 /** @returns {Promise<import('@/types/mypage.js').StoreSimpleResponse[]>} */
 export async function getStaffStores() {
-  const { data } = await client.get('/api/mypage/staff/stores')
+  const { data } = await client.get('/api/mypage/teacher/schools')
   return data
 }
 
@@ -100,11 +100,11 @@ export async function getStaffStores() {
  * @returns {Promise<import('@/types/mypage.js').StoreSimpleResponse>}
  */
 export async function joinStaffStore(payload) {
-  const { data } = await client.post('/api/mypage/staff/stores', payload)
+  const { data } = await client.post('/api/mypage/teacher/schools', payload)
   return data
 }
 
-/** @param {number} storeId */
-export async function leaveStaffStore(storeId) {
-  await client.delete(`/api/mypage/staff/stores/${storeId}`)
+/** @param {number} schoolId */
+export async function leaveStaffStore(schoolId) {
+  await client.delete(`/api/mypage/teacher/schools/${schoolId}`)
 }

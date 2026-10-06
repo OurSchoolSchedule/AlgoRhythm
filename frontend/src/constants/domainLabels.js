@@ -12,13 +12,13 @@ export const DOMAIN = {
 }
 
 export const ROLE_LABEL = {
-  OWNER: DOMAIN.admin,
-  STAFF: DOMAIN.teacher,
+  ADMIN: DOMAIN.admin,
+  TEACHER: DOMAIN.teacher,
 }
 
 /** API 역할 → App 화면 역할 */
 export function positionToUserRole(position) {
-  return position === 'OWNER' ? 'admin' : 'worker'
+  return position === 'ADMIN' ? 'admin' : 'worker'
 }
 
 /** 알림/백엔드 메시지의 매장 용어를 학교 UI 문구로 치환 */
@@ -37,10 +37,10 @@ export function localizeNotificationMessage(message) {
 
 export function categoryLabel(category) {
   switch (category) {
-    case 'SHIFT_SWAP':
+    case 'TIMETABLE_SWAP':
+      return '수업 교환'
+    case 'SUBSTITUTE':
       return DOMAIN.substitute
-    case 'EXTRA_SHIFT':
-      return DOMAIN.extraWork
     case 'SCHEDULE_INPUT':
       return '시간표 입력'
     default:

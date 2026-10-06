@@ -10,7 +10,7 @@ function useInvalidateAfterSwap() {
   const queryClient = useQueryClient()
   return () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.notification.list() })
-    queryClient.invalidateQueries({ queryKey: ['work-shift'] })
+    queryClient.invalidateQueries({ queryKey: ['timetable'] })
   }
 }
 

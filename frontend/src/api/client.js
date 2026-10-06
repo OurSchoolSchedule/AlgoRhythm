@@ -64,7 +64,9 @@ client.interceptors.response.use(
     }
 
     // Spring Security 미인증 403 / 401 → dev-token만으로는 refresh 불가
+    // 테스트 로그인(토큰 없음)은 401이어도 화면을 유지한다.
     if (
+      getAccessToken() &&
       shouldForceReLogin(response) &&
       !config?.url?.includes('/api/auth/dev-token')
     ) {
@@ -73,7 +75,7 @@ client.interceptors.response.use(
       return Promise.reject(error)
     }
 
-    if (response.status !== 401 || config?._retried) {
+    if (response.status !== 401 || config?._retried || !getAccessToken()) {
       return Promise.reject(error)
     }
 

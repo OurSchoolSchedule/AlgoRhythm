@@ -12,56 +12,34 @@ export const queryKeys = {
     staffStores: () => ['mypage', 'staff', 'stores'],
   },
   store: {
-    staff: () => ['store', 'staff'],
-    staffSummary: (params) => ['store', 'staff', 'summary', params ?? {}],
+    staffSummary: () => ['store', 'teachers'],
   },
-  storeSettings: {
-    detail: () => ['store-settings'],
-    temporary: (key) => ['store-settings', 'temporary', key],
+  schoolSetting: {
+    detail: () => ['school-setting'],
+    periods: () => ['school-setting', 'periods'],
   },
-  availability: {
-    me: () => ['availability', 'me'],
-    store: (storeId) => ['availability', 'store', storeId],
+  schoolCatalog: {
+    subjects: () => ['school', 'subjects'],
+    classes: (academicYear) => ['school', 'classes', academicYear ?? 'all'],
+  },
+  unavailability: {
+    me: () => ['unavailability', 'me'],
   },
   schedule: {
-    submissionStatus: (storeId) => ['schedule', 'submission-status', storeId],
+    submissionStatus: () => ['schedule', 'without-availability'],
     candidates: (key) => ['schedule', 'candidates', key],
   },
-  workShift: {
-    all: () => ['work-shift', 'all'],
-    storeWeek: (range) => ['work-shift', 'store-week', range],
-    myWeek: (range) => ['work-shift', 'my-week', range],
-  },
-  attendance: {
-    today: () => ['attendance', 'today'],
-  },
-  payroll: {
-    storeSummary: (params) => ['payroll', 'store', 'summary', params ?? {}],
-    storeTotal: (params) => ['payroll', 'store', 'total', params ?? {}],
-    staffDetail: (userStoreId, params) => [
-      'payroll',
-      'store',
-      'staff',
-      userStoreId,
-      params ?? {},
-    ],
-    employeeDetail: (userStoreId, params) => [
-      'payroll',
-      'store',
-      'employee',
-      userStoreId,
-      params ?? {},
-    ],
-    storeWages: () => ['payroll', 'store', 'wages'],
-    me: (params) => ['payroll', 'me', params ?? {}],
-    meTotal: (params) => ['payroll', 'me', 'total', params ?? {}],
-    minimumWage: (params) => ['payroll', 'minimum-wage', params ?? {}],
-    currentMinimumWage: () => ['payroll', 'minimum-wage', 'current'],
+  timetable: {
+    mine: () => ['timetable', 'me'],
+    school: () => ['timetable', 'school'],
   },
   todo: {
     byDate: (date) => ['todo', date],
   },
   notification: {
     list: () => ['notification', 'list'],
+  },
+  substitute: {
+    requests: (status) => ['substitute', 'requests', status ?? 'all'],
   },
 }

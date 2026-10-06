@@ -10,7 +10,7 @@
  * @property {string} [message] 사용자 표시용 메시지
  */
 
-/** @typedef {'OWNER'|'STAFF'} Position */
+/** @typedef {'ADMIN'|'TEACHER'} Position */
 /** @typedef {'HIRED'|'ON_LEAVE'|'RESIGNED'} EmploymentStatus */
 /** @typedef {'MON'|'TUE'|'WED'|'THU'|'FRI'|'SAT'|'SUN'} DayOfWeek */
 

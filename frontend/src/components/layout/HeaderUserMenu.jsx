@@ -1,28 +1,90 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
+import { useNotifications, useOwnerProfile, useStaffProfile, useStoreStaffSummary } from '@/hooks'
+import UnavailabilityDialog from '@/components/schedule/UnavailabilityDialog.jsx'
+import { getStoredTheme, setThemePreference } from '@/theme'
 
-function UserIcon({ size = 20, dark = false }) {
+const THEME_OPTIONS = [
+  { id: 'system', label: '시스템' },
+  { id: 'light', label: '라이트' },
+  { id: 'dark', label: '다크' },
+]
+
+function ThemeIcon({ name }) {
+  const common = {
+    width: 16,
+    height: 16,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.8,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    'aria-hidden': true,
+  }
+  if (name === 'light') {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4" />
+      </svg>
+    )
+  }
+  if (name === 'dark') {
+    return (
+      <svg {...common}>
+        <path d="M20 14.5A8 8 0 0 1 9.5 4 6.5 6.5 0 0 0 20 14.5z" />
+      </svg>
+    )
+  }
+  return (
+    <svg {...common}>
+      <rect x="3" y="4" width="18" height="12" rx="1.5" />
+      <path d="M8 20h8M12 16v4" />
+    </svg>
+  )
+}
+
+function ThemeSwitch({ value, onChange }) {
+  const onKeyDown = (event) => {
+    const index = THEME_OPTIONS.findIndex((option) => option.id === value)
+    const next = event.key === 'ArrowRight' || event.key === 'ArrowDown'
+      ? (index + 1) % THEME_OPTIONS.length
+      : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+        ? (index - 1 + THEME_OPTIONS.length) % THEME_OPTIONS.length
+        : -1
+    if (next < 0) return
+    event.preventDefault()
+    event.stopPropagation()
+    onChange(THEME_OPTIONS[next].id)
+    event.currentTarget.querySelectorAll('[role="radio"]')[next]?.focus()
+  }
+
   return (
     <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: '50%',
-        background: dark ? '#2c2c2a' : '#e8e6e0',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
-      }}
+      className="theme-switch"
+      role="radiogroup"
+      aria-label="테마"
+      data-value={value}
+      onKeyDown={onKeyDown}
     >
-      <svg
-        width={size * 0.55}
-        height={size * 0.55}
-        viewBox="0 0 24 24"
-        fill={dark ? '#fff' : '#888'}
-      >
-        <circle cx="12" cy="8" r="4" />
-        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-      </svg>
+      <span className="theme-switch-thumb" aria-hidden="true" />
+      {THEME_OPTIONS.map((option) => {
+        const selected = value === option.id
+        return (
+          <button
+            key={option.id}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            aria-label={option.label}
+            tabIndex={selected ? 0 : -1}
+            onClick={() => onChange(option.id)}
+          >
+            <ThemeIcon name={option.id} />
+            <span className="theme-switch-label">{option.label}</span>
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -44,37 +106,103 @@ function BellIcon() {
 }
 
 const PROFILE = {
-  admin: {
-    label: '관리자',
-    name: '관리자님',
-    subjects: '전체 과목 관리',
-    homeroom: '-',
-  },
-  worker: {
-    label: '사용자',
-    name: '사용자 선생님',
-    subjects: '수학, 미적분 I, 미적분 II',
-    homeroom: '3-2',
-  },
+  admin: { label: '관리자', initial: '관' },
+  worker: { label: '교사', initial: '교' },
+}
+
+function formatHomeroom(classes) {
+  if (!classes?.length) return '없음'
+  return classes.map((item) => `${item.grade}-${item.classNumber}`).join(', ')
+}
+
+function formatSubjects(subjects) {
+  if (!subjects?.length) return '없음'
+  return subjects.map((item) => item.subjectName).filter(Boolean).join(', ') || '없음'
+}
+
+function moveMenuFocus(menu, direction) {
+  const items = [...menu.querySelectorAll('[role="menuitem"]')]
+  if (items.length === 0) return
+  const current = items.indexOf(document.activeElement)
+  const next = direction === 'first'
+    ? 0
+    : direction === 'last'
+      ? items.length - 1
+      : (current + direction + items.length) % items.length
+  items[next]?.focus()
 }
 
 export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onLogout }) {
   const [profileOpen, setProfileOpen] = useState(false)
+  const [unavailabilityOpen, setUnavailabilityOpen] = useState(false)
+  const [themePreference, setThemeChoice] = useState(() => getStoredTheme())
   const menuRef = useRef(null)
+  const triggerRef = useRef(null)
+  const panelRef = useRef(null)
+  const menuId = useId()
   const profile = PROFILE[userRole] ?? PROFILE.worker
+  const isAdmin = userRole === 'admin'
+  const ownerProfile = useOwnerProfile({ enabled: isAdmin })
+  const staffProfile = useStaffProfile({ enabled: !isAdmin })
+  const teachers = useStoreStaffSummary()
+  const me = isAdmin ? ownerProfile.data : staffProfile.data
+  const assignment = teachers.data?.staffList?.find((teacher) => teacher.userId != null && teacher.userId === me?.userId)
+  const profileQuery = isAdmin ? ownerProfile : staffProfile
+  const profileLoading = teachers.isLoading || profileQuery.isLoading
+  const profileFailed = teachers.isError || profileQuery.isError
+  const subjectLabel = profileLoading
+    ? '불러오는 중...'
+    : profileFailed
+      ? '불러오지 못했습니다'
+      : formatSubjects(assignment?.subjects)
+  const homeroomLabel = profileLoading
+    ? '불러오는 중...'
+    : profileFailed
+      ? '불러오지 못했습니다'
+      : formatHomeroom(assignment?.homeroomClasses)
+  const displayName = me?.username || profile.label
+  const { data: notifications = [] } = useNotifications()
+  const hasUnread = notifications.some((item) => item?.isRead === false)
 
   useEffect(() => {
-    if (!profileOpen) return
+    if (!profileOpen) return undefined
 
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setProfileOpen(false)
       }
     }
+    const handleKey = (event) => {
+      if (event.key === 'Escape') {
+        setProfileOpen(false)
+        triggerRef.current?.focus()
+      }
+    }
 
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKey)
+    }
   }, [profileOpen])
+
+  const onPanelKeyDown = (event) => {
+    if (!panelRef.current) return
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      moveMenuFocus(panelRef.current, 1)
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      moveMenuFocus(panelRef.current, -1)
+    } else if (event.key === 'Home') {
+      event.preventDefault()
+      moveMenuFocus(panelRef.current, 'first')
+    } else if (event.key === 'End') {
+      event.preventDefault()
+      moveMenuFocus(panelRef.current, 'last')
+    }
+  }
 
   return (
     <div
@@ -88,28 +216,44 @@ export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onL
     >
       <button
         type="button"
+        className="icon-button"
         aria-label="알림"
         aria-pressed={alarmOpen}
         onClick={onAlarmToggle}
         style={{
-          background: alarmOpen ? '#e8f7ee' : 'none',
+          position: 'relative',
+          background: alarmOpen ? 'var(--color-primary-50)' : 'none',
           border: 'none',
           cursor: 'pointer',
           padding: 6,
-          borderRadius: 8,
+          borderRadius: 'var(--radius-md)',
           display: 'flex',
           alignItems: 'center',
-          color: alarmOpen ? '#27a859' : '#444',
+          color: alarmOpen ? 'var(--color-primary)' : 'var(--color-text-secondary)',
         }}
       >
         <BellIcon />
+        {hasUnread && <span className="alarm-dot" />}
       </button>
 
       <button
+        ref={triggerRef}
         type="button"
+        className="icon-button"
         onClick={() => setProfileOpen((open) => !open)}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowDown') {
+            event.preventDefault()
+            setProfileOpen(true)
+            requestAnimationFrame(() => {
+              panelRef.current?.querySelector('[role="menuitem"]')?.focus()
+            })
+          }
+        }}
+        aria-label={profile.label}
         aria-expanded={profileOpen}
-        aria-haspopup="true"
+        aria-haspopup="menu"
+        aria-controls={menuId}
         style={{
           background: 'none',
           border: 'none',
@@ -120,98 +264,74 @@ export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onL
           padding: 0,
         }}
       >
-        <UserIcon size={28} />
-        <span style={{ fontSize: 14, color: '#2c2c2a', fontWeight: 500 }}>
-          {profile.label}
-        </span>
+        <span className="profile-avatar" aria-hidden="true">{profile.initial}</span>
+        <span className="profile-label">{profile.label}</span>
       </button>
 
       {profileOpen && (
         <div
-          role="dialog"
+          ref={panelRef}
+          id={menuId}
+          role="menu"
           aria-label="사용자 정보"
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 12px)',
-            right: 0,
-            width: 280,
-            background: '#fff',
-            border: '0.5px solid #e8e6e0',
-            borderRadius: 12,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-            zIndex: 60,
-            overflow: 'hidden',
-          }}
+          onKeyDown={onPanelKeyDown}
+          className="profile-menu"
         >
-          <div
-            style={{
-              padding: '28px 24px 20px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              textAlign: 'center',
-            }}
-          >
-            <UserIcon size={56} dark />
-            <p
-              style={{
-                margin: '14px 0 16px',
-                fontSize: 15,
-                fontWeight: 600,
-                color: '#2c2c2a',
-              }}
-            >
-              {profile.name}
+          <div style={{ padding: '12px 12px 8px' }}>
+            <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>
+              {displayName}
             </p>
-            <p style={{ margin: '0 0 6px', fontSize: 13, color: '#5f5e5a', lineHeight: 1.5 }}>
-              담당 과목 | {profile.subjects}
+            <p style={{ margin: '0 0 4px', fontSize: 13, color: 'var(--color-text-subtle)', lineHeight: 1.5 }}>
+              담당 과목 | {subjectLabel}
             </p>
-            <p style={{ margin: 0, fontSize: 13, color: '#5f5e5a', lineHeight: 1.5 }}>
-              담당 학급 | {profile.homeroom}
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-subtle)', lineHeight: 1.5 }}>
+              담당 학급 | {homeroomLabel}
             </p>
           </div>
 
-          <div style={{ borderTop: '0.5px solid #e8e6e0', padding: '16px 24px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ height: 1, background: 'var(--color-border)', margin: '8px 0' }} />
+
+          <div className="profile-theme">
+            <span className="profile-theme-label">화면 테마</span>
+            <ThemeSwitch
+              value={themePreference}
+              onChange={(id) => {
+                setThemeChoice(id)
+                setThemePreference(id)
+              }}
+            />
+          </div>
+
+          <button
+            type="button"
+            role="menuitem"
+            className="menu-item"
+            onClick={() => {
+              setProfileOpen(false)
+              setUnavailabilityOpen(true)
+            }}
+          >
+            시간대 선호도 제출
+          </button>
+
+          {onLogout && (
             <button
               type="button"
-              style={{
-                width: '100%',
-                padding: '10px 0',
-                borderRadius: 8,
-                border: '0.5px solid #d3d1c7',
-                background: '#fff',
-                color: '#2c2c2a',
-                fontSize: 14,
-                fontWeight: 500,
-                cursor: 'pointer',
+              role="menuitem"
+              className="menu-item"
+              onClick={() => {
+                setProfileOpen(false)
+                onLogout()
               }}
+              style={{ color: 'var(--color-danger)' }}
             >
-              시간대 선호도 제출
+              로그아웃
             </button>
-            {onLogout && (
-              <button
-                type="button"
-                onClick={() => {
-                  setProfileOpen(false)
-                  onLogout()
-                }}
-                style={{
-                  width: '100%',
-                  padding: '10px 0',
-                  borderRadius: 8,
-                  border: '0.5px solid #e3b9a8',
-                  background: '#fff',
-                  color: '#d85a30',
-                  fontSize: 14,
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                }}
-              >
-                로그아웃
-              </button>
-            )}
-          </div>
+          )}
         </div>
+      )}
+      {unavailabilityOpen && (
+        <UnavailabilityDialog onClose={() => setUnavailabilityOpen(false)} />
       )}
     </div>
   )

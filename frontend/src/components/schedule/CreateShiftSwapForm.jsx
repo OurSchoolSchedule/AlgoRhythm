@@ -1,24 +1,77 @@
-import { useState } from 'react'
-import { useMyWeekShifts, useCreateShiftSwapRequest } from '@/hooks'
-import { DOMAIN } from '@/constants/domainLabels.js'
-import { getSchoolWeekRange } from '@/utils/weekRange.js'
-import { formatShiftRange } from '@/utils/formatShift.js'
+import { useMemo, useState } from 'react'
+import { useMyTimetable, useSchoolTimetableList, useCreateShiftSwapRequest } from '@/hooks'
+import { toISODate } from '@/utils'
+
+const DAY_LABEL = {
+  MON: '월',
+  TUE: '화',
+  WED: '수',
+  THU: '목',
+  FRI: '금',
+  SAT: '토',
+  SUN: '일',
+}
+
+/** @param {import('@/types/timetable.js').TimetableDto} slot */
+function timetableLabel(slot) {
+  const day = DAY_LABEL[slot.dayOfWeek] ?? slot.dayOfWeek ?? ''
+  const klass =
+    slot.grade != null && slot.classNumber != null ? `${slot.grade}-${slot.classNumber}` : ''
+  return [day, slot.periodNumber != null ? `${slot.periodNumber}교시` : '', klass, slot.subjectName, slot.teacherName]
+    .filter(Boolean)
+    .join(' · ')
+}
+
+const fieldStyle = {
+  width: '100%',
+  boxSizing: 'border-box',
+  marginBottom: 8,
+  padding: '8px 10px',
+  borderRadius: 6,
+  border: '1px solid var(--color-border-input)',
+  fontSize: 12,
+}
 
 export default function CreateShiftSwapForm() {
-  const week = getSchoolWeekRange()
-  const { data: shifts = [], isLoading, isError } = useMyWeekShifts(week)
+  const mineQuery = useMyTimetable()
+  const schoolQuery = useSchoolTimetableList()
   const createSwap = useCreateShiftSwapRequest()
-  const [shiftId, setShiftId] = useState('')
+  const today = toISODate()
+  const [requesterTimetableId, setRequesterTimetableId] = useState('')
+  const [requesterDate, setRequesterDate] = useState(today)
+  const [receiverTimetableId, setReceiverTimetableId] = useState('')
+  const [receiverDate, setReceiverDate] = useState(today)
   const [reason, setReason] = useState('')
+
+  const mySlots = mineQuery.data ?? []
+  const otherSlots = useMemo(() => {
+    const selected = Number(requesterTimetableId)
+    return (schoolQuery.data ?? []).filter((slot) => slot.id !== selected)
+  }, [schoolQuery.data, requesterTimetableId])
+
+  const canSubmit =
+    requesterTimetableId &&
+    receiverTimetableId &&
+    requesterDate &&
+    receiverDate &&
+    reason.trim() &&
+    !createSwap.isPending
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!shiftId || !reason.trim()) return
+    if (!canSubmit) return
     createSwap.mutate(
-      { shiftId: Number(shiftId), reason: reason.trim() },
+      {
+        requesterTimetableId: Number(requesterTimetableId),
+        requesterDate,
+        receiverTimetableId: Number(receiverTimetableId),
+        receiverDate,
+        reason: reason.trim(),
+      },
       {
         onSuccess: () => {
-          setShiftId('')
+          setRequesterTimetableId('')
+          setReceiverTimetableId('')
           setReason('')
         },
       },
@@ -27,91 +80,124 @@ export default function CreateShiftSwapForm() {
 
   return (
     <form onSubmit={handleSubmit} style={{ marginTop: 10 }}>
-      <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 600, color: '#2c2c2a' }}>
-        {DOMAIN.substitute} 요청
+      <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 600, color: 'var(--color-text)' }}>
+        수업 교환 요청
       </p>
-      {isLoading && (
-        <p style={{ margin: 0, fontSize: 12, color: '#888' }}>내 수업 목록 불러오는 중...</p>
+      {mineQuery.isLoading && (
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--color-text-muted)' }}>내 수업 목록 불러오는 중...</p>
       )}
-      {isError && (
-        <p style={{ margin: 0, fontSize: 12, color: '#d85a30' }}>
-          수업 목록을 불러오지 못했습니다. 시간표가 등록되어 있는지 확인해 주세요.
+      {mineQuery.isError && (
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--color-danger)' }}>
+          내 시간표를 불러오지 못했습니다. 새로고침 후 다시 확인하세요.
         </p>
       )}
-      {!isLoading && !isError && shifts.length === 0 && (
-        <p style={{ margin: 0, fontSize: 12, color: '#b4b2a9' }}>
-          이번 주 등록된 수업이 없습니다.
+      {!mineQuery.isLoading && !mineQuery.isError && mySlots.length === 0 && (
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--color-text-muted)' }}>
+          등록된 내 수업이 없습니다. 시간표가 등록되면 교환을 요청할 수 있습니다.
         </p>
       )}
-      {shifts.length > 0 && (
+      {mySlots.length > 0 && (
         <>
-          <label style={{ display: 'block', fontSize: 11, color: '#888', marginBottom: 4 }}>
-            대상 수업
+          <label style={{ display: 'block', fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 4 }}>
+            내 수업
           </label>
           <select
-            value={shiftId}
-            onChange={(e) => setShiftId(e.target.value)}
-            style={{
-              width: '100%',
-              marginBottom: 8,
-              padding: '8px 10px',
-              borderRadius: 6,
-              border: '0.5px solid #d3d1c7',
-              fontSize: 12,
+            value={requesterTimetableId}
+            onChange={(e) => {
+              setRequesterTimetableId(e.target.value)
+              if (e.target.value === receiverTimetableId) setReceiverTimetableId('')
             }}
+            style={fieldStyle}
           >
             <option value="">수업 선택</option>
-            {shifts.map((s) => (
-              <option key={s.id} value={s.id}>
-                {formatShiftRange(s.startDatetime, s.endDatetime)}
-                {s.storeName ? ` · ${s.storeName}` : ''}
+            {mySlots.map((slot) => (
+              <option key={slot.id} value={slot.id}>
+                {timetableLabel(slot)}
               </option>
             ))}
           </select>
-          <label style={{ display: 'block', fontSize: 11, color: '#888', marginBottom: 4 }}>
-            {DOMAIN.reason}
+          <label style={{ display: 'block', fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 4 }}>
+            내 수업 날짜
+          </label>
+          <input
+            type="date"
+            value={requesterDate}
+            onChange={(e) => setRequesterDate(e.target.value)}
+            style={fieldStyle}
+          />
+
+          <label style={{ display: 'block', fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 4 }}>
+            바꿀 수업
+          </label>
+          {schoolQuery.isLoading && (
+            <p style={{ margin: '0 0 8px', fontSize: 12, color: 'var(--color-text-muted)' }}>학교 시간표 불러오는 중...</p>
+          )}
+          {schoolQuery.isError && (
+            <p style={{ margin: '0 0 8px', fontSize: 12, color: 'var(--color-danger)' }}>
+              학교 시간표를 불러오지 못했습니다. 상대 수업을 고르려면 전체 시간표 조회 권한이 필요합니다.
+            </p>
+          )}
+          {!schoolQuery.isLoading && !schoolQuery.isError && (
+            <select
+              value={receiverTimetableId}
+              onChange={(e) => setReceiverTimetableId(e.target.value)}
+              style={fieldStyle}
+            >
+              <option value="">수업 선택</option>
+              {otherSlots.map((slot) => (
+                <option key={slot.id} value={slot.id}>
+                  {timetableLabel(slot)}
+                </option>
+              ))}
+            </select>
+          )}
+          <label style={{ display: 'block', fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 4 }}>
+            상대 수업 날짜
+          </label>
+          <input
+            type="date"
+            value={receiverDate}
+            onChange={(e) => setReceiverDate(e.target.value)}
+            style={fieldStyle}
+          />
+
+          <label style={{ display: 'block', fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 4 }}>
+            사유
           </label>
           <input
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="보결 사유를 입력하세요"
-            style={{
-              width: '100%',
-              boxSizing: 'border-box',
-              marginBottom: 8,
-              padding: '8px 10px',
-              borderRadius: 6,
-              border: '0.5px solid #d3d1c7',
-              fontSize: 12,
-            }}
+            placeholder="교환 사유를 입력하세요"
+            style={fieldStyle}
           />
           <button
             type="submit"
-            disabled={createSwap.isPending || !shiftId || !reason.trim()}
+            disabled={!canSubmit}
             style={{
               width: '100%',
-              padding: '8px 0',
-              borderRadius: 6,
+              height: 40,
+              padding: '10px 16px',
+              borderRadius: 'var(--radius-md)',
               border: 'none',
-              background: createSwap.isPending ? '#bfe3cd' : '#f09500',
-              color: '#fff',
-              fontSize: 12,
+              background: canSubmit ? 'var(--color-primary-button)' : 'var(--color-border)',
+              color: canSubmit ? 'var(--color-on-primary)' : 'var(--color-text-muted)',
+              fontSize: 'var(--font-body)',
               fontWeight: 600,
-              cursor: createSwap.isPending ? 'default' : 'pointer',
+              cursor: canSubmit ? 'pointer' : 'default',
             }}
           >
-            {createSwap.isPending ? '요청 중...' : `${DOMAIN.substitute} 요청 보내기`}
+            {createSwap.isPending ? '요청 중' : '요청하기'}
           </button>
         </>
       )}
       {createSwap.isError && (
-        <p style={{ margin: '8px 0 0', fontSize: 11, color: '#d85a30' }}>
-          요청에 실패했습니다.
+        <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--color-danger)' }}>
+          요청에 실패했습니다. 입력 내용을 확인한 뒤 다시 요청하세요.
         </p>
       )}
       {createSwap.isSuccess && (
-        <p style={{ margin: '8px 0 0', fontSize: 11, color: '#1d9e75' }}>
-          보결 요청을 보냈습니다. 가능한 교사에게 알림이 전달됩니다.
+        <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--color-success)' }}>
+          교환 요청을 보냈습니다.
         </p>
       )}
     </form>

@@ -1,171 +1,166 @@
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
+import { createSubject } from "@/api";
+import { useCreateSubject, useDeleteSubject, useSubjects, useUpdateSubject } from "@/hooks";
+import { queryKeys } from "@/hooks/queryKeys.js";
+import { useQueryClient } from "@tanstack/react-query";
+import { getApiErrorMessage } from "@/utils/timetableGeneration.js";
+import { subjectNamesFromCsv } from "@/utils/subjectCsv.js";
 
-const initialSubjects = [
-  { id: 1, grade: 1, classNum: "1-1", subject: "수학Ⅰ", hours: 4, teacher: "김민지", category: "수학" },
-  { id: 2, grade: 1, classNum: "1-2", subject: "수학Ⅰ", hours: 4, teacher: "이철수", category: "수학" },
-  { id: 3, grade: 1, classNum: "1-3", subject: "미적분", hours: 3, teacher: "박지은", category: "수학" },
-  { id: 4, grade: 1, classNum: "1-4", subject: "미적분", hours: 3, teacher: "김민지", category: "수학" },
-  { id: 5, grade: 2, classNum: "2-1", subject: "확률과 통계", hours: 3, teacher: "최영호", category: "수학" },
-  { id: 6, grade: 2, classNum: "2-2", subject: "확률과 통계", hours: 3, teacher: "최영호", category: "수학" },
-  { id: 7, grade: 2, classNum: "2-3", subject: "기하", hours: 4, teacher: "박지은", category: "수학" },
-  { id: 8, grade: 3, classNum: "3-1", subject: "수학Ⅱ", hours: 4, teacher: "이철수", category: "수학" },
-  { id: 9, grade: 3, classNum: "3-2", subject: "수학Ⅱ", hours: 4, teacher: "김민지", category: "수학" },
-  { id: 10, grade: 3, classNum: "3-3", subject: "미적분", hours: 5, teacher: "최영호", category: "수학" },
-];
+export default function SubjectManageView() {
+  const queryClient = useQueryClient();
+  const subjects = useSubjects();
+  const create = useCreateSubject();
+  const update = useUpdateSubject();
+  const remove = useDeleteSubject();
+  const fileRef = useRef(null);
+  const [name, setName] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editingName, setEditingName] = useState("");
+  const [csvMessage, setCsvMessage] = useState("");
+  const [csvError, setCsvError] = useState(false);
+  const [csvPending, setCsvPending] = useState(false);
 
-const GRADES = ["전체", "1학년", "2학년", "3학년"];
+  const rows = subjects.data ?? [];
 
-export default function SubjectManageView({ navigate }) {
-  const [subjects, setSubjects] = useState(initialSubjects);
-  const [filterGrade, setFilterGrade] = useState("전체");
-  const [csvStatus, setCsvStatus] = useState(null);
-  const [showAdd, setShowAdd] = useState(false);
-  const [newRow, setNewRow] = useState({ grade: 1, classNum: "", subject: "", hours: 3, teacher: "", category: "수학" });
-  const fileRef = useRef();
-
-  const filtered = filterGrade === "전체" ? subjects : subjects.filter(s => s.grade === parseInt(filterGrade));
-
-  const handleCSV = (e) => {
-    const f = e.target.files[0];
-    if (!f) return;
-    setCsvStatus("loading");
-    setTimeout(() => {
-      setCsvStatus("success");
-      setSubjects(prev => [
-        ...prev,
-        { id: Date.now(), grade: 1, classNum: "1-5", subject: "수학Ⅰ", hours: 4, teacher: "신규교사", category: "수학" },
-        { id: Date.now() + 1, grade: 2, classNum: "2-4", subject: "확률과 통계", hours: 3, teacher: "홍길동", category: "수학" },
-      ]);
-    }, 1400);
+  const handleAdd = (event) => {
+    event.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    create.mutate({ name: trimmed }, { onSuccess: () => setName("") });
   };
 
-  const handleAddRow = () => {
-    if (!newRow.classNum || !newRow.subject || !newRow.teacher) return;
-    setSubjects(prev => [...prev, { ...newRow, id: Date.now() }]);
-    setShowAdd(false);
-    setNewRow({ grade: 1, classNum: "", subject: "", hours: 3, teacher: "", category: "수학" });
+  const handleCsv = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setCsvPending(true);
+    setCsvMessage("");
+    setCsvError(false);
+    try {
+      const parsed = subjectNamesFromCsv(await file.text());
+      if (parsed.error) {
+        setCsvError(true);
+        setCsvMessage(parsed.error);
+        return;
+      }
+      const results = await Promise.allSettled(parsed.names.map((item) => createSubject({ name: item })));
+      await queryClient.invalidateQueries({ queryKey: queryKeys.schoolCatalog.subjects() });
+      const failed = results.filter((item) => item.status === "rejected").length;
+      const saved = results.length - failed;
+      setCsvError(failed > 0);
+      setCsvMessage(`${saved}개를 저장했습니다.${failed ? ` ${failed}개는 실패했습니다.` : ""}`);
+    } catch (error) {
+      setCsvError(true);
+      setCsvMessage(getApiErrorMessage(error, "CSV를 저장하지 못했습니다."));
+    } finally {
+      setCsvPending(false);
+    }
   };
-
-  const handleDelete = (id) => setSubjects(prev => prev.filter(s => s.id !== id));
-
-  const totalHours = subjects.reduce((sum, s) => sum + s.hours, 0);
-  const teachers = [...new Set(subjects.map(s => s.teacher))].length;
 
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-        <button onClick={() => navigate("home")} style={{ background: "none", border: "none", cursor: "pointer", color: "#888", fontSize: 13, padding: 0 }}>← 뒤로</button>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#2c2c2a", letterSpacing: "-0.5px" }}>과목·수업 관리</h1>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
-        <StatCard label="등록 과목" value={subjects.length} unit="개" color="#27a859" />
-        <StatCard label="총 주간 시수" value={totalHours} unit="시간" color="#1d9e75" />
-        <StatCard label="담당 교사" value={teachers} unit="명" color="#f09500" />
-        <StatCard label="학년 수" value={3} unit="개" color="#d85a30" />
-      </div>
-
-      <div style={{ background: "#fff", borderRadius: 12, border: "0.5px solid #e8e6e0", padding: "20px 24px", marginBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <div style={{ display: "flex", gap: 6 }}>
-            {GRADES.map(g => (
-              <button key={g} onClick={() => setFilterGrade(g)} style={{
-                padding: "6px 14px", borderRadius: 20, fontSize: 13,
-                border: "0.5px solid", cursor: "pointer",
-                background: filterGrade === g ? "#27a859" : "transparent",
-                borderColor: filterGrade === g ? "#27a859" : "#d3d1c7",
-                color: filterGrade === g ? "#fff" : "#5f5e5a",
-              }}>{g}</button>
-            ))}
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <input type="file" ref={fileRef} accept=".csv" onChange={handleCSV} style={{ display: "none" }} />
-            <button onClick={() => fileRef.current?.click()} style={{
-              padding: "7px 16px", borderRadius: 8, border: "0.5px solid #1d9e75",
-              background: "transparent", color: "#1d9e75", fontSize: 13, cursor: "pointer",
-            }}>CSV 업로드</button>
-            <button onClick={() => setShowAdd(v => !v)} style={{
-              padding: "7px 16px", borderRadius: 8, border: "none",
-              background: "#27a859", color: "#fff", fontSize: 13, cursor: "pointer",
-            }}>+ 직접 추가</button>
-          </div>
-        </div>
-
-        {csvStatus === "loading" && (
-          <div style={{ padding: "10px 14px", background: "#e8f7ee", borderRadius: 8, marginBottom: 12, fontSize: 13, color: "#27a859" }}>
-            ⏳ CSV 파일 파싱 중...
-          </div>
-        )}
-        {csvStatus === "success" && (
-          <div style={{ padding: "10px 14px", background: "#e1f5ee", borderRadius: 8, marginBottom: 12, fontSize: 13, color: "#0f6e56" }}>
-            ✓ CSV 파싱 완료 — 2개 행이 추가되었습니다.
-          </div>
-        )}
-
-        {showAdd && (
-          <div style={{ background: "#f8f8f6", borderRadius: 8, padding: "14px 16px", marginBottom: 14, display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8, alignItems: "end" }}>
-            {[
-              { label: "학년", type: "number", key: "grade", min: 1, max: 3 },
-              { label: "학반", type: "text", key: "classNum", placeholder: "1-1" },
-              { label: "과목명", type: "text", key: "subject", placeholder: "미적분" },
-              { label: "주간 시수", type: "number", key: "hours", min: 1, max: 8 },
-              { label: "담당 교사", type: "text", key: "teacher", placeholder: "이름" },
-            ].map(f => (
-              <div key={f.key}>
-                <label style={{ display: "block", fontSize: 11, color: "#888", marginBottom: 4 }}>{f.label}</label>
-                <input type={f.type} value={newRow[f.key]} min={f.min} max={f.max} placeholder={f.placeholder}
-                  onChange={e => setNewRow(p => ({ ...p, [f.key]: f.type === "number" ? Number(e.target.value) : e.target.value }))}
-                  style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "0.5px solid #d3d1c7", fontSize: 13, boxSizing: "border-box" }}
-                />
-              </div>
-            ))}
-            <button onClick={handleAddRow} style={{ padding: "7px 0", borderRadius: 6, border: "none", background: "#27a859", color: "#fff", fontSize: 13, cursor: "pointer", height: 32 }}>추가</button>
-          </div>
-        )}
-
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-            <thead>
-              <tr style={{ borderBottom: "0.5px solid #e8e6e0" }}>
-                {["학년", "학반", "과목명", "주간 시수", "담당 교사", ""].map(h => (
-                  <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "#888" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(s => (
-                <tr key={s.id} style={{ borderBottom: "0.5px solid #f1efe8" }}>
-                  <td style={{ padding: "10px 12px", color: "#888" }}>{s.grade}학년</td>
-                  <td style={{ padding: "10px 12px", fontWeight: 600, color: "#2c2c2a" }}>{s.classNum}</td>
-                  <td style={{ padding: "10px 12px", color: "#2c2c2a" }}>{s.subject}</td>
-                  <td style={{ padding: "10px 12px" }}>
-                    <span style={{ background: "#e8f7ee", color: "#27a859", padding: "3px 10px", borderRadius: 12, fontSize: 12, fontWeight: 600 }}>
-                      {s.hours}시간
-                    </span>
-                  </td>
-                  <td style={{ padding: "10px 12px", color: "#444" }}>{s.teacher}</td>
-                  <td style={{ padding: "10px 12px" }}>
-                    <button onClick={() => handleDelete(s.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#d85a30", fontSize: 12 }}>삭제</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <p style={{ margin: "12px 0 0", fontSize: 12, color: "#888" }}>총 {filtered.length}개 항목</p>
-      </div>
-    </div>
-  );
-}
-
-function StatCard({ label, value, unit, color }) {
-  return (
-    <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e8e6e0", padding: "14px 18px" }}>
-      <p style={{ margin: "0 0 4px", fontSize: 12, color: "#888" }}>{label}</p>
-      <p style={{ margin: 0, fontSize: 24, fontWeight: 700, color, letterSpacing: "-1px" }}>
-        {value}<span style={{ fontSize: 12, fontWeight: 400, marginLeft: 3, color: "#888" }}>{unit}</span>
+      <h1 style={{ margin: "0 0 16px", fontSize: 20, fontWeight: 700, color: "var(--color-text)" }}>과목 관리</h1>
+      <p style={{ margin: "0 0 16px", fontSize: 13, color: "var(--color-text-muted)" }}>
+        과목은 이름만 저장됩니다. 학년·학급·시수·담당 교사는 이 화면에서 바꾸지 않습니다.
       </p>
+      <form onSubmit={handleAdd} style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        <input
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          placeholder="과목명"
+          style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--color-border-input)" }}
+        />
+        <button type="submit" disabled={create.isPending || !name.trim()} style={primaryButton}>
+          {create.isPending ? "추가 중..." : "과목 추가"}
+        </button>
+        <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={handleCsv} style={{ display: "none" }} />
+        <button type="button" disabled={csvPending} onClick={() => fileRef.current?.click()} style={secondaryButton}>
+          {csvPending ? "올리는 중..." : "CSV 올리기"}
+        </button>
+      </form>
+      {create.isError && (
+        <p style={{ color: "var(--color-danger)", fontSize: 13 }}>
+          {getApiErrorMessage(create.error, "과목을 추가하지 못했습니다.")}{" "}
+          <button type="button" className="history-link" onClick={() => create.reset()}>다시 시도</button>
+        </p>
+      )}
+      {csvMessage && (
+        <p style={{ color: csvError ? "var(--color-danger)" : "var(--color-success)", fontSize: 13 }}>{csvMessage}</p>
+      )}
+      {subjects.isLoading && <p style={{ color: "var(--color-text-muted)", fontSize: 13 }}>불러오는 중...</p>}
+      {subjects.isError && (
+        <p style={{ color: "var(--color-danger)", fontSize: 13 }}>
+          {getApiErrorMessage(subjects.error, "과목을 불러오지 못했습니다.")}{" "}
+          <button type="button" className="history-link" onClick={() => subjects.refetch()}>다시 시도</button>
+        </p>
+      )}
+      {!subjects.isLoading && !subjects.isError && rows.length === 0 && (
+        <p style={{ color: "var(--color-text-muted)", fontSize: 13 }}>등록된 과목이 없습니다.</p>
+      )}
+      {!subjects.isError && rows.map((subject) => (
+        <div key={subject.id} style={{ display: "flex", gap: 8, alignItems: "center", padding: "8px 0", borderBottom: "1px solid var(--color-border-light)" }}>
+          {editingId === subject.id ? (
+            <input
+              value={editingName}
+              onChange={(event) => setEditingName(event.target.value)}
+              style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid var(--color-border-input)" }}
+            />
+          ) : (
+            <span style={{ flex: 1, color: "var(--color-text)" }}>{subject.name}</span>
+          )}
+          {editingId === subject.id ? (
+            <button
+              type="button"
+              disabled={update.isPending || !editingName.trim()}
+              onClick={() => update.mutate(
+                { subjectId: subject.id, payload: { name: editingName.trim() } },
+                { onSuccess: () => setEditingId(null) },
+              )}
+              style={secondaryButton}
+            >저장</button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setEditingId(subject.id);
+                setEditingName(subject.name ?? "");
+              }}
+              style={secondaryButton}
+            >수정</button>
+          )}
+          <button
+            type="button"
+            disabled={remove.isPending}
+            onClick={() => remove.mutate(subject.id)}
+            style={{ ...secondaryButton, color: "var(--color-danger)" }}
+          >삭제</button>
+        </div>
+      ))}
+      {(update.isError || remove.isError) && (
+        <p style={{ color: "var(--color-danger)", fontSize: 13 }}>
+          {getApiErrorMessage(update.error || remove.error, "과목을 바꾸지 못했습니다.")}{" "}
+          <button type="button" className="history-link" onClick={() => { update.reset(); remove.reset(); }}>다시 시도</button>
+        </p>
+      )}
     </div>
   );
 }
+
+const primaryButton = {
+  padding: "8px 14px",
+  borderRadius: 8,
+  border: "none",
+  background: "var(--color-primary-button)",
+  color: "var(--color-on-primary)",
+  fontWeight: 600,
+  cursor: "pointer",
+};
+
+const secondaryButton = {
+  padding: "8px 12px",
+  borderRadius: 8,
+  border: "1px solid var(--color-border-input)",
+  background: "var(--color-surface)",
+  color: "var(--color-text)",
+  cursor: "pointer",
+};

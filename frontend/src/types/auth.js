@@ -30,7 +30,7 @@
  * @property {string} [address] OWNER: 새 매장 주소
  * @property {string} [phoneNumber]
  * @property {string} [businessRegistrationNumber]
- * @property {import('./storeSettings.js').StoreSettingDto} [storeSetting] OWNER
+ * @property {Object} [storeSetting] OWNER. 매장 설정 API는 학교 화면에서 쓰지 않는다.
  * @property {number} [bankId]
  * @property {string} [accountNumber]
  * @property {string} [hireDate] ISO date (YYYY-MM-DD)
@@ -52,7 +52,7 @@
  * @property {string} bankName
  * @property {string} accountNumber
  * @property {string} hireDate
- * @property {import('./storeSettings.js').StoreSettingDto} storeSetting
+ * @property {Object} storeSetting
  */
 
 /**

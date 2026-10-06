@@ -8,14 +8,30 @@ function normalizeEnum(value) {
 /** API 알림 객체 필드 정규화 (enum·isRead 호환) */
 export function normalizeNotification(raw) {
   if (!raw) return raw
+  const schoolName = raw.schoolName ?? raw.storeName ?? ''
+  const timetableSwapRequestId = raw.timetableSwapRequestId ?? raw.shiftSwapRequestId ?? null
+  const substituteRequestId = raw.substituteRequestId ?? raw.extraShiftRequestId ?? null
+  const substituteResponseId = raw.substituteResponseId ?? null
+  const timetableSwapStatus = normalizeEnum(raw.timetableSwapStatus ?? raw.shiftSwapStatus)
+  const timetableSwapManagerApprovalStatus = normalizeEnum(
+    raw.timetableSwapManagerApprovalStatus ?? raw.shiftSwapManagerApprovalStatus,
+  )
+  const substituteStatus = normalizeEnum(raw.substituteStatus ?? raw.extraShiftStatus)
+
   return {
     ...raw,
     type: normalizeEnum(raw.type),
     category: normalizeEnum(raw.category),
     targetType: normalizeEnum(raw.targetType),
-    shiftSwapStatus: normalizeEnum(raw.shiftSwapStatus),
-    shiftSwapManagerApprovalStatus: normalizeEnum(raw.shiftSwapManagerApprovalStatus),
-    extraShiftStatus: normalizeEnum(raw.extraShiftStatus),
+    schoolName,
+    storeName: schoolName,
+    id: raw.id ?? null,
+    timetableSwapRequestId,
+    substituteRequestId,
+    substituteResponseId,
+    timetableSwapStatus,
+    timetableSwapManagerApprovalStatus,
+    substituteStatus,
     isRead: Boolean(raw.isRead ?? raw.read),
   }
 }

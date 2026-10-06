@@ -1,29 +1,34 @@
+/** index.css 토큰을 그대로 가리킨다. hex는 여기 두지 않는다. */
 export const colors = {
-  primary: '#27a859',
-  primaryLight: '#e8f7ee',
-  primaryLighter: '#eef9f3',
-  primaryMuted: '#d0edd9',
-  primaryDark: '#1f8f4a',
+  primary: 'var(--color-primary)',
+  primaryLight: 'var(--color-primary-50)',
+  primaryMuted: 'var(--color-primary-100)',
+  primaryDark: 'var(--color-primary-600)',
+  primaryButton: 'var(--color-primary-button)',
+  onPrimary: 'var(--color-on-primary)',
 
-  success: '#1d9e75',
-  successLight: '#e1f5ee',
-  successDark: '#0f6e56',
+  success: 'var(--color-success)',
+  successLight: 'var(--color-success-light)',
 
-  warning: '#f09500',
-  warningLight: '#faeeda',
+  warning: 'var(--color-warning)',
+  warningLight: 'var(--color-warning-light)',
 
-  danger: '#d85a30',
-  dangerLight: '#faece7',
+  danger: 'var(--color-danger)',
+  dangerLight: 'var(--color-danger-light)',
 
-  text: '#2c2c2a',
-  textSecondary: '#444',
-  textMuted: '#888',
-  textSubtle: '#5f5e5a',
+  info: 'var(--color-info)',
+  infoLight: 'var(--color-info-light)',
 
-  border: '#e8e6e0',
-  borderLight: '#f1efe8',
-  borderInput: '#d3d1c7',
+  text: 'var(--color-text)',
+  textSecondary: 'var(--color-text-secondary)',
+  textMuted: 'var(--color-text-muted)',
+  textSubtle: 'var(--color-text-subtle)',
 
-  bg: '#f8f8f6',
-  surface: '#fff',
+  border: 'var(--color-border)',
+  borderLight: 'var(--color-border-light)',
+  borderInput: 'var(--color-border-input)',
+
+  bg: 'var(--color-bg)',
+  surface: 'var(--color-surface)',
+  surfaceHover: 'var(--color-surface-hover)',
 }

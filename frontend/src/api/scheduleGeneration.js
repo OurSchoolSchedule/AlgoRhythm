@@ -1,63 +1,74 @@
-// 스케줄 생성(Schedule Generation) API
+// 시간표 생성(Timetable Generation) API
 import client from './client.js'
 
 /**
- * 스케줄 요청 생성 (POST /api/schedules/requests).
- * @param {import('@/types/scheduleGeneration.js').ScheduleRequestDto} payload
- * @returns {Promise<import('@/types/scheduleGeneration.js').ScheduleRequestResponseDto>}
+ * 생성 요청 만들기 (POST /api/timetable-generation/requests). ADMIN.
+ * @returns {Promise<import('@/types/scheduleGeneration.js').TimetableRequestResponse>}
  */
-export async function createScheduleRequest(payload) {
-  const { data } = await client.post('/api/schedules/requests', payload)
+export async function createScheduleRequest() {
+  const { data } = await client.post('/api/timetable-generation/requests')
   return data
 }
 
 /**
- * 제출 현황 조회 (GET /api/schedules/requests/{storeId}/submission-status).
- * @param {number} storeId
- * @returns {Promise<import('@/types/scheduleGeneration.js').SubmissionStatusResponse>}
+ * 불가 교시 미제출 교사 (GET /api/timetable-generation/teachers/without-availability).
+ * 예전 제출 현황 API는 없다.
+ * @returns {Promise<import('@/types/scheduleGeneration.js').TeachersWithoutAvailabilityResponse>}
  */
-export async function getSubmissionStatus(storeId) {
+export async function getTeachersWithoutAvailability() {
   const { data } = await client.get(
-    `/api/schedules/requests/${storeId}/submission-status`,
+    '/api/timetable-generation/teachers/without-availability',
   )
-  return data
+  return {
+    allSubmitted: Boolean(data?.allSubmitted),
+    unsubmittedUserIds: Array.isArray(data?.unsubmittedUserIds)
+      ? data.unsubmittedUserIds
+      : [],
+  }
+}
+
+/** @deprecated getTeachersWithoutAvailability 를 쓴다. storeId는 무시한다. */
+export async function getSubmissionStatus() {
+  return getTeachersWithoutAvailability()
 }
 
 /**
- * 후보안 생성 (POST /api/schedules/requests/{scheduleRequestId}/generate).
+ * AI 생성 (POST /api/timetable-generation/requests/{id}/generate).
+ * 응답의 candidateTimetableKey로 후보를 조회한다.
  * @param {number} scheduleRequestId
- * @param {import('@/types/scheduleGeneration.js').ScheduleGenerationRequestDto} payload
- * @returns {Promise<import('@/types/scheduleGeneration.js').ScheduleGenerationResponseDto>}
+ * @param {import('@/types/scheduleGeneration.js').TimetableGenerationRequestDto} payload
+ * @returns {Promise<import('@/types/scheduleGeneration.js').TimetableGenerationResponse>}
  */
 export async function generateSchedule(scheduleRequestId, payload) {
   const { data } = await client.post(
-    `/api/schedules/requests/${scheduleRequestId}/generate`,
+    `/api/timetable-generation/requests/${scheduleRequestId}/generate`,
     payload,
   )
-  return data
+  const candidateTimetableKey =
+    data?.candidateTimetableKey ?? data?.candidateKey ?? null
+  return { ...data, candidateTimetableKey }
 }
 
 /**
- * 후보안 조회 (GET /api/schedules/candidates?key=).
- * @param {string} key Redis candidateScheduleKey
+ * 후보 시간표 (GET /api/timetable-generation/candidates?key=).
+ * @param {string} key candidateTimetableKey
  * @returns {Promise<import('@/types/scheduleGeneration.js').CandidateSchedule[]>}
  */
 export async function getCandidateSchedules(key) {
-  const { data } = await client.get('/api/schedules/candidates', {
+  const { data } = await client.get('/api/timetable-generation/candidates', {
     params: { key },
   })
-  return data
+  return Array.isArray(data) ? data : []
 }
 
 /**
- * 후보안 확정 (POST /api/schedules/requests/{scheduleRequestId}/confirm).
+ * 후보 확정 (POST /api/timetable-generation/requests/{id}/confirm).
  * @param {number} scheduleRequestId
- * @param {import('@/types/scheduleGeneration.js').ConfirmScheduleRequestDto} payload
- * @returns {Promise<import('@/types/scheduleGeneration.js').ConfirmScheduleResponse>}
+ * @param {import('@/types/scheduleGeneration.js').ConfirmTimetableRequestDto} payload
  */
 export async function confirmSchedule(scheduleRequestId, payload) {
   const { data } = await client.post(
-    `/api/schedules/requests/${scheduleRequestId}/confirm`,
+    `/api/timetable-generation/requests/${scheduleRequestId}/confirm`,
     payload,
   )
   return data

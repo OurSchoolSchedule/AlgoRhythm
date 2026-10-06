@@ -1,111 +1,71 @@
-import { TIMETABLE_DAYS, TIMETABLE_PERIODS } from '@/constants/schoolTimetable.js'
+import { buildDayRows, buildTodayRows, formatRowDetail } from '@/utils/homeFocus.js'
+
+function badgeKind(status) {
+  if (status === '변경') return 'change'
+  if (status === '보결' || status === '대타 대기') return 'wait'
+  return 'neutral'
+}
 
 /**
+ * 홈의 오늘 시간표. 수업이 없는 날은 행을 그리지 않는다.
  * @param {Object} props
  * @param {ReturnType<import('@/utils/schoolTimetable.js').buildSchoolTimetable>} props.timetable
+ * @param {Date} [props.now]
+ * @param {string} [props.dayKey]
+ * @param {Date} [props.date]
  */
-export default function DayTimetableList({ timetable }) {
-  const { todayKey, todayByPeriod, currentPeriod, currentClass } = timetable
-
-  if (!todayKey || !todayByPeriod) {
-    return (
-      <p style={{ margin: 0, fontSize: 13, color: '#888' }}>
-        주말에는 수업 일정이 표시되지 않습니다.
-      </p>
-    )
-  }
+export default function DayTimetableList({ timetable, now = new Date(), dayKey, date }) {
+  const rows = dayKey
+    ? buildDayRows(timetable, dayKey, now, date ?? null)
+    : buildTodayRows(timetable, now)
+  if (rows.length === 0) return null
 
   return (
-    <>
-      {currentClass ? (
-        <div
-          style={{
-            background: '#e8f7ee',
-            borderRadius: 8,
-            padding: '10px 14px',
-            marginBottom: 12,
-          }}
-        >
-          <span style={{ fontSize: 13, color: '#27a859', fontWeight: 600 }}>
-            {currentPeriod}교시 · {currentClass.class} · {currentClass.subject}
-          </span>
-        </div>
-      ) : (
-        <div
-          style={{
-            background: '#f1efe8',
-            borderRadius: 8,
-            padding: '10px 14px',
-            marginBottom: 12,
-          }}
-        >
-          <span style={{ fontSize: 13, color: '#888' }}>현재 공강 시간입니다</span>
-        </div>
-      )}
-
-      <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center' }}>
-        {TIMETABLE_DAYS.map((d) => (
-          <button
-            key={d}
-            type="button"
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
-              border: 'none',
-              background: d === todayKey ? '#27a859' : 'transparent',
-              color: d === todayKey ? '#fff' : '#5f5e5a',
-              fontWeight: d === todayKey ? 600 : 400,
-              fontSize: 13,
-              cursor: 'default',
-            }}
-          >
-            {d}
-          </button>
-        ))}
-      </div>
-
-      <div style={{ overflowY: 'auto', maxHeight: 320 }}>
-        {TIMETABLE_PERIODS.map((p) => {
-          const s = todayByPeriod[p]
-          const isCurrent = p === currentPeriod
+    <div className="day-list">
+      {rows.map((row) => {
+        if (row.kind === 'lunch') {
           return (
-            <div
-              key={p}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '7px 0',
-                borderBottom: '0.5px solid #e8e6e0',
-              }}
-            >
-              <span style={{ fontSize: 12, color: '#888', width: 32, flexShrink: 0 }}>
-                {p}교시
-              </span>
-              {s ? (
-                <span
-                  style={{
-                    flex: 1,
-                    background: isCurrent ? '#e8f7ee' : '#f1efe8',
-                    color: isCurrent ? '#27a859' : '#444',
-                    borderRadius: 6,
-                    padding: '5px 10px',
-                    fontSize: 13,
-                    fontWeight: isCurrent ? 600 : 400,
-                  }}
-                >
-                  {s.class} | {s.subject}
-                </span>
-              ) : (
-                <span style={{ flex: 1, color: '#d3d1c7', fontSize: 13, paddingLeft: 10 }}>
-                  —
-                </span>
-              )}
+            <div key={row.id} className="day-row-lunch">
+              {row.label}
             </div>
           )
-        })}
-      </div>
-    </>
+        }
+
+        const cell = row.cell
+        return (
+          <div
+            key={row.id}
+            className={`day-row${row.isNow ? ' day-row-now' : ''}${row.isPast ? ' day-row-past' : ''}`}
+          >
+            <div className="day-period-col">
+              <span className="day-period-label">{row.periodLabel}</span>
+              <span className="day-period-time">{row.time}</span>
+            </div>
+            <div className="day-main">
+              {cell ? (
+                <>
+                  <span className="day-subject">{cell.subject || '수업'}</span>
+                  {formatRowDetail(cell) && <span className="day-meta">{formatRowDetail(cell)}</span>}
+                  {cell.previousTeacher && (
+                    <span className="day-change">
+                      <s>{cell.previousTeacher}</s>
+                      {cell.teacher ? ` → ${cell.teacher}` : ''}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="day-subject day-empty">공강</span>
+              )}
+            </div>
+            <div className="day-badges">
+              {row.isNow && <span className="day-badge day-badge-now">지금</span>}
+              {cell?.status && (
+                <span className={`day-badge day-badge-${badgeKind(cell.status)}`}>{cell.status}</span>
+              )}
+            </div>
+          </div>
+        )
+      })}
+    </div>
   )
 }
