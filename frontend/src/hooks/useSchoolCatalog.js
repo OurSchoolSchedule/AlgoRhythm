@@ -6,6 +6,7 @@ import {
   deleteSubject,
   getSchoolClasses,
   getSubjects,
+  updateSchoolClass,
   updateSubject,
 } from '@/api'
 import { queryKeys } from './queryKeys.js'
@@ -60,6 +61,16 @@ export function useCreateSchoolClass() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (payload) => createSchoolClass(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['school', 'classes'] })
+    },
+  })
+}
+
+export function useUpdateSchoolClass() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ classId, payload }) => updateSchoolClass(classId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['school', 'classes'] })
     },

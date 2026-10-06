@@ -104,12 +104,18 @@ export function HistoryView() {
   const historyQuery = useSubstituteHistory();
   const swapQuery = useMySwapRequests();
   const historyData = useMemo(() => {
-    const substitutes = (historyQuery.data ?? []).map(substituteToHistoryRecord);
-    const swaps = (swapQuery.data ?? []).map(swapToHistoryRecord);
+    const substitutes = historyQuery.isError
+      ? []
+      : (historyQuery.data ?? []).map(substituteToHistoryRecord);
+    const swaps = swapQuery.isError
+      ? []
+      : (swapQuery.data ?? []).map(swapToHistoryRecord);
     return [...substitutes, ...swaps].filter((record) => record.date);
-  }, [historyQuery.data, swapQuery.data]);
-  const listLoading = historyQuery.isLoading || swapQuery.isLoading;
-  const listError = historyQuery.isError || swapQuery.isError;
+  }, [historyQuery.data, historyQuery.isError, swapQuery.data, swapQuery.isError]);
+  const listLoading = (historyQuery.isLoading && !historyQuery.data)
+    || (swapQuery.isLoading && !swapQuery.data);
+  const listError = historyQuery.isError && swapQuery.isError;
+  const listPartialError = !listError && (historyQuery.isError || swapQuery.isError);
   const refetchList = () => {
     historyQuery.refetch();
     swapQuery.refetch();
@@ -288,6 +294,12 @@ export function HistoryView() {
       {listError && (
         <p className="history-empty">
           내역을 불러오지 못했습니다.{" "}
+          <button type="button" className="history-link" onClick={refetchList}>다시 시도</button>
+        </p>
+      )}
+      {listPartialError && (
+        <p className="history-empty">
+          {historyQuery.isError ? "보결" : "교환"} 내역을 불러오지 못했습니다.{" "}
           <button type="button" className="history-link" onClick={refetchList}>다시 시도</button>
         </p>
       )}

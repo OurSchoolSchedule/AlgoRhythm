@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   countByType,
   substituteToHistoryRecord,
+  swapToHistoryRecord,
   countPending,
   emptyMonthMessage,
   filterHistory,
@@ -37,6 +38,30 @@ describe('substitute history rows', () => {
       status: '미처리',
       title: '1교시 · 월 · 출장',
       after: '출장',
+    })
+  })
+})
+
+describe('swap history rows', () => {
+  it('maps swap list fields into history records', () => {
+    expect(swapToHistoryRecord({
+      id: 9,
+      requesterDate: '2026-05-12',
+      receiverDate: '2026-05-13',
+      requesterUsername: '김교사',
+      receiverUsername: '이교사',
+      reason: '회의',
+      status: 'ACCEPTED',
+      managerApprovalStatus: 'PENDING',
+      createdAt: '2026-05-11T01:00:00Z',
+    })).toMatchObject({
+      id: 'swap-9',
+      date: '2026-05-12',
+      type: '교환',
+      status: '대기 중',
+      title: '김교사 ↔ 이교사 · 회의',
+      before: '2026-05-12',
+      after: '2026-05-13',
     })
   })
 })

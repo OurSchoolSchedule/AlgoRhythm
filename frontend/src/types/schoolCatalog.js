@@ -18,7 +18,7 @@
  * @property {number} academicYear
  * @property {number} grade
  * @property {number} classNumber
- * @property {number} [homeroomTeacherSchoolUserId]
+ * @property {number|null} [homeroomTeacherSchoolUserId]
  */
 
 /**
