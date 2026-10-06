@@ -1,10 +1,8 @@
 import { SCHOOL_PERIOD_SLOTS } from '@/constants/schoolTimetable.js'
 import { formatClassName } from '@/utils/homeFocus.js'
 import {
-  STATUS_BADGE,
   boardPeriods,
   cellSlotKey,
-  cellStatusKind,
   periodsWithLunch,
 } from '@/utils/timetableBoard.js'
 
@@ -22,9 +20,9 @@ function shortClock(value) {
 
 function subline(cell, detailMode) {
   const klass = formatClassName(cell.class)
-  if (detailMode === 'class') return [cell.teacher, cell.location].filter(Boolean).join(' · ')
+  if (detailMode === 'class') return cell.teacher || ''
   if (detailMode === 'all') return [klass, cell.teacher].filter(Boolean).join(' · ')
-  return [klass, cell.location].filter(Boolean).join(' · ')
+  return klass
 }
 
 /**
@@ -84,7 +82,6 @@ export default function WeeklyTimetableGrid({
             {days.map((day) => {
               const cell = timetable.byDay?.[day.key]?.[row.period] ?? null
               const key = cellSlotKey(day.key, row.period)
-              const kind = cell ? cellStatusKind(cell.status) : ''
               const dragging = dragFrom && cellSlotKey(dragFrom.day, dragFrom.period) === key
               const hovered = hoverKey === key && dragFrom
               const rejected = hovered && hoverReason
@@ -127,7 +124,6 @@ export default function WeeklyTimetableGrid({
                     <>
                       <span className="tt-subject">{cell.subject || '수업'}</span>
                       {subline(cell, detailMode) ? <span className="tt-sub">{subline(cell, detailMode)}</span> : null}
-                      {kind ? <span className={`tt-badge is-${kind}`}>{STATUS_BADGE[kind]}</span> : null}
                     </>
                   ) : (
                     <span className="tt-free">공강</span>

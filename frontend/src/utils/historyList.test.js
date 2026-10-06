@@ -36,7 +36,7 @@ describe('substitute history rows', () => {
       type: '보결',
       status: '미처리',
       title: '1교시 · 월 · 출장',
-      requester: null,
+      after: '출장',
     })
   })
 })

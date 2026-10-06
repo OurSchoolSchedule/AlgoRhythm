@@ -48,10 +48,6 @@ function SearchIcon() {
   );
 }
 
-function personLine(person) {
-  return person ? `${person.name} · ${person.at}` : "없음";
-}
-
 function HistoryDetail({ record, onClose }) {
   const titleId = useId();
   const closeRef = useRef(null);
@@ -79,18 +75,18 @@ function HistoryDetail({ record, onClose }) {
           <span> → {record.after || "없음"}</span>
         </p>
         <dl>
-          <div>
-            <dt>요청자</dt>
-            <dd>{personLine(record.requester)}</dd>
-          </div>
-          <div>
-            <dt>수락자</dt>
-            <dd>{personLine(record.acceptor)}</dd>
-          </div>
-          <div>
-            <dt>승인자</dt>
-            <dd>{personLine(record.approver)}</dd>
-          </div>
+          {record.status ? (
+            <div>
+              <dt>상태</dt>
+              <dd>{record.status}</dd>
+            </div>
+          ) : null}
+          {record.time ? (
+            <div>
+              <dt>등록</dt>
+              <dd>{record.time}</dd>
+            </div>
+          ) : null}
         </dl>
       </aside>
     </>
@@ -416,7 +412,7 @@ export function AdminView({ navigate }) {
             </p>
           )}
           {!staffLoading && !staffError && staffList.length === 0 && (
-            <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>등록된 교사가 없습니다. 교사를 초대하면 여기에 표시됩니다.</p>
+            <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>등록된 교사가 없습니다.</p>
           )}
 
           {!staffLoading && !staffError && staffList.length > 0 && (

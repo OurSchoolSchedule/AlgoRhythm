@@ -20,10 +20,8 @@ import {
 } from '@/utils/schoolWeek.js'
 import { getApiErrorMessage } from '@/utils/timetableGeneration.js'
 import {
-  STATUS_BADGE,
   applyCellMoves,
   cellSlotKey,
-  cellStatusKind,
   changedTimetablePatches,
   dropRejection,
 } from '@/utils/timetableBoard.js'
@@ -94,7 +92,6 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
     : (scope === 'mine' ? 'class' : scope)
   const days = schoolWeekDays(weekStart, now)
   const breakLabel = weekBreakLabel(weekStart)
-  const alternativeCount = Number(timetable?.alternativeCount) || 0
   const thisWeek = isSameSchoolWeek(weekStart, now)
   const source = timetable
 
@@ -118,10 +115,6 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
   const hoverReason = dragFrom && hover
     ? dropRejection(shown.byDay, dragFrom, hover, days.find((day) => day.key === hover.day)?.holiday || '')
     : ''
-
-  const hasStatus = TIMETABLE_DAYS.some((day) => (
-    source.periods.some((period) => cellStatusKind(shown.byDay?.[day]?.[period]?.status))
-  ))
 
   useEffect(() => {
     if (moves.length === 0) return undefined
@@ -308,13 +301,6 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
         )}
       </div>
 
-      {!failed && !isLoading && alternativeCount > 0 && (
-        <div className="tt-note">
-          생성된 시간표 대안 {alternativeCount}개가 있습니다
-          <button type="button" className="history-link" onClick={openCreate}>선택하기</button>
-        </div>
-      )}
-
       {failed ? (
         <div className="home-load-error">
           <span className="home-error-mark" aria-hidden="true">!</span>
@@ -382,16 +368,6 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
               setHover(null)
             }}
           />
-
-          {hasStatus && (
-            <p className="tt-legend">
-              <span className="is-wait">대기</span>
-              <span aria-hidden="true"> · </span>
-              <span className="is-change">변경</span>
-              <span aria-hidden="true"> · </span>
-              <span className="is-conflict">충돌</span>
-            </p>
-          )}
         </>
       )}
 
@@ -414,18 +390,8 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
               <dl className="tt-detail-list">
                 <div><dt>학급</dt><dd>{formatClassName(selectedCell.class) || '없음'}</dd></div>
                 <div><dt>교사</dt><dd>{selectedCell.teacher || '없음'}</dd></div>
-                <div><dt>장소</dt><dd>{selectedCell.location || '없음'}</dd></div>
               </dl>
             ) : null}
-            <h3>상태 이력</h3>
-            {selectedCell?.status || selectedCell?.previousTeacher ? (
-              <ul className="tt-history">
-                {selectedCell.status ? <li>{STATUS_BADGE[cellStatusKind(selectedCell.status)] || selectedCell.status}</li> : null}
-                {selectedCell.previousTeacher ? <li>변경 전 교사 {selectedCell.previousTeacher}</li> : null}
-              </ul>
-            ) : (
-              <p className="home-empty">상태 이력이 없습니다</p>
-            )}
             {selectedCell && requestMode === 'substitute' ? (
               <CreateSubstituteForm
                 timetableId={selectedCell.id}

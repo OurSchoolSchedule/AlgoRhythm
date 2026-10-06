@@ -18,20 +18,19 @@ export function formatClassName(classLabel) {
 }
 
 /**
- * @param {{ class?: string, subject?: string, location?: string } | null | undefined} cell
+ * @param {{ class?: string, subject?: string } | null | undefined} cell
  */
 export function formatHeroDetail(cell) {
   if (!cell) return ''
-  const place = [formatClassName(cell.class), cell.subject].filter(Boolean).join(' ')
-  return [place, cell.location].filter(Boolean).join(' · ')
+  return [formatClassName(cell.class), cell.subject].filter(Boolean).join(' ')
 }
 
 /**
- * @param {{ class?: string, location?: string } | null | undefined} cell
+ * @param {{ class?: string, teacher?: string } | null | undefined} cell
  */
 export function formatRowDetail(cell) {
   if (!cell) return ''
-  return [formatClassName(cell.class), cell.location].filter(Boolean).join(' · ')
+  return [formatClassName(cell.class), cell.teacher].filter(Boolean).join(' · ')
 }
 
 function slotOf(period) {

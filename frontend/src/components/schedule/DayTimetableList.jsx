@@ -1,11 +1,5 @@
 import { buildDayRows, buildTodayRows, formatRowDetail } from '@/utils/homeFocus.js'
 
-function badgeKind(status) {
-  if (status === '변경') return 'change'
-  if (status === '보결' || status === '대타 대기') return 'wait'
-  return 'neutral'
-}
-
 /**
  * 홈의 오늘 시간표. 수업이 없는 날은 행을 그리지 않는다.
  * @param {Object} props
@@ -46,12 +40,6 @@ export default function DayTimetableList({ timetable, now = new Date(), dayKey, 
                 <>
                   <span className="day-subject">{cell.subject || '수업'}</span>
                   {formatRowDetail(cell) && <span className="day-meta">{formatRowDetail(cell)}</span>}
-                  {cell.previousTeacher && (
-                    <span className="day-change">
-                      <s>{cell.previousTeacher}</s>
-                      {cell.teacher ? ` → ${cell.teacher}` : ''}
-                    </span>
-                  )}
                 </>
               ) : (
                 <span className="day-subject day-empty">공강</span>
@@ -59,9 +47,6 @@ export default function DayTimetableList({ timetable, now = new Date(), dayKey, 
             </div>
             <div className="day-badges">
               {row.isNow && <span className="day-badge day-badge-now">지금</span>}
-              {cell?.status && (
-                <span className={`day-badge day-badge-${badgeKind(cell.status)}`}>{cell.status}</span>
-              )}
             </div>
           </div>
         )

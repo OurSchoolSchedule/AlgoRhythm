@@ -9,9 +9,6 @@ function cell(period, start, end, extra = {}) {
     teacher: '김민지',
     startTime: start,
     endTime: end,
-    location: '본관 3층',
-    status: '',
-    previousTeacher: '',
     ...extra,
   }
 }
@@ -40,7 +37,7 @@ describe('resolveHomeFocus', () => {
     )
     expect(focus.label).toBe('지금')
     expect(focus.headline).toBe('3교시 · 10:10–10:55')
-    expect(focus.detail).toBe('2-3반 국어 · 본관 3층')
+    expect(focus.detail).toBe('2-3반 국어')
   })
 
   it('shows the next class between periods', () => {

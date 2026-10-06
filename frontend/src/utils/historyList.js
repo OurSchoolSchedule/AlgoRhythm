@@ -107,9 +107,6 @@ export function substituteToHistoryRecord(item) {
     actor: '',
     time,
     search: title,
-    requester: null,
-    acceptor: null,
-    approver: null,
   }
 }
 
