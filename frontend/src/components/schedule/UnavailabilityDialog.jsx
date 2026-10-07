@@ -122,10 +122,10 @@ export default function UnavailabilityDialog({ onClose }) {
           <p style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--color-text-muted)' }}>등록된 근무 불가가 없습니다.</p>
         )}
         {!query.isError && (
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 12 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', marginBottom: 12 }}>
             <thead>
               <tr>
-                <th style={headStyle}>교시</th>
+                <th style={{ ...headStyle, width: 40 }}>교시</th>
                 {DAYS.map(([, label]) => <th key={label} style={headStyle}>{label}</th>)}
               </tr>
             </thead>
@@ -136,7 +136,7 @@ export default function UnavailabilityDialog({ onClose }) {
                   {DAYS.map(([day]) => {
                     const on = selected.has(cellKey(day, period))
                     return (
-                      <td key={day} style={{ padding: 4, textAlign: 'center' }}>
+                      <td key={day} style={{ padding: 4, textAlign: 'center', verticalAlign: 'middle' }}>
                         <button
                           type="button"
                           aria-pressed={on}
@@ -144,16 +144,24 @@ export default function UnavailabilityDialog({ onClose }) {
                           disabled={query.isLoading || query.isError}
                           onClick={() => toggle(day, period)}
                           style={{
+                            boxSizing: 'border-box',
+                            display: 'block',
                             width: '100%',
-                            minHeight: 36,
+                            height: 36,
+                            padding: 0,
+                            margin: 0,
                             borderRadius: 6,
                             border: '1px solid var(--color-border-input)',
                             background: on ? 'var(--color-primary-button)' : 'var(--color-surface)',
-                            color: on ? 'var(--color-on-primary)' : 'var(--color-text-muted)',
+                            color: on ? 'var(--color-on-primary)' : 'transparent',
                             cursor: 'pointer',
                             fontSize: 12,
+                            fontWeight: 600,
+                            lineHeight: '34px',
+                            overflow: 'hidden',
+                            whiteSpace: 'nowrap',
                           }}
-                        >{on ? '불가' : ''}</button>
+                        >불가</button>
                       </td>
                     )
                   })}
