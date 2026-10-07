@@ -9,6 +9,7 @@ import {
   useOwnerProfile,
   useStaffProfile,
 } from '@/hooks'
+import LoadError from '@/components/LoadError.jsx'
 import TodoCompose from '@/components/schedule/TodoCompose.jsx'
 import TodoPage from '@/pages/schedule/TodoPage.jsx'
 import { getApiErrorMessage } from '@/utils/timetableGeneration.js'
@@ -175,7 +176,7 @@ function actionBtnStyle(color) {
   }
 }
 
-function TodoEmbed({ date, userRole }) {
+function TodoEmbed({ date, userRole, quietError = false }) {
   const [content, setContent] = useState('')
   const [todoType, setTodoType] = useState('PERSONAL')
 
@@ -244,17 +245,14 @@ function TodoEmbed({ date, userRole }) {
         </p>
       )}
 
-      {isLoading && (
+      {(isLoading || (isError && quietError)) && (
         <div className="home-skeleton-list" aria-hidden="true">
           <span className="home-skeleton" style={{ width: '100%', height: 44 }} />
           <span className="home-skeleton" style={{ width: '100%', height: 44 }} />
         </div>
       )}
-      {isError && (
-        <p className="todo-row-error">
-          할 일을 불러오지 못했어요.{' '}
-          <button type="button" className="todo-retry" onClick={() => refetch()}>다시 시도</button>
-        </p>
+      {isError && !quietError && (
+        <LoadError onRetry={() => refetch()} />
       )}
 
       {!isLoading && !isError && todoData && previewItems.length === 0 && (
@@ -276,7 +274,7 @@ function TodoEmbed({ date, userRole }) {
   )
 }
 
-export default function ScheduleTodoTab({ embedded = false, date, userRole }) {
-  if (embedded) return <TodoEmbed date={date} userRole={userRole} />
+export default function ScheduleTodoTab({ embedded = false, date, userRole, quietError = false }) {
+  if (embedded) return <TodoEmbed date={date} userRole={userRole} quietError={quietError} />
   return <TodoPage date={date} userRole={userRole} />
 }

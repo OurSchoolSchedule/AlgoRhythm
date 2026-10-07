@@ -31,7 +31,8 @@
   --color-text: #1f2328;
   --color-text-secondary: #4b5563;
   --color-text-subtle: var(--color-text-secondary);
-  --color-text-muted: #6b7280;
+  /* 흰 배경 대비 4.54:1 이상 (WCAG AA) */
+  --color-text-muted: #667085;
   --color-border-input: #d1d5db;
   --color-border: #e5e7eb;
   --color-border-light: #f0f1f3;
@@ -707,6 +708,7 @@ body {
   color: var(--color-primary-600);
 }
 
+.load-error,
 .home-load-error {
   display: flex;
   align-items: center;
@@ -716,6 +718,7 @@ body {
   color: var(--color-text);
 }
 
+.load-error-mark,
 .home-error-mark {
   color: var(--color-danger);
   font-weight: 700;
