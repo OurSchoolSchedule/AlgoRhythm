@@ -13,6 +13,7 @@ import {
   useRespondExtraShift,
   useApproveExtraShift,
 } from '@/hooks'
+import LoadError from '@/components/LoadError.jsx'
 import TodoCompose from '@/components/schedule/TodoCompose.jsx'
 import { getApiErrorMessage } from '@/utils/timetableGeneration.js'
 
@@ -407,34 +408,22 @@ export default function TodoPage({ date, userRole }) {
         </div>
       )}
 
-      {listFailed && (
-        <div className="home-load-error">
-          <span className="home-error-mark" aria-hidden="true">!</span>
-          <span>불러오지 못했어요</span>
-          <button
-            type="button"
-            className="home-text-button home-accent"
-            onClick={() => {
-              refetch()
-              substitutes.refetch()
-            }}
-          >
-            다시 시도
-          </button>
-        </div>
+      {(listFailed || substitutes.isError) && (
+        <LoadError
+          onRetry={() => {
+            if (listFailed) refetch()
+            if (substitutes.isError) substitutes.refetch()
+          }}
+        />
       )}
 
       {!showSkeleton && !listFailed && (
         <div className="todo-groups">
-          {substitutes.isError && (
-            <div className="home-load-error">
-              <span className="home-error-mark" aria-hidden="true">!</span>
-              <span>불러오지 못했어요</span>
-              <button type="button" className="home-text-button home-accent" onClick={() => substitutes.refetch()}>
-                다시 시도
-              </button>
+          {substitutes.isError ? (
+            <div className="home-skeleton-list" aria-hidden="true">
+              <span className="home-skeleton" style={{ width: '100%', height: 44 }} />
             </div>
-          )}
+          ) : null}
 
           {substitutes.isSuccess && actionRows.length > 0 && (
             <section id="todo-group-need">

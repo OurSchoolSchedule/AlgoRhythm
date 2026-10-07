@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { createSubject } from "@/api";
+import LoadError from "@/components/LoadError.jsx";
 import { useCreateSubject, useDeleteSubject, useSubjects, useUpdateSubject } from "@/hooks";
 import { queryKeys } from "@/hooks/queryKeys.js";
 import { useQueryClient } from "@tanstack/react-query";
@@ -94,10 +95,7 @@ export default function SubjectManageView() {
       )}
       {subjects.isLoading && <p style={{ color: "var(--color-text-muted)", fontSize: 13 }}>불러오는 중...</p>}
       {subjects.isError && (
-        <p style={{ color: "var(--color-danger)", fontSize: 13 }}>
-          {getApiErrorMessage(subjects.error, "과목을 불러오지 못했습니다.")}{" "}
-          <button type="button" className="history-link" onClick={() => subjects.refetch()}>다시 시도</button>
-        </p>
+        <LoadError onRetry={() => subjects.refetch()} />
       )}
       {!subjects.isLoading && !subjects.isError && rows.length === 0 && (
         <p style={{ color: "var(--color-text-muted)", fontSize: 13 }}>등록된 과목이 없습니다.</p>

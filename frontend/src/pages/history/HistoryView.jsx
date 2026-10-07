@@ -5,6 +5,7 @@ import {
   useStoreStaffSummary,
   useSubstituteHistory,
 } from "@/hooks";
+import LoadError from "@/components/LoadError.jsx";
 import SchoolClassPanel from "@/components/schedule/SchoolClassPanel.jsx";
 import SchoolSettingPanel from "@/components/schedule/SchoolSettingPanel.jsx";
 import {
@@ -26,8 +27,6 @@ import {
   substituteToHistoryRecord,
   swapToHistoryRecord,
 } from "@/utils/historyList.js";
-import { getApiErrorMessage } from "@/utils/timetableGeneration.js";
-
 const typeColor = {
   보결: "var(--color-warning)",
   변경: "var(--color-info)",
@@ -291,9 +290,12 @@ export function HistoryView() {
 
       <div className="history-summary">
         <p>
-          변동 <strong>{monthItems.length}</strong>건
+          변동 <strong>{listLoading || listError ? "—" : monthItems.length}</strong>
+          {!(listLoading || listError) ? "건" : ""}
           <span aria-hidden="true"> · </span>
-          {pending > 0 ? (
+          {listLoading || listError ? (
+            <span className="is-muted">미처리 —</span>
+          ) : pending > 0 ? (
             <>미처리 <strong className="is-danger">{pending}</strong>건</>
           ) : (
             <span className="is-muted">미처리 없음</span>
@@ -302,17 +304,8 @@ export function HistoryView() {
       </div>
 
       {listLoading && <p className="history-empty">불러오는 중...</p>}
-      {listError && (
-        <p className="history-empty">
-          내역을 불러오지 못했습니다.{" "}
-          <button type="button" className="history-link" onClick={refetchList}>다시 시도</button>
-        </p>
-      )}
-      {listPartialError && (
-        <p className="history-empty">
-          {historyQuery.isError ? "보결" : "교환"} 내역을 불러오지 못했습니다.{" "}
-          <button type="button" className="history-link" onClick={refetchList}>다시 시도</button>
-        </p>
+      {(listError || listPartialError) && (
+        <LoadError onRetry={refetchList} />
       )}
       {!listLoading && !listError && historyData.length === 0 && (
         <p className="history-empty">변동 내역이 없습니다</p>
@@ -481,9 +474,7 @@ export function AdminView({ navigate }) {
             <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>불러오는 중...</p>
           )}
           {staffError && (
-            <p style={{ margin: 0, fontSize: 13, color: "var(--color-danger)" }}>
-              교사 목록을 불러오지 못했습니다. 관리자 권한으로 다시 확인하세요.
-            </p>
+            <LoadError />
           )}
           {!staffLoading && !staffError && staffList.length === 0 && (
             <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>등록된 구성원이 없습니다.</p>
@@ -541,10 +532,7 @@ export function AdminView({ navigate }) {
             <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>불러오는 중...</p>
           )}
           {schoolUnavail.isError && (
-            <p style={{ margin: 0, fontSize: 13, color: "var(--color-danger)" }}>
-              {getApiErrorMessage(schoolUnavail.error, "근무 불가를 불러오지 못했습니다.")}{" "}
-              <button type="button" className="history-link" onClick={() => schoolUnavail.refetch()}>다시 시도</button>
-            </p>
+            <LoadError onRetry={() => schoolUnavail.refetch()} />
           )}
           {!schoolUnavail.isLoading && !schoolUnavail.isError && (schoolUnavail.data?.length ?? 0) === 0 && (
             <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>등록된 근무 불가가 없습니다.</p>

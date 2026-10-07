@@ -1,4 +1,5 @@
 import { useSubstituteRequests, useRespondExtraShift, useApproveExtraShift } from '@/hooks'
+import LoadError from '@/components/LoadError.jsx'
 import { getApiErrorMessage } from '@/utils/timetableGeneration.js'
 
 const DAY_LABEL = { MON: '월', TUE: '화', WED: '수', THU: '목', FRI: '금', SAT: '토', SUN: '일' }
@@ -14,7 +15,7 @@ function responseIdFor(request, notifications) {
  * OPEN 보결 중 알림에 없는 건을 보여 준다.
  * 관리자 승인은 알림의 substituteResponseId가 있을 때만 한다.
  */
-export default function SubstituteRequestList({ position, notifications = [] }) {
+export default function SubstituteRequestList({ position, notifications = [], quietError = false }) {
   const query = useSubstituteRequests('OPEN')
   const respond = useRespondExtraShift()
   const approve = useApproveExtraShift()
@@ -30,11 +31,9 @@ export default function SubstituteRequestList({ position, notifications = [] }) 
     return <p style={{ margin: '8px 0', fontSize: 13, color: 'var(--color-text-muted)' }}>보결 요청을 불러오는 중...</p>
   }
   if (query.isError) {
+    if (quietError) return null
     return (
-      <p style={{ margin: '8px 0', fontSize: 13, color: 'var(--color-danger)' }}>
-        {getApiErrorMessage(query.error, '보결 목록을 불러오지 못했습니다.')}{' '}
-        <button type="button" className="history-link" onClick={() => query.refetch()}>다시 시도</button>
-      </p>
+      <LoadError onRetry={() => query.refetch()} />
     )
   }
   if (rows.length === 0) return null

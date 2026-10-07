@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { getAccessToken } from '@/api'
+import LoadError from '@/components/LoadError.jsx'
 import CreateShiftSwapForm from '@/components/schedule/CreateShiftSwapForm.jsx'
 import CreateSubstituteForm from '@/components/schedule/CreateSubstituteForm.jsx'
 import CreateTimetableCellForm from '@/components/schedule/CreateTimetableCellForm.jsx'
@@ -454,11 +455,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
       )}
 
       {failed ? (
-        <div className="home-load-error">
-          <span className="home-error-mark" aria-hidden="true">!</span>
-          <span>불러오지 못했어요</span>
-          <button type="button" className="home-text-button home-accent" onClick={() => refetch()}>다시 시도</button>
-        </div>
+        <LoadError onRetry={() => refetch()} />
       ) : isLoading ? (
         <div className="tt-board tt-skeleton" aria-hidden="true">
           {Array.from({ length: 6 }, (_, index) => (

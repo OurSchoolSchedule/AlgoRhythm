@@ -1,6 +1,7 @@
 import { useTodos, useNotifications, useSchoolTimetable, useSubstituteRequests } from "@/hooks";
 import ScheduleTodoTab from "@/pages/schedule/ScheduleTodoTab.jsx";
 import DayTimetableList from "@/components/schedule/DayTimetableList.jsx";
+import LoadError from "@/components/LoadError.jsx";
 import NotificationActionButtons from "@/components/schedule/NotificationActionButtons.jsx";
 import SubstituteRequestList from "@/components/schedule/SubstituteRequestList.jsx";
 import { toISODate } from "@/utils";
@@ -66,27 +67,19 @@ const typeBg = {
   "추가 근무": "var(--color-info-light)",
 };
 
-function SectionHeader({ title, count, onViewAll }) {
+function SectionHeader({ title, count, countReady, onViewAll }) {
   return (
     <div className="home-section-head">
       <h2>
         {title}
-        {count > 0 && <span className="home-accent">{count}</span>}
+        {!countReady ? (
+          <span className="home-accent">—</span>
+        ) : count > 0 ? (
+          <span className="home-accent">{count}</span>
+        ) : null}
       </h2>
       <button type="button" className="home-text-button" onClick={onViewAll}>
         전체 보기 ›
-      </button>
-    </div>
-  );
-}
-
-function LoadError({ onRetry }) {
-  return (
-    <div className="home-load-error">
-      <span className="home-error-mark" aria-hidden="true">!</span>
-      <span>불러오지 못했어요</span>
-      <button type="button" className="home-text-button home-accent" onClick={onRetry}>
-        다시 시도
       </button>
     </div>
   );
@@ -96,25 +89,25 @@ function SkeletonBlock({ width, height }) {
   return <span className="home-skeleton" style={{ width, height }} />;
 }
 
-function HomeStats({ lessons, substitutes, alerts, loading }) {
+function HomeStats({ lessons, substitutes, alerts, loading, failedLessons, failedRest }) {
   const items = [
-    ["오늘 수업", lessons, "교시"],
-    [`이번 주 ${DOMAIN.substitute}`, substitutes, "건"],
-    ["알림", alerts, "건"],
+    ["오늘 수업", failedLessons ? "—" : lessons, "교시", failedLessons],
+    [`이번 주 ${DOMAIN.substitute}`, failedRest ? "—" : substitutes, "건", failedRest],
+    ["알림", failedRest ? "—" : alerts, "건", failedRest],
   ];
   return (
     <div className="home-stats">
-      {items.map(([label, value, unit], index) => (
+      {items.map(([label, value, unit, failed], index) => (
         <div key={label} className="home-stat-cell">
           {index > 0 && <span className="home-stat-rule" aria-hidden="true" />}
           <div className="home-stat">
             <div className="home-stat-label">{label}</div>
-            {loading ? (
+            {loading && !failed ? (
               <SkeletonBlock width={48} height={20} />
             ) : (
               <div className="home-stat-value-row">
                 <span className="home-stat-value">{value}</span>
-                <span className="home-stat-unit">{unit}</span>
+                {value !== "—" && <span className="home-stat-unit">{unit}</span>}
               </div>
             )}
           </div>
@@ -160,6 +153,8 @@ export default function HomeView({ navigate, userRole = "admin" }) {
   const {
     data: todoData,
     isError: todoError,
+    isLoading: todoLoading,
+    refetch: refetchTodos,
   } = useTodos(todayDateStr);
   const todoItems = todoData
     ? [...todoData.schoolTodos, ...todoData.handoverTodos, ...todoData.personalTodos]
@@ -174,6 +169,18 @@ export default function HomeView({ navigate, userRole = "admin" }) {
   const focus = resolveHomeFocus(timetable, now);
   const taskCount = actionable.length + todoItems.length + openSubstituteCount;
   const summaryLoading = timetableLoading || notificationsLoading;
+  const tasksCountReady = !todoLoading && !todoError && !notificationsLoading && !notificationsError
+    && !openSubstitutes.isLoading && !openSubstitutes.isError;
+  const briefsCountReady = !notificationsLoading && !notificationsError;
+  const timetableCountReady = !timetableLoading && !timetableError;
+
+  const pageLoadError = timetableError || notificationsError || todoError || openSubstitutes.isError;
+  const retryPage = () => {
+    if (timetableError) refetchTimetable();
+    if (notificationsError) refetchNotifications();
+    if (todoError) refetchTodos();
+    if (openSubstitutes.isError) openSubstitutes.refetch();
+  };
 
   return (
     <div>
@@ -198,7 +205,11 @@ export default function HomeView({ navigate, userRole = "admin" }) {
             <SkeletonBlock width={180} height={20} />
             <SkeletonBlock width={140} height={14} />
           </div>
-        ) : notificationsError ? null : (
+        ) : notificationsError ? (
+          <div className="home-hero home-hero-admin">
+            <p className="home-hero-title">처리할 일 —</p>
+          </div>
+        ) : (
           <div className="home-hero home-hero-admin">
             <p className="home-hero-title">
               {work.total > 0 ? `처리할 일 ${work.total}건` : "처리할 일이 없습니다"}
@@ -218,7 +229,11 @@ export default function HomeView({ navigate, userRole = "admin" }) {
           <SkeletonBlock width={220} height={20} />
           <SkeletonBlock width={160} height={14} />
         </div>
-      ) : timetableError ? null : (
+      ) : timetableError ? (
+        <div className={`home-hero home-hero-focus${isAdmin ? " home-hero-focus-mobile" : ""} is-empty`}>
+          <p className="home-hero-title">—</p>
+        </div>
+      ) : (
         <div className={`home-hero home-hero-focus${isAdmin ? " home-hero-focus-mobile" : ""}${focus.empty ? " is-empty" : ""}`}>
           {focus.label ? <p className="home-hero-label">{focus.label}</p> : null}
           <p className="home-hero-title">{focus.headline}</p>
@@ -231,20 +246,26 @@ export default function HomeView({ navigate, userRole = "admin" }) {
         substitutes={substituteCount}
         alerts={unreadCount}
         loading={summaryLoading}
+        failedLessons={timetableError}
+        failedRest={notificationsError}
       />
+
+      {pageLoadError && <LoadError onRetry={retryPage} />}
 
       <div className="home-columns">
         <section className="home-timetable">
-          <SectionHeader title="오늘 시간표" count={hasClass ? todayClassCount : 0} onViewAll={() => navigate("timetable")} />
-          {timetableLoading && (
+          <SectionHeader
+            title="오늘 시간표"
+            count={hasClass ? todayClassCount : 0}
+            countReady={timetableCountReady}
+            onViewAll={() => navigate("timetable")}
+          />
+          {(timetableLoading || timetableError) && (
             <div className="home-skeleton-list" aria-hidden="true">
               <SkeletonBlock width="100%" height={64} />
               <SkeletonBlock width="100%" height={64} />
               <SkeletonBlock width="100%" height={64} />
             </div>
-          )}
-          {!timetableLoading && timetableError && (
-            <LoadError onRetry={() => refetchTimetable()} />
           )}
           {!timetableLoading && !timetableError && !hasClass && (
             <p className="home-empty">오늘({weekdayLabel})은 수업이 없는 날입니다</p>
@@ -256,14 +277,21 @@ export default function HomeView({ navigate, userRole = "admin" }) {
 
         <div className="home-side">
           <section className="home-tasks">
-            <SectionHeader title="오늘 할 일" count={todoError ? 0 : taskCount} onViewAll={() => navigate("todos")} />
-            {notificationsLoading && (
+            <SectionHeader
+              title="오늘 할 일"
+              count={taskCount}
+              countReady={tasksCountReady}
+              onViewAll={() => navigate("todos")}
+            />
+            {(notificationsLoading || notificationsError || openSubstitutes.isLoading || openSubstitutes.isError) && (
               <div className="home-skeleton-list" aria-hidden="true">
                 <SkeletonBlock width="100%" height={64} />
               </div>
             )}
-            <SubstituteRequestList position={position} notifications={notifications} />
-            {actionable.map((item) => (
+            {!notificationsError && !openSubstitutes.isError && (
+              <SubstituteRequestList position={position} notifications={notifications} quietError />
+            )}
+            {!notificationsError && actionable.map((item) => (
               <div key={item.id ?? item.createdAt} className="home-row">
                 <p className="home-item-title">{localizeNotificationMessage(item.message)}</p>
                 {formatBriefTime(item.createdAt) && (
@@ -272,18 +300,20 @@ export default function HomeView({ navigate, userRole = "admin" }) {
                 <NotificationActionButtons notification={item} position={position} />
               </div>
             ))}
-            <ScheduleTodoTab embedded date={todayDateStr} userRole={userRole} />
+            <ScheduleTodoTab embedded date={todayDateStr} userRole={userRole} quietError={pageLoadError} />
           </section>
 
           <section className="home-changes">
-            <SectionHeader title="오늘 변동" count={briefs.length} onViewAll={() => navigate("history")} />
-            {notificationsLoading && (
+            <SectionHeader
+              title="오늘 변동"
+              count={briefs.length}
+              countReady={briefsCountReady}
+              onViewAll={() => navigate("history")}
+            />
+            {(notificationsLoading || notificationsError) && (
               <div className="home-skeleton-list" aria-hidden="true">
                 <SkeletonBlock width="100%" height={44} />
               </div>
-            )}
-            {!notificationsLoading && notificationsError && (
-              <LoadError onRetry={() => refetchNotifications()} />
             )}
             {!notificationsLoading && !notificationsError && briefs.length === 0 && (
               <p className="home-empty">오늘 변동이 없습니다</p>
