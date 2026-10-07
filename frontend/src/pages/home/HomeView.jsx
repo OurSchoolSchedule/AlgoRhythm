@@ -192,14 +192,14 @@ export default function HomeView({ navigate, userRole = "admin" }) {
         )}
       </div>
 
-      {isAdmin ? (
+      {isAdmin && (
         notificationsLoading ? (
-          <div className="home-hero" aria-hidden="true">
+          <div className="home-hero home-hero-admin" aria-hidden="true">
             <SkeletonBlock width={180} height={20} />
             <SkeletonBlock width={140} height={14} />
           </div>
         ) : notificationsError ? null : (
-          <div className="home-hero">
+          <div className="home-hero home-hero-admin">
             <p className="home-hero-title">
               {work.total > 0 ? `처리할 일 ${work.total}건` : "처리할 일이 없습니다"}
             </p>
@@ -210,17 +210,19 @@ export default function HomeView({ navigate, userRole = "admin" }) {
             )}
           </div>
         )
-      ) : timetableLoading ? (
-        <div className="home-hero" aria-hidden="true">
+      )}
+
+      {timetableLoading ? (
+        <div className={`home-hero home-hero-focus${isAdmin ? " home-hero-focus-mobile" : ""}`} aria-hidden="true">
           <SkeletonBlock width={48} height={12} />
           <SkeletonBlock width={220} height={20} />
           <SkeletonBlock width={160} height={14} />
         </div>
       ) : timetableError ? null : (
-        <div className="home-hero">
-          <p className="home-hero-label">{focus.label}</p>
+        <div className={`home-hero home-hero-focus${isAdmin ? " home-hero-focus-mobile" : ""}${focus.empty ? " is-empty" : ""}`}>
+          {focus.label ? <p className="home-hero-label">{focus.label}</p> : null}
           <p className="home-hero-title">{focus.headline}</p>
-          {focus.detail && <p className="home-hero-detail">{focus.detail}</p>}
+          {focus.detail ? <p className="home-hero-detail">{focus.detail}</p> : null}
         </div>
       )}
 

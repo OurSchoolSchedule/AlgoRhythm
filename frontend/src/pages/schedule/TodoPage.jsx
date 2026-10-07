@@ -13,6 +13,7 @@ import {
   useRespondExtraShift,
   useApproveExtraShift,
 } from '@/hooks'
+import TodoCompose from '@/components/schedule/TodoCompose.jsx'
 import { getApiErrorMessage } from '@/utils/timetableGeneration.js'
 
 const TYPE_OPTIONS = [
@@ -90,14 +91,6 @@ function responseIdFor(request, notifications) {
   return match?.substituteResponseId ?? null
 }
 
-function PlusIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-  )
-}
-
 function PencilIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
@@ -117,7 +110,6 @@ function TrashIcon() {
 export default function TodoPage({ date, userRole }) {
   const [content, setContent] = useState('')
   const [todoType, setTodoType] = useState('PERSONAL')
-  const [composerOpen, setComposerOpen] = useState(false)
   const [scope, setScope] = useState('mine')
   const [completedOpen, setCompletedOpen] = useState(false)
   const [pendingDone, setPendingDone] = useState(() => new Set())
@@ -128,7 +120,6 @@ export default function TodoPage({ date, userRole }) {
   const [editValue, setEditValue] = useState('')
   const [menuFor, setMenuFor] = useState(null)
   const [rowFault, setRowFault] = useState(null)
-  const formRef = useRef(null)
   const timers = useRef([])
 
   const { data: activeStore } = useActiveStore()
@@ -198,7 +189,6 @@ export default function TodoPage({ date, userRole }) {
       {
         onSuccess: () => {
           setContent('')
-          setComposerOpen(false)
         },
       },
     )
@@ -388,63 +378,20 @@ export default function TodoPage({ date, userRole }) {
         onJump={jumpTo}
       />
 
-      <form
-        ref={formRef}
-        className={listFailed ? 'todo-compose is-off' : 'todo-compose'}
-        onSubmit={(event) => {
-          event.preventDefault()
-          if (!listFailed) submitCreate()
-        }}
-      >
-        <div className="todo-compose-line">
-          <span className="todo-plus"><PlusIcon /></span>
-          <input
-            type="text"
-            value={content}
-            disabled={listFailed}
-            maxLength={500}
-            placeholder="할 일 추가"
-            aria-label="할 일 추가"
-            onChange={(event) => setContent(event.target.value)}
-            onFocus={() => setComposerOpen(true)}
-            onBlur={(event) => {
-              const next = event.relatedTarget
-              if (next && formRef.current?.contains(next)) return
-              setComposerOpen(false)
-            }}
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') {
-                event.preventDefault()
-                setComposerOpen(false)
-                event.currentTarget.blur()
-              }
-            }}
-          />
-          <button type="submit" className="todo-add-mobile" disabled={listFailed || createTodo.isPending || !content.trim()}>
-            추가
-          </button>
-        </div>
-        {composerOpen && isAdmin && !listFailed && (
-          <div className="todo-compose-options">
-            {typeOptions.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                aria-pressed={todoType === option.value}
-                onClick={() => setTodoType(option.value)}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </form>
-      {createTodo.isError && (
-        <p className="todo-row-error">
-          {getApiErrorMessage(createTodo.error, '추가하지 못했습니다.')}{' '}
-          <button type="button" className="todo-retry" onClick={submitCreate}>다시 시도</button>
-        </p>
-      )}
+      <TodoCompose
+        content={content}
+        onContentChange={setContent}
+        todoType={todoType}
+        onTodoTypeChange={setTodoType}
+        typeOptions={typeOptions}
+        showTypeOptions={isAdmin}
+        disabled={listFailed}
+        pending={createTodo.isPending}
+        error={createTodo.isError}
+        errorMessage={getApiErrorMessage(createTodo.error, '추가하지 못했어요.')}
+        onSubmit={submitCreate}
+        onRetry={submitCreate}
+      />
 
       {showSkeleton && (
         <div className="todo-groups" aria-hidden="true">

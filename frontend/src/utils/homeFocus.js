@@ -18,11 +18,12 @@ export function formatClassName(classLabel) {
 }
 
 /**
- * @param {{ class?: string, subject?: string } | null | undefined} cell
+ * @param {{ class?: string, subject?: string, location?: string } | null | undefined} cell
  */
 export function formatHeroDetail(cell) {
   if (!cell) return ''
-  return [formatClassName(cell.class), cell.subject].filter(Boolean).join(' ')
+  const main = [formatClassName(cell.class), cell.subject].filter(Boolean).join(' ')
+  return [main, cell.location].filter(Boolean).join(' · ')
 }
 
 /**
@@ -101,6 +102,7 @@ export function resolveHomeFocus(timetable, now) {
         label: '지금',
         headline: headline(ongoing.period, ongoing.cell.startTime, ongoing.cell.endTime),
         detail: formatHeroDetail(ongoing.cell),
+        empty: false,
       }
     }
 
@@ -111,23 +113,18 @@ export function resolveHomeFocus(timetable, now) {
     if (upcoming) {
       return {
         label: '다음 수업',
-        headline: `${upcoming.period}교시 · ${formatClock(upcoming.cell.startTime)}`,
+        headline: headline(upcoming.period, upcoming.cell.startTime, upcoming.cell.endTime),
         detail: formatHeroDetail(upcoming.cell),
+        empty: false,
       }
     }
   }
 
-  const next = timetable ? findNextSchoolDay(now, timetable) : null
-  if (!next) {
-    return { label: '다음 수업일', headline: '예정된 수업이 없습니다', detail: '' }
-  }
-  const month = next.date.getMonth() + 1
-  const day = next.date.getDate()
-  const start = next.cell.startTime || slotOf(next.period)?.start || ''
   return {
-    label: '다음 수업일',
-    headline: `${month}/${day}(${next.dayKey}) ${next.period}교시 · ${formatClock(start)}`,
-    detail: formatHeroDetail(next.cell),
+    label: '',
+    headline: '오늘은 수업이 없는 날입니다',
+    detail: '',
+    empty: true,
   }
 }
 
