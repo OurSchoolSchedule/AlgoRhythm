@@ -149,7 +149,6 @@ export default function HomeView({ user, navigate }) {
     <div className="home-page">
       <div className="home-hero">
         <div className="home-hero-copy">
-          <p className="home-kicker">홈</p>
           <h1 className="home-title">
             {now.getMonth() + 1}월 {now.getDate()}일 ({weekdayLabel})
           </h1>

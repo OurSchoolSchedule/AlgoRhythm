@@ -193,8 +193,17 @@ export default function AIFloatingChat() {
                 color: input.trim() && !preview.isPending ? 'var(--color-on-primary)' : 'var(--color-text-muted)',
                 cursor: input.trim() && !preview.isPending ? 'pointer' : 'default',
                 flexShrink: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0,
               }}
-            >보내기</button>
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M22 2 11 13" />
+                <path d="M22 2 15 22 11 13 2 9z" />
+              </svg>
+            </button>
           </div>
         </div>
       )}
