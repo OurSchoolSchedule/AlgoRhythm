@@ -1,18 +1,33 @@
 package com.rssolplan.edu.global.exception;
 
 import com.rssolplan.edu.domain.auth.dto.ApiResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     // 400 Bad Request - 잘못된 시간 범위 등
     @ExceptionHandler(BadRequestException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiResponse<Object> handleBadRequest(BadRequestException ex) {
+        return ApiResponse.error("BAD_REQUEST", ex.getMessage());
+    }
+
+    @ExceptionHandler({
+            MissingServletRequestParameterException.class,
+            MethodArgumentTypeMismatchException.class
+    })
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiResponse<Object> handleRequestBinding(Exception ex) {
         return ApiResponse.error("BAD_REQUEST", ex.getMessage());
     }
 
@@ -41,6 +56,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ApiResponse<Object> handleGeneralException(Exception ex) {
+        log.error("Unhandled exception", ex);
         return ApiResponse.error("INTERNAL_ERROR", ex.getMessage());
     }
 }
