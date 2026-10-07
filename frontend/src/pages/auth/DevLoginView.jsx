@@ -14,12 +14,14 @@ import {
 } from '@/api'
 import { getApiErrorMessage } from '@/utils/timetableGeneration.js'
 
+const showTestLogin = import.meta.env.DEV || import.meta.env.VITE_SHOW_TEST_LOGIN === 'true'
+
 /**
- * 개발용 로그인 화면.
+ * 로그인 화면.
  * - 이메일 인증 send/verify
  * - 신규이면 온보딩
  * - 기존은 토큰 저장 후 진입
- * - 테스트 미리보기·dev-token 유지
+ * - 개발용 dev-token·테스트 미리보기는 DEV 또는 VITE_SHOW_TEST_LOGIN=true 일 때만
  */
 export default function DevLoginView({ onSuccess }) {
   const [mode, setMode] = useState('login')
@@ -136,14 +138,18 @@ export default function DevLoginView({ onSuccess }) {
         }}
       >
         <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700, color: 'var(--color-text)' }}>
-          AlgoRhythm
+          우리학교 시간표
         </h1>
         <p style={{ margin: '0 0 24px', fontSize: 13, color: 'var(--color-text-muted)' }}>
-          {mode === 'onboarding' ? '학교 온보딩' : mode === 'code' ? '이메일 인증' : '로그인'}
+          {mode === 'onboarding'
+            ? '학교 온보딩'
+            : mode === 'code'
+              ? '이메일 인증'
+              : '시간표·보결·할 일을 한곳에서 관리합니다.'}
         </p>
 
         {mode === 'login' && (
-          <form onSubmit={handleDevLogin}>
+          <div>
             <label style={labelStyle}>이메일</label>
             <input
               type="email"
@@ -155,21 +161,38 @@ export default function DevLoginView({ onSuccess }) {
             />
             {message && <p style={errorStyle}>{message}</p>}
             <button
-              type="submit"
-              disabled={devToken.isPending || !email.trim()}
-              style={primaryButton(devToken.isPending || !email.trim())}
-            >
-              {devToken.isPending ? '로그인 중...' : '개발 로그인'}
-            </button>
-            <button
               type="button"
               disabled={sendCode.isPending || !email.trim()}
               onClick={handleSendCode}
-              style={{ ...secondaryButton, marginTop: 8 }}
+              style={primaryButton(sendCode.isPending || !email.trim())}
             >
               {sendCode.isPending ? '코드 보내는 중...' : '이메일 인증 코드 받기'}
             </button>
-          </form>
+
+            {showTestLogin && (
+              <>
+                <p style={{ margin: '20px 0 10px', fontSize: 12, color: 'var(--color-text-muted)', textAlign: 'center' }}>
+                  개발용 로그인 (dev-token)
+                </p>
+                <form onSubmit={handleDevLogin}>
+                  <button
+                    type="submit"
+                    disabled={devToken.isPending || !email.trim()}
+                    style={primaryButton(devToken.isPending || !email.trim())}
+                  >
+                    {devToken.isPending ? '로그인 중...' : '개발 로그인'}
+                  </button>
+                </form>
+                <p style={{ margin: '16px 0 10px', fontSize: 12, color: 'var(--color-text-muted)', textAlign: 'center' }}>
+                  테스트 로그인
+                </p>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" onClick={() => enterPreview('worker')} style={previewButtonStyle}>일반 교사</button>
+                  <button type="button" onClick={() => enterPreview('admin')} style={previewButtonStyle}>관리자</button>
+                </div>
+              </>
+            )}
+          </div>
         )}
 
         {mode === 'code' && (
@@ -229,18 +252,6 @@ export default function DevLoginView({ onSuccess }) {
               {onboarding.isPending ? '등록 중...' : '완료'}
             </button>
           </form>
-        )}
-
-        {mode === 'login' && (
-          <>
-            <p style={{ margin: '20px 0 10px', fontSize: 12, color: 'var(--color-text-muted)', textAlign: 'center' }}>
-              테스트 로그인
-            </p>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button type="button" onClick={() => enterPreview('worker')} style={previewButtonStyle}>일반 교사</button>
-              <button type="button" onClick={() => enterPreview('admin')} style={previewButtonStyle}>관리자</button>
-            </div>
-          </>
         )}
       </div>
     </div>
