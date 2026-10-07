@@ -14,14 +14,12 @@ import {
 } from '@/api'
 import { getApiErrorMessage } from '@/utils/timetableGeneration.js'
 
-const showTestLogin = import.meta.env.DEV || import.meta.env.VITE_SHOW_TEST_LOGIN === 'true'
-
 /**
  * 로그인 화면.
  * - 이메일 인증 send/verify
  * - 신규이면 온보딩
  * - 기존은 토큰 저장 후 진입
- * - 개발용 dev-token·테스트 미리보기는 DEV 또는 VITE_SHOW_TEST_LOGIN=true 일 때만
+ * - 개발용 dev-token·테스트 미리보기(시연·로컬·배포 공통)
  */
 export default function DevLoginView({ onSuccess }) {
   const [mode, setMode] = useState('login')
@@ -169,29 +167,25 @@ export default function DevLoginView({ onSuccess }) {
               {sendCode.isPending ? '코드 보내는 중...' : '이메일 인증 코드 받기'}
             </button>
 
-            {showTestLogin && (
-              <>
-                <p style={{ margin: '20px 0 10px', fontSize: 12, color: 'var(--color-text-muted)', textAlign: 'center' }}>
-                  개발용 로그인 (dev-token)
-                </p>
-                <form onSubmit={handleDevLogin}>
-                  <button
-                    type="submit"
-                    disabled={devToken.isPending || !email.trim()}
-                    style={primaryButton(devToken.isPending || !email.trim())}
-                  >
-                    {devToken.isPending ? '로그인 중...' : '개발 로그인'}
-                  </button>
-                </form>
-                <p style={{ margin: '16px 0 10px', fontSize: 12, color: 'var(--color-text-muted)', textAlign: 'center' }}>
-                  테스트 로그인
-                </p>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button type="button" onClick={() => enterPreview('worker')} style={previewButtonStyle}>일반 교사</button>
-                  <button type="button" onClick={() => enterPreview('admin')} style={previewButtonStyle}>관리자</button>
-                </div>
-              </>
-            )}
+            <p style={{ margin: '20px 0 10px', fontSize: 12, color: 'var(--color-text-muted)', textAlign: 'center' }}>
+              개발용 로그인 (dev-token)
+            </p>
+            <form onSubmit={handleDevLogin}>
+              <button
+                type="submit"
+                disabled={devToken.isPending || !email.trim()}
+                style={primaryButton(devToken.isPending || !email.trim())}
+              >
+                {devToken.isPending ? '로그인 중...' : '개발 로그인'}
+              </button>
+            </form>
+            <p style={{ margin: '16px 0 10px', fontSize: 12, color: 'var(--color-text-muted)', textAlign: 'center' }}>
+              테스트 로그인
+            </p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" onClick={() => enterPreview('worker')} style={previewButtonStyle}>일반 교사</button>
+              <button type="button" onClick={() => enterPreview('admin')} style={previewButtonStyle}>관리자</button>
+            </div>
           </div>
         )}
 
