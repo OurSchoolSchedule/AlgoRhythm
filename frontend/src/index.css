@@ -1840,6 +1840,16 @@ body {
   color: var(--color-text-muted);
 }
 
+.tt-empty-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 12px;
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+
 .tt-board {
   overflow: auto;
   border: 1px solid var(--color-border);

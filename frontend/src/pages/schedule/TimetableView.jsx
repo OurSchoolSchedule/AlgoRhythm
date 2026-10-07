@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { getAccessToken } from '@/api'
-import LoadError from '@/components/LoadError.jsx'
 import CreateShiftSwapForm from '@/components/schedule/CreateShiftSwapForm.jsx'
 import CreateSubstituteForm from '@/components/schedule/CreateSubstituteForm.jsx'
 import CreateTimetableCellForm from '@/components/schedule/CreateTimetableCellForm.jsx'
@@ -27,6 +26,9 @@ import {
   changedTimetablePatches,
   dropRejection,
 } from '@/utils/timetableBoard.js'
+
+/** 저장 API가 안정화되기 전까지 수정 진입을 막아 둔다. */
+const SHOW_EDIT = false
 
 function maskByDay(byDay, periods, accept) {
   const next = {}
@@ -225,13 +227,9 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
     }
   }
 
-  /** 셀 수정·저장 API가 없어 수정 진입을 막는다. 코드는 유지한다. */
-  const SHOW_EDIT = false
-
   const emptyCopy = isAdmin
     ? '아직 등록된 시간표가 없습니다'
     : '시간표가 확정되면 알림으로 알려드립니다'
-  const hasTimetable = timetable.weekClassCount > 0
 
   const scopeOptions = isAdmin
     ? [
@@ -444,7 +442,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
         </div>
       )}
 
-      {editing && (
+      {SHOW_EDIT && editing && (
         <div className="tt-edit-banner" role="status">
           <div className="tt-edit-banner-copy">
             <strong>시간표 수정 중</strong>
@@ -455,7 +453,11 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
       )}
 
       {failed ? (
-        <LoadError onRetry={() => refetch()} />
+        <div className="home-load-error">
+          <span className="home-error-mark" aria-hidden="true">!</span>
+          <span>불러오지 못했어요</span>
+          <button type="button" className="home-text-button home-accent" onClick={() => refetch()}>다시 시도</button>
+        </div>
       ) : isLoading ? (
         <div className="tt-board tt-skeleton" aria-hidden="true">
           {Array.from({ length: 6 }, (_, index) => (
@@ -469,31 +471,34 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
         </div>
       ) : (
         <>
-          {!hasTimetable && (
-            <div className="tt-note tt-note-plain">
+          {timetable.weekClassCount === 0 && (
+            <div className="tt-empty-note">
               <span>{emptyCopy}</span>
               {isAdmin && (
-                <button type="button" className="history-link" onClick={openCreate}>시간표 생성</button>
+                <>
+                  <span aria-hidden="true"> · </span>
+                  <button type="button" className="history-link" onClick={openCreate}>시간표 생성</button>
+                </>
               )}
             </div>
           )}
 
-          {editing && hoverReason && <p className="tt-reject">{hoverReason}</p>}
+          {SHOW_EDIT && editing && hoverReason && <p className="tt-reject">{hoverReason}</p>}
 
           <WeeklyTimetableGrid
             timetable={shown}
             days={days}
             detailMode={detailMode}
             selectedKey={selected ? cellSlotKey(selected.day, selected.period) : ''}
-            showFreeLabel={hasTimetable}
-            editing={editing}
+            editing={SHOW_EDIT && editing}
             dragFrom={dragFrom}
             hoverKey={hover ? cellSlotKey(hover.day, hover.period) : ''}
             hoverReason={hoverReason}
+            showFreeLabel={timetable.weekClassCount > 0}
             onSelect={(slot) => {
               setSelected(slot)
               setRequestMode('')
-              setCreating(Boolean(editing && isAdmin && !shown.byDay?.[slot.day]?.[slot.period]))
+              setCreating(Boolean(SHOW_EDIT && editing && isAdmin && !shown.byDay?.[slot.day]?.[slot.period]))
             }}
             onDragStart={(slot) => {
               dragRef.current = slot
