@@ -65,6 +65,21 @@ function HomeStats({ lessons, substitutes, alerts, loading, failed }) {
   );
 }
 
+function HomeFocus({ focus, loading, failed }) {
+  if (loading) return <SkeletonBlock width={160} height={44} />;
+  if (failed || !focus) return <p className="home-focus-empty">—</p>;
+  if (focus.kind === "empty-day") {
+    return <p className="home-focus-empty">{focus.title}</p>;
+  }
+  return (
+    <>
+      <p className="home-focus-label">{focus.label}</p>
+      <p className="home-focus-title">{focus.title}</p>
+      <p className="home-focus-detail">{focus.detail}</p>
+    </>
+  );
+}
+
 export default function HomeView({ user, navigate }) {
   const position = user?.position || "TEACHER";
   const userRole = position === "ADMIN" ? "ADMIN" : "TEACHER";
@@ -104,6 +119,8 @@ export default function HomeView({ user, navigate }) {
   const taskCount = openTodos.length + actionable.length;
   const summaryLoading = todosLoading || notificationsLoading || timetableLoading;
   const summaryFailed = Boolean(todoError || notificationsError || timetableError);
+  const tasksLoading = todosLoading || notificationsLoading;
+  const tasksFailed = Boolean(todoError || notificationsError);
   const pageError = todoError || notificationsError || timetableError;
   const retryPage = () => {
     if (todoError) refetchTodos();
@@ -148,58 +165,18 @@ export default function HomeView({ user, navigate }) {
   return (
     <div className="home-page">
       <div className="home-hero">
-        <div className="home-hero-copy">
+        <div className="home-hero-main">
           <h1 className="home-title">
             {now.getMonth() + 1}월 {now.getDate()}일 ({weekdayLabel})
           </h1>
-          <div className="home-hero-work">
-            {summaryLoading ? (
-              <SkeletonBlock width={220} height={28} />
-            ) : summaryFailed ? (
-              <p className="home-work-line">—</p>
-            ) : taskCount > 0 ? (
-              <p className="home-work-line">
-                처리할 일 <strong>{taskCount}</strong>건
-              </p>
-            ) : (
-              <p className="home-work-line home-work-line-muted">처리할 일이 없습니다</p>
-            )}
-            {userRole === "ADMIN" && (
-              <button type="button" className="btn btn-secondary btn-sm home-create-btn" onClick={() => navigate("timetable-create")}>
-                시간표 생성
-              </button>
-            )}
-          </div>
-          <div className="home-hero-focus home-hero-focus-mobile-only" aria-label="지금 수업">
-            {timetableLoading ? (
-              <SkeletonBlock width="100%" height={72} />
-            ) : timetableError || !focus ? (
-              <p className="home-focus-empty">—</p>
-            ) : focus.kind === "empty-day" ? (
-              <p className="home-focus-empty">{focus.title}</p>
-            ) : (
-              <>
-                <p className="home-focus-label">{focus.label}</p>
-                <p className="home-focus-title">{focus.title}</p>
-                <p className="home-focus-detail">{focus.detail}</p>
-              </>
-            )}
-          </div>
-        </div>
-        <div className="home-hero-focus home-hero-focus-desktop-only" aria-label="지금 수업">
-          {timetableLoading ? (
-            <SkeletonBlock width="100%" height={72} />
-          ) : timetableError || !focus ? (
-            <p className="home-focus-empty">—</p>
-          ) : focus.kind === "empty-day" ? (
-            <p className="home-focus-empty">{focus.title}</p>
-          ) : (
-            <>
-              <p className="home-focus-label">{focus.label}</p>
-              <p className="home-focus-title">{focus.title}</p>
-              <p className="home-focus-detail">{focus.detail}</p>
-            </>
+          {userRole === "ADMIN" && (
+            <button type="button" className="btn btn-secondary btn-sm home-create-btn" onClick={() => navigate("timetable-create")}>
+              시간표 생성
+            </button>
           )}
+        </div>
+        <div className="home-hero-focus" aria-label="지금 수업">
+          <HomeFocus focus={focus} loading={timetableLoading} failed={Boolean(timetableError)} />
         </div>
       </div>
 
@@ -247,15 +224,25 @@ export default function HomeView({ user, navigate }) {
             <SectionHeader
               title="오늘 할 일"
               count={taskCount}
-              countReady={!todosLoading && !notificationsLoading && !todoError && !notificationsError}
+              countReady={!tasksLoading && !tasksFailed}
               onViewAll={() => navigate("todos")}
             />
-            {(todosLoading || notificationsLoading || todoError || notificationsError) && (
+            <div className="home-task-summary" aria-label="처리할 일">
+              <div className="home-stat">
+                <p className="home-stat-label">처리할 일</p>
+                {tasksLoading ? (
+                  <SkeletonBlock width={36} height={28} />
+                ) : (
+                  <p className="home-stat-value">{tasksFailed ? "—" : taskCount}</p>
+                )}
+              </div>
+            </div>
+            {(tasksLoading || tasksFailed) && (
               <div className="home-skeleton-list" aria-hidden="true">
                 <SkeletonBlock width="100%" height={64} />
               </div>
             )}
-            {!todosLoading && !notificationsLoading && !todoError && !notificationsError && (
+            {!tasksLoading && !tasksFailed && (
               <>
                 <SubstituteRequestList position={position} notifications={notifications} />
                 {actionable.slice(0, 3).map((item) => (
