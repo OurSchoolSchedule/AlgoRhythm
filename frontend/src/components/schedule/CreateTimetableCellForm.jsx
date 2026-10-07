@@ -108,7 +108,7 @@ export default function CreateTimetableCellForm({
         <select value={teacherSchoolUserId} onChange={(e) => setTeacherSchoolUserId(e.target.value)} style={inputStyle} required>
           <option value="">선택</option>
           {teachers.map((item) => (
-            <option key={item.userStoreId} value={item.userStoreId}>{item.username}</option>
+            <option key={item.schoolUserId} value={item.schoolUserId}>{item.username}</option>
           ))}
         </select>
       </label>

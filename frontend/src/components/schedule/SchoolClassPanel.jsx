@@ -128,7 +128,7 @@ export default function SchoolClassPanel() {
     <>
       <option value="">담임 없음</option>
       {teachers.map((item) => (
-        <option key={item.userStoreId} value={item.userStoreId}>
+        <option key={item.schoolUserId} value={item.schoolUserId}>
           {item.username}
         </option>
       ))}

@@ -1,29 +1,26 @@
 /**
- * 매장(Store) 타입.
+ * 학교 구성원 요약 타입.
+ * API는 schoolUserId / schoolName 기준. 화면 호환용 별칭을 함께 둔다.
  */
 
 /**
- * @typedef {Object} StoreStaffResponse
- * @property {number} userStoreId
+ * @typedef {Object} SchoolStaffResponse
+ * @property {number} schoolUserId
  * @property {string} username
  */
+
+/** @typedef {SchoolStaffResponse & { userStoreId: number }} StoreStaffResponse */
 
 /**
  * @typedef {Object} StaffSummaryDto
- * @property {number} userStoreId
+ * @property {number} schoolUserId
+ * @property {number} [userStoreId] schoolUserId 별칭
  * @property {number} [userId]
  * @property {string} username
- * @property {string} profileImageUrl
+ * @property {string} [profileImageUrl]
  * @property {string} role
  * @property {import('./common.js').EmploymentStatus} employmentStatus
- * @property {number} monthlyPay 이번 달 총 급여
- * @property {string} email
- * @property {string} [tel]
- * @property {string} bankName
- * @property {string} accountNumber
- * @property {number} [lateCount]
- * @property {number} [absenceCount]
- * @property {number} [totalShiftCount]
+ * @property {string} [email]
  * @property {{ subjectId: number, subjectName: string }[]} [subjects]
  * @property {{ classId: number, academicYear: number, grade: number, classNumber: number }[]} [homeroomClasses]
  * @property {number|null} [weeklyLessonCount]
@@ -31,10 +28,8 @@
 
 /**
  * @typedef {Object} AllStaffSummaryResponseDto
- * @property {number} storeId
- * @property {string} storeName
- * @property {number} year
- * @property {number} month
+ * @property {string} schoolName
+ * @property {string} [storeName] schoolName 별칭
  * @property {number} totalStaffCount
  * @property {StaffSummaryDto[]} staffList
  */

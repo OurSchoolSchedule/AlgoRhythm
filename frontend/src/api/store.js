@@ -12,18 +12,24 @@ export async function getStoreStaffSummary() {
     client.get('/api/school/me'),
   ])
   const members = Array.isArray(membersResult.data) ? membersResult.data : []
+  const schoolName = schoolResult.data?.name ?? ''
   return {
-    storeName: schoolResult.data?.name ?? '',
+    schoolName,
+    storeName: schoolName,
     totalStaffCount: members.length,
-    staffList: members.map((member) => ({
-      userStoreId: member.schoolUserId,
-      userId: member.userId,
-      username: member.username,
-      role: member.position,
-      employmentStatus: member.employmentStatus,
-      subjects: Array.isArray(member.subjects) ? member.subjects : [],
-      homeroomClasses: Array.isArray(member.homeroomClasses) ? member.homeroomClasses : [],
-      weeklyLessonCount: member.weeklyLessonCount ?? null,
-    })),
+    staffList: members.map((member) => {
+      const schoolUserId = member.schoolUserId
+      return {
+        schoolUserId,
+        userStoreId: schoolUserId,
+        userId: member.userId,
+        username: member.username,
+        role: member.position,
+        employmentStatus: member.employmentStatus,
+        subjects: Array.isArray(member.subjects) ? member.subjects : [],
+        homeroomClasses: Array.isArray(member.homeroomClasses) ? member.homeroomClasses : [],
+        weeklyLessonCount: member.weeklyLessonCount ?? null,
+      }
+    }),
   }
 }

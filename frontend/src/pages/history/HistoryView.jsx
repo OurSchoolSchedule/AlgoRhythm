@@ -384,7 +384,7 @@ export function AdminView({ navigate }) {
   const schoolUnavail = useSchoolUnavailabilities({ enabled: tab === "불가" });
   const DAY_LABEL = { MON: "월", TUE: "화", WED: "수", THU: "목", FRI: "금" };
   const memberName = (schoolUserId) => (
-    staffList.find((item) => item.userStoreId === schoolUserId)?.username
+    staffList.find((item) => item.schoolUserId === schoolUserId)?.username
     || `구성원 ${schoolUserId ?? ""}`
   );
 
@@ -431,8 +431,8 @@ export function AdminView({ navigate }) {
             <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>
               구성원 목록{staffSummary ? ` · 총 ${staffSummary.totalStaffCount}명` : ""}
             </p>
-            {staffSummary?.storeName && (
-              <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{staffSummary.storeName}</span>
+            {staffSummary?.schoolName && (
+              <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{staffSummary.schoolName}</span>
             )}
           </div>
 
@@ -461,7 +461,7 @@ export function AdminView({ navigate }) {
                 {staffList.map(s => {
                   const st = STATUS_STYLE[s.employmentStatus] ?? { bg: "var(--color-border-light)", color: "var(--color-text-muted)" };
                   return (
-                    <tr key={s.userStoreId} style={{ borderBottom: "1px solid var(--color-border-light)" }}>
+                    <tr key={s.schoolUserId} style={{ borderBottom: "1px solid var(--color-border-light)" }}>
                       <td style={{ padding: "10px 12px", fontWeight: 600, color: "var(--color-text)" }}>{s.username}</td>
                       <td style={{ padding: "10px 12px", color: "var(--color-text-secondary)" }}>{ROLE_LABEL[s.role] ?? s.role}</td>
                       <td style={{ padding: "10px 12px" }}>

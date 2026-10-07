@@ -8,25 +8,6 @@ const KEY_TO_API_DAY = {
   금: 'FRI',
 }
 
-const STATUS_KIND = {
-  '대타 대기': 'wait',
-  대기: 'wait',
-  변경됨: 'change',
-  변경: 'change',
-  충돌: 'conflict',
-}
-
-export const STATUS_BADGE = {
-  wait: '대기',
-  change: '변경',
-  conflict: '충돌',
-}
-
-/** @param {string} [status] */
-export function cellStatusKind(status) {
-  return STATUS_KIND[status] || ''
-}
-
 /** @param {string} day @param {number} period */
 export function cellSlotKey(day, period) {
   return `${day}-${period}`

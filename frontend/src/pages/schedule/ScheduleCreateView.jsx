@@ -294,7 +294,8 @@ function Step2({
         ))}
       </div>
 
-      {missingQuery.data && missingQuery.data.allSubmitted === false && (
+      {missingQuery.data?.allSubmitted === false
+        && Array.isArray(missingQuery.data.unsubmittedUserIds) && (
         <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--color-text)' }}>
           불가 교시 미제출 {missingQuery.data.unsubmittedUserIds.length}명
           {missingQuery.data.unsubmittedUserIds.length > 0

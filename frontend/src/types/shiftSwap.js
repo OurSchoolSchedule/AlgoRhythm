@@ -4,13 +4,15 @@
 
 /**
  * 수업 교환 요청 생성 (POST /api/timetable-swap/requests).
- * @typedef {Object} ShiftSwapRequestCreateDto
+ * @typedef {Object} CreateSwapRequestDto
  * @property {number} requesterTimetableId
  * @property {string} requesterDate "YYYY-MM-DD"
  * @property {number} receiverTimetableId
  * @property {string} receiverDate "YYYY-MM-DD"
  * @property {string} reason
  */
+
+/** @typedef {CreateSwapRequestDto} ShiftSwapRequestCreateDto */
 
 /**
  * 수신자 응답 (POST /api/timetable-swap/requests/{id}/respond).
