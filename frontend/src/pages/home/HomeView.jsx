@@ -81,29 +81,36 @@ export default function HomeView({ user, navigate }) {
   const todayDateStr = toISODate(now);
   const weekdayLabel = WEEKDAY_LABELS[now.getDay()] || "";
 
-  const { todos, loading: todosLoading, error: todoError, refetch: refetchTodos } = useTodos({
-    role: userRole,
-    date: todayDateStr,
-  });
   const {
-    notifications,
-    loading: notificationsLoading,
+    data: todoData,
+    isLoading: todosLoading,
+    error: todoError,
+    refetch: refetchTodos,
+  } = useTodos(todayDateStr);
+  const todos = [
+    ...(todoData?.schoolTodos ?? []),
+    ...(todoData?.handoverTodos ?? []),
+    ...(todoData?.personalTodos ?? []),
+  ];
+  const {
+    data: notifications = [],
+    isLoading: notificationsLoading,
     error: notificationsError,
     refetch: refetchNotifications,
-  } = useNotifications({ role: userRole });
+  } = useNotifications();
   const {
     timetable,
-    loading: timetableLoading,
+    isLoading: timetableLoading,
     error: timetableError,
     refetch: refetchTimetable,
-  } = useSchoolTimetable({ role: userRole });
-  const { requests: substituteRequests } = useSubstituteRequests({ role: userRole });
+  } = useSchoolTimetable(now);
+  const { data: substituteRequests = [] } = useSubstituteRequests("OPEN");
 
-  const openTodos = (todos || []).filter((t) => !t.done && !t.completed);
+  const openTodos = todos.filter((t) => !t.done && !t.completed);
   const todayClassCount = (timetable?.periods || []).filter((p) => p.subject && p.subject !== "공강").length;
   const hasClass = todayClassCount > 0;
-  const unreadCount = (notifications || []).filter((n) => !n.read).length;
-  const substituteCount = (substituteRequests || []).filter((r) => {
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const substituteCount = substituteRequests.filter((r) => {
     const status = String(r.status || "").toUpperCase();
     return status === "PENDING" || status === "REQUESTED" || status === "OPEN";
   }).length;
@@ -121,7 +128,7 @@ export default function HomeView({ user, navigate }) {
   };
   const focus = resolveHomeFocus(timetable, now);
 
-  const briefs = filterBriefingNotifications(notifications || []).map((n) => {
+  const briefs = filterBriefingNotifications(notifications).map((n) => {
     const action = getNotificationAction(n);
     return {
       key: `br-${n.id ?? n.createdAt}`,
