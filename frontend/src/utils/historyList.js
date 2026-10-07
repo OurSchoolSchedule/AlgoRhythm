@@ -1,6 +1,6 @@
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
 
-export const HISTORY_TYPES = ['전체', '보결']
+export const HISTORY_TYPES = ['전체', '보결', '교환']
 export const HISTORY_STATUSES = ['미처리', '대기 중', '완료', '취소됨']
 export const HISTORY_PAGE_SIZE = 30
 
@@ -20,6 +20,20 @@ export function historyMonthKey(iso) {
 export function formatMonthTitle(key) {
   const [year, month] = key.split('-')
   return `${year}년 ${Number(month)}월`
+}
+
+/** @param {Date} [date] */
+export function currentMonthKey(date = new Date()) {
+  return `${date.getFullYear()}-${date.getMonth() + 1}`
+}
+
+/** @param {{ status?: string }[]} records */
+export function countByStatus(records) {
+  const counts = {}
+  for (const status of HISTORY_STATUSES) {
+    counts[status] = records.filter((record) => record.status === status).length
+  }
+  return counts
 }
 
 /** @param {string} key */
@@ -84,6 +98,19 @@ const SUBSTITUTE_STATUS = {
   EXPIRED: '취소됨',
 }
 
+const SWAP_STATUS = {
+  PENDING: '대기 중',
+  ACCEPTED: '대기 중',
+  REJECTED: '취소됨',
+  CANCELLED: '취소됨',
+}
+
+const SWAP_APPROVAL = {
+  PENDING: '대기 중',
+  APPROVED: '완료',
+  REJECTED: '취소됨',
+}
+
 /** 보결 목록에 있는 필드만 내역 행으로 만든다. 요청자 이름은 응답에 없다. */
 export function substituteToHistoryRecord(item) {
   const date = item.substituteDate || String(item.createdAt || '').slice(0, 10)
@@ -97,7 +124,7 @@ export function substituteToHistoryRecord(item) {
     item.note,
   ].filter(Boolean).join(' · ') || '보결'
   return {
-    id: item.id,
+    id: `sub-${item.id}`,
     date,
     type: '보결',
     status: SUBSTITUTE_STATUS[item.status] || '미처리',
@@ -107,9 +134,35 @@ export function substituteToHistoryRecord(item) {
     actor: '',
     time,
     search: title,
-    requester: null,
-    acceptor: null,
-    approver: null,
+  }
+}
+
+/**
+ * 내 교환 요청을 내역 행으로 만든다.
+ * @param {import('@/types/shiftSwap.js').TimetableSwapResponseDto} item
+ */
+export function swapToHistoryRecord(item) {
+  const date = item.requesterDate || String(item.createdAt || '').slice(0, 10)
+  const created = item.createdAt ? new Date(item.createdAt) : null
+  const time = created && !Number.isNaN(created.getTime())
+    ? created.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+    : ''
+  const people = [item.requesterUsername, item.receiverUsername].filter(Boolean).join(' ↔ ')
+  const title = [people, item.reason].filter(Boolean).join(' · ') || '수업 교환'
+  const status = SWAP_APPROVAL[item.managerApprovalStatus]
+    || SWAP_STATUS[item.status]
+    || '대기 중'
+  return {
+    id: `swap-${item.id}`,
+    date,
+    type: '교환',
+    status,
+    title,
+    before: item.requesterDate || '',
+    after: item.receiverDate || '',
+    actor: people,
+    time,
+    search: `${title} ${item.reason || ''}`,
   }
 }
 

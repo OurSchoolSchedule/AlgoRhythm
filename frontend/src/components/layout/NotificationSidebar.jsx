@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useNotifications, useActiveStore } from '@/hooks'
+import LoadError from '@/components/LoadError.jsx'
 import NotificationActionButtons from '@/components/schedule/NotificationActionButtons.jsx'
 import SubstituteRequestList from '@/components/schedule/SubstituteRequestList.jsx'
 import {
@@ -79,7 +80,12 @@ export default function NotificationSidebar({ open, onClose, userRole }) {
   const { data: activeStore } = useActiveStore({ enabled: open })
   const previewPosition = userRole === 'admin' ? 'ADMIN' : userRole === 'worker' ? 'TEACHER' : undefined
   const position = resolvePosition(activeStore?.position) ?? previewPosition
-  const { data: notifications = [], isLoading, isError } = useNotifications({
+  const {
+    data: notifications = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useNotifications({
     enabled: open,
   })
 
@@ -156,12 +162,14 @@ export default function NotificationSidebar({ open, onClose, userRole }) {
             <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-muted)' }}>불러오는 중...</p>
           )}
           {isError && (
-            <p style={{ margin: 0, fontSize: 13, color: 'var(--color-danger)' }}>
-              알림을 불러오지 못했습니다. 잠시 후 다시 열어 주세요.
-            </p>
+            <LoadError onRetry={() => refetch()} />
           )}
 
-          <SubstituteRequestList position={position} notifications={notifications} />
+          <SubstituteRequestList
+            position={position}
+            notifications={notifications}
+            quietError={isError}
+          />
 
           {!isLoading && !isError && actionable.length > 0 && (
             <section style={{ marginBottom: 20 }}>

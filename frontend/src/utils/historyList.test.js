@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  countByStatus,
   countByType,
+  currentMonthKey,
   substituteToHistoryRecord,
+  swapToHistoryRecord,
   countPending,
   emptyMonthMessage,
   filterHistory,
@@ -31,12 +34,36 @@ describe('substitute history rows', () => {
       note: '출장',
       createdAt: '2026-05-09T23:10:00Z',
     })).toMatchObject({
-      id: 4,
+      id: 'sub-4',
       date: '2026-05-10',
       type: '보결',
       status: '미처리',
       title: '1교시 · 월 · 출장',
-      requester: null,
+      after: '출장',
+    })
+  })
+})
+
+describe('swap history rows', () => {
+  it('maps swap list fields into history records', () => {
+    expect(swapToHistoryRecord({
+      id: 9,
+      requesterDate: '2026-05-12',
+      receiverDate: '2026-05-13',
+      requesterUsername: '김교사',
+      receiverUsername: '이교사',
+      reason: '회의',
+      status: 'ACCEPTED',
+      managerApprovalStatus: 'PENDING',
+      createdAt: '2026-05-11T01:00:00Z',
+    })).toMatchObject({
+      id: 'swap-9',
+      date: '2026-05-12',
+      type: '교환',
+      status: '대기 중',
+      title: '김교사 ↔ 이교사 · 회의',
+      before: '2026-05-12',
+      after: '2026-05-13',
     })
   })
 })
@@ -44,6 +71,10 @@ describe('substitute history rows', () => {
 describe('history months', () => {
   it('lists only months that have records, newest first', () => {
     expect(monthsWithData(records)).toEqual(['2026-5', '2026-4'])
+  })
+
+  it('defaults to the calendar month of today', () => {
+    expect(currentMonthKey(new Date(2026, 9, 5))).toBe('2026-10')
   })
 
   it('moves to the next calendar month even when it has no records', () => {
@@ -57,6 +88,10 @@ describe('history filters', () => {
     expect(countByType(records.filter((item) => item.date.startsWith('2026-05')))).toMatchObject({
       전체: 3,
       보결: 2,
+    })
+    expect(countByStatus(records)).toMatchObject({
+      미처리: 1,
+      완료: 3,
     })
     expect(countPending(records)).toBe(1)
   })

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   useCandidateSchedules,
   useConfirmSchedule,
@@ -24,24 +24,17 @@ export default function ScheduleCreateView({ navigate }) {
     semesterStart: '2026-09-01',
     semesterEnd: '2027-02-28',
     semesterName: '2026학년도 2학기',
-    csvName: '',
     strategies: GENERATION_STRATEGIES.map((item) => item.id),
   })
   const [requestId, setRequestId] = useState(null)
   const [candidateKey, setCandidateKey] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(null)
   const [flowError, setFlowError] = useState('')
-  const fileRef = useRef(null)
 
   const createRequest = useCreateScheduleRequest()
   const generate = useGenerateSchedule()
   const confirm = useConfirmSchedule()
   const generating = createRequest.isPending || generate.isPending
-
-  const handleFile = (event) => {
-    const file = event.target.files?.[0]
-    setForm((prev) => ({ ...prev, csvName: file?.name ?? '' }))
-  }
 
   const handleGenerate = async (slotRequirements) => {
     setFlowError('')
@@ -97,7 +90,7 @@ export default function ScheduleCreateView({ navigate }) {
 
       <div style={{ background: 'var(--color-surface)', borderRadius: 12, border: '1px solid var(--color-border)', padding: '28px 32px', marginTop: 20 }}>
         {step === 0 && (
-          <Step0 form={form} setForm={setForm} fileRef={fileRef} handleFile={handleFile} />
+          <Step0 form={form} setForm={setForm} />
         )}
         {step === 1 && (
           <Step1 form={form} setForm={setForm} />
@@ -145,7 +138,7 @@ export default function ScheduleCreateView({ navigate }) {
   )
 }
 
-function Step0({ form, setForm, fileRef, handleFile }) {
+function Step0({ form, setForm }) {
   return (
     <div>
       <SectionTitle>학기 기본 정보</SectionTitle>
@@ -175,21 +168,8 @@ function Step0({ form, setForm, fileRef, handleFile }) {
           />
         </Field>
       </div>
-
-      <SectionTitle>교사·과목 데이터 (CSV 미리보기)</SectionTitle>
-      <div style={{ background: 'var(--color-surface-hover)', borderRadius: 8, border: '1px dashed var(--color-border-input)', padding: '24px', textAlign: 'center', marginBottom: 16 }}>
-        <input ref={fileRef} type="file" accept=".csv" onChange={handleFile} style={{ display: 'none' }} />
-        <p style={{ margin: '0 0 14px', fontSize: 14, color: 'var(--color-text-subtle)' }}>
-          {form.csvName || 'CSV 파일은 이 화면에서만 미리 봅니다.'}
-        </p>
-        <button
-          type="button"
-          onClick={() => fileRef.current?.click()}
-          style={{ padding: '8px 20px', borderRadius: 8, border: '1px solid var(--color-primary)', background: 'transparent', color: 'var(--color-primary)', fontSize: 13, cursor: 'pointer' }}
-        >{form.csvName ? '파일 변경' : '파일 선택'}</button>
-      </div>
-      <p style={{ margin: 0, fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
-        미리보기입니다. 서버에 저장되지 않으며, 생성에는 이미 등록된 학급·과목·교시를 사용합니다.
+      <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
+        생성에는 이미 등록된 학급·과목·교시를 사용합니다.
       </p>
     </div>
   )
@@ -306,7 +286,6 @@ function Step2({
           ['학년도·학기', term.academicYear ? `${term.academicYear}년 ${term.semester}학기` : '없음'],
           ['배정 요구', sourceLoading ? '확인 중' : `${slots.length}칸`],
           ['생성 방식', `${form.strategies.length}개`],
-          ['CSV', form.csvName ? `${form.csvName} · 미리보기` : '없음'],
         ].map(([label, value]) => (
           <div key={label} style={{ display: 'flex', gap: 8 }}>
             <span style={{ fontSize: 13, color: 'var(--color-text-muted)', flexShrink: 0 }}>{label}</span>
@@ -315,7 +294,8 @@ function Step2({
         ))}
       </div>
 
-      {missingQuery.data && missingQuery.data.allSubmitted === false && (
+      {missingQuery.data?.allSubmitted === false
+        && Array.isArray(missingQuery.data.unsubmittedUserIds) && (
         <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--color-text)' }}>
           불가 교시 미제출 {missingQuery.data.unsubmittedUserIds.length}명
           {missingQuery.data.unsubmittedUserIds.length > 0

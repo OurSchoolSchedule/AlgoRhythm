@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { useNotifications, useOwnerProfile, useStaffProfile, useStoreStaffSummary } from '@/hooks'
 import UnavailabilityDialog from '@/components/schedule/UnavailabilityDialog.jsx'
+import ProfileSchoolDialog from '@/components/layout/ProfileSchoolDialog.jsx'
 import { getStoredTheme, setThemePreference } from '@/theme'
 
 const THEME_OPTIONS = [
@@ -135,6 +136,7 @@ function moveMenuFocus(menu, direction) {
 export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onLogout }) {
   const [profileOpen, setProfileOpen] = useState(false)
   const [unavailabilityOpen, setUnavailabilityOpen] = useState(false)
+  const [schoolOpen, setSchoolOpen] = useState(false)
   const [themePreference, setThemeChoice] = useState(() => getStoredTheme())
   const menuRef = useRef(null)
   const triggerRef = useRef(null)
@@ -150,16 +152,12 @@ export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onL
   const profileQuery = isAdmin ? ownerProfile : staffProfile
   const profileLoading = teachers.isLoading || profileQuery.isLoading
   const profileFailed = teachers.isError || profileQuery.isError
-  const subjectLabel = profileLoading
-    ? '불러오는 중...'
-    : profileFailed
-      ? '불러오지 못했습니다'
-      : formatSubjects(assignment?.subjects)
-  const homeroomLabel = profileLoading
-    ? '불러오는 중...'
-    : profileFailed
-      ? '불러오지 못했습니다'
-      : formatHomeroom(assignment?.homeroomClasses)
+  const subjectLabel = profileLoading || profileFailed
+    ? '—'
+    : formatSubjects(assignment?.subjects)
+  const homeroomLabel = profileLoading || profileFailed
+    ? '—'
+    : formatHomeroom(assignment?.homeroomClasses)
   const displayName = me?.username || profile.label
   const { data: notifications = [] } = useNotifications()
   const hasUnread = notifications.some((item) => item?.isRead === false)
@@ -308,6 +306,18 @@ export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onL
             className="menu-item"
             onClick={() => {
               setProfileOpen(false)
+              setSchoolOpen(true)
+            }}
+          >
+            프로필·학교
+          </button>
+
+          <button
+            type="button"
+            role="menuitem"
+            className="menu-item"
+            onClick={() => {
+              setProfileOpen(false)
               setUnavailabilityOpen(true)
             }}
           >
@@ -332,6 +342,9 @@ export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onL
       )}
       {unavailabilityOpen && (
         <UnavailabilityDialog onClose={() => setUnavailabilityOpen(false)} />
+      )}
+      {schoolOpen && (
+        <ProfileSchoolDialog isAdmin={isAdmin} onClose={() => setSchoolOpen(false)} />
       )}
     </div>
   )

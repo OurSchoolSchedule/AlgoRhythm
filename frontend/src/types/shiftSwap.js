@@ -1,16 +1,18 @@
 /**
- * 대타(Shift Swap) 타입.
+ * 수업 교환(Timetable Swap) 타입.
  */
 
 /**
  * 수업 교환 요청 생성 (POST /api/timetable-swap/requests).
- * @typedef {Object} ShiftSwapRequestCreateDto
+ * @typedef {Object} CreateSwapRequestDto
  * @property {number} requesterTimetableId
  * @property {string} requesterDate "YYYY-MM-DD"
  * @property {number} receiverTimetableId
  * @property {string} receiverDate "YYYY-MM-DD"
  * @property {string} reason
  */
+
+/** @typedef {CreateSwapRequestDto} ShiftSwapRequestCreateDto */
 
 /**
  * 수신자 응답 (POST /api/timetable-swap/requests/{id}/respond).
@@ -25,11 +27,17 @@
  */
 
 /**
- * @typedef {Object} ShiftSwapResponseDto
- * @property {number} requestId
- * @property {number} shiftId
- * @property {number} requesterId
- * @property {number} receiverId
+ * @typedef {Object} TimetableSwapResponseDto
+ * @property {number} id
+ * @property {number} [schoolId]
+ * @property {number} requesterTimetableId
+ * @property {string} requesterDate
+ * @property {number} [requesterSchoolUserId]
+ * @property {string} [requesterUsername]
+ * @property {number} receiverTimetableId
+ * @property {string} receiverDate
+ * @property {number} [receiverSchoolUserId]
+ * @property {string} [receiverUsername]
  * @property {string} reason
  * @property {string} status
  * @property {string} managerApprovalStatus

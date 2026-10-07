@@ -24,35 +24,26 @@
 /**
  * 온보딩 요청 (POST /api/auth/onboarding).
  * @typedef {Object} OnboardingRequest
- * @property {import('./common.js').Position} role "OWNER" | "STAFF"
- * @property {string} [storeCode] STAFF: 기존 매장 참여 코드
- * @property {string} [name] OWNER: 새 매장 이름
- * @property {string} [address] OWNER: 새 매장 주소
+ * @property {'ADMIN'|'TEACHER'} role
+ * @property {string} [schoolCode] TEACHER: 기존 학교 코드
+ * @property {string} [name] ADMIN: 새 학교 이름
+ * @property {string} [address] ADMIN: 새 학교 주소
  * @property {string} [phoneNumber]
- * @property {string} [businessRegistrationNumber]
- * @property {Object} [storeSetting] OWNER. 매장 설정 API는 학교 화면에서 쓰지 않는다.
- * @property {number} [bankId]
- * @property {string} [accountNumber]
  * @property {string} [hireDate] ISO date (YYYY-MM-DD)
  */
 
 /**
  * @typedef {Object} OnboardingResponse
  * @property {number} userId
- * @property {number} userStoreId
- * @property {number} storeId
+ * @property {number} schoolUserId
+ * @property {number} schoolId
  * @property {string} position
  * @property {string} employmentStatus
- * @property {string} storeCode
- * @property {string} storeName
+ * @property {string} schoolCode
+ * @property {string} schoolName
  * @property {string} address
  * @property {string} phoneNumber
- * @property {string} businessRegistrationNumber
- * @property {number} bankId
- * @property {string} bankName
- * @property {string} accountNumber
  * @property {string} hireDate
- * @property {Object} storeSetting
  */
 
 /**
@@ -70,8 +61,18 @@
 
 /**
  * @typedef {Object} EmailVerificationResponse
- * @property {boolean} [verified]
+ * @property {boolean} [success]
  * @property {string} [message]
+ */
+
+/**
+ * @typedef {Object} EmailVerificationAuthResponse
+ * @property {boolean} [success]
+ * @property {string} [message]
+ * @property {string} [accessToken]
+ * @property {string} [refreshToken]
+ * @property {number} [userId]
+ * @property {boolean} [newUser]
  */
 
 export {}

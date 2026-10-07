@@ -42,9 +42,10 @@
 
 /**
  * 미제출 교사 (GET /api/timetable-generation/teachers/without-availability).
+ * swagger 스키마는 비어 있다. 아래 필드는 있을 때만 쓴다.
  * @typedef {Object} TeachersWithoutAvailabilityResponse
- * @property {boolean} allSubmitted
- * @property {number[]} unsubmittedUserIds
+ * @property {boolean|null} allSubmitted
+ * @property {number[]|null} unsubmittedUserIds
  */
 
 /**

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useMyUnavailabilities, useSaveUnavailabilities } from '@/hooks'
+import { useEffect, useMemo, useState } from 'react'
+import { useDeleteUnavailability, useMyUnavailabilities, useSaveUnavailabilities } from '@/hooks'
 import { getApiErrorMessage } from '@/utils/timetableGeneration.js'
 
 const DAYS = [
@@ -18,9 +18,17 @@ function cellKey(day, period) {
 export default function UnavailabilityDialog({ onClose }) {
   const query = useMyUnavailabilities()
   const save = useSaveUnavailabilities()
+  const remove = useDeleteUnavailability()
   const [draft, setDraft] = useState(null)
   const [toast, setToast] = useState('')
-  const loaded = new Set((query.data ?? []).map((item) => cellKey(item.dayOfWeek, item.periodNumber)))
+  const byKey = useMemo(() => {
+    const map = new Map()
+    for (const item of query.data ?? []) {
+      map.set(cellKey(item.dayOfWeek, item.periodNumber), item)
+    }
+    return map
+  }, [query.data])
+  const loaded = new Set(byKey.keys())
   const selected = draft ?? loaded
 
   useEffect(() => {
@@ -37,26 +45,37 @@ export default function UnavailabilityDialog({ onClose }) {
     setDraft(next)
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    const current = query.data ?? []
+    const nextKeys = selected
+    const removed = current.filter((item) => !nextKeys.has(cellKey(item.dayOfWeek, item.periodNumber)) && item.id != null)
     const unavailabilities = []
     for (const [day] of DAYS) {
       for (const period of PERIODS) {
-        if (selected.has(cellKey(day, period))) {
+        if (nextKeys.has(cellKey(day, period))) {
           unavailabilities.push({ dayOfWeek: day, periodNumber: period })
         }
       }
     }
-    save.mutate(
-      { replace: (query.data ?? []).length > 0, unavailabilities },
-      {
-        onSuccess: () => {
-          setDraft(null)
-          setToast('근무 불가 시간을 저장했습니다.')
-        },
-        onError: (error) => setToast(getApiErrorMessage(error, '저장에 실패했습니다.')),
-      },
-    )
+
+    try {
+      for (const item of removed) {
+        await remove.mutateAsync(item.id)
+      }
+      if (unavailabilities.length > 0 || current.length > 0) {
+        await save.mutateAsync({
+          replace: current.length > 0 && removed.length < current.length,
+          unavailabilities,
+        })
+      }
+      setDraft(null)
+      setToast('근무 불가 시간을 저장했습니다.')
+    } catch (error) {
+      setToast(getApiErrorMessage(error, '저장에 실패했습니다.'))
+    }
   }
+
+  const pending = save.isPending || remove.isPending
 
   return (
     <div
@@ -90,7 +109,7 @@ export default function UnavailabilityDialog({ onClose }) {
           <button type="button" className="panel-close" aria-label="시간대 선호도 닫기" onClick={onClose}>닫기</button>
         </div>
         <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--color-text-muted)' }}>
-          선택한 칸은 근무 불가입니다.
+          선택한 칸은 근무 불가입니다. 해제한 칸은 개별 삭제됩니다.
         </p>
         {query.isLoading && <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>불러오는 중...</p>}
         {query.isError && (
@@ -103,10 +122,10 @@ export default function UnavailabilityDialog({ onClose }) {
           <p style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--color-text-muted)' }}>등록된 근무 불가가 없습니다.</p>
         )}
         {!query.isError && (
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 12 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', marginBottom: 12 }}>
             <thead>
               <tr>
-                <th style={headStyle}>교시</th>
+                <th style={{ ...headStyle, width: 40 }}>교시</th>
                 {DAYS.map(([, label]) => <th key={label} style={headStyle}>{label}</th>)}
               </tr>
             </thead>
@@ -117,7 +136,7 @@ export default function UnavailabilityDialog({ onClose }) {
                   {DAYS.map(([day]) => {
                     const on = selected.has(cellKey(day, period))
                     return (
-                      <td key={day} style={{ padding: 4, textAlign: 'center' }}>
+                      <td key={day} style={{ padding: 4, textAlign: 'center', verticalAlign: 'middle' }}>
                         <button
                           type="button"
                           aria-pressed={on}
@@ -125,16 +144,24 @@ export default function UnavailabilityDialog({ onClose }) {
                           disabled={query.isLoading || query.isError}
                           onClick={() => toggle(day, period)}
                           style={{
+                            boxSizing: 'border-box',
+                            display: 'block',
                             width: '100%',
-                            minHeight: 36,
+                            height: 36,
+                            padding: 0,
+                            margin: 0,
                             borderRadius: 6,
                             border: '1px solid var(--color-border-input)',
                             background: on ? 'var(--color-primary-button)' : 'var(--color-surface)',
-                            color: on ? 'var(--color-on-primary)' : 'var(--color-text-muted)',
+                            color: on ? 'var(--color-on-primary)' : 'transparent',
                             cursor: 'pointer',
                             fontSize: 12,
+                            fontWeight: 600,
+                            lineHeight: '34px',
+                            overflow: 'hidden',
+                            whiteSpace: 'nowrap',
                           }}
-                        >{on ? '불가' : ''}</button>
+                        >불가</button>
                       </td>
                     )
                   })}
@@ -145,7 +172,7 @@ export default function UnavailabilityDialog({ onClose }) {
         )}
         <button
           type="button"
-          disabled={query.isLoading || query.isError || save.isPending}
+          disabled={query.isLoading || query.isError || pending}
           onClick={handleSave}
           style={{
             width: '100%',
@@ -157,12 +184,7 @@ export default function UnavailabilityDialog({ onClose }) {
             fontWeight: 600,
             cursor: 'pointer',
           }}
-        >{save.isPending ? '저장 중...' : '저장'}</button>
-        {save.isError && (
-          <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--color-danger)' }}>
-            <button type="button" className="history-link" onClick={handleSave}>다시 시도</button>
-          </p>
-        )}
+        >{pending ? '저장 중...' : '저장'}</button>
       </div>
       {toast && (
         <div

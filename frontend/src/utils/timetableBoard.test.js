@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyCellMoves, cellStatusKind, changedTimetablePatches, dropRejection, periodsWithLunch } from './timetableBoard.js'
+import { applyCellMoves, changedTimetablePatches, dropRejection, periodsWithLunch } from './timetableBoard.js'
 
 const byDay = {
   월: { 1: { id: 1, teacher: '김민지', subject: '국어' }, 2: null },
@@ -10,13 +10,6 @@ const byDay = {
 }
 
 describe('timetable board', () => {
-  it('상태 문자열을 배지 종류로 나눈다', () => {
-    expect(cellStatusKind('대타 대기')).toBe('wait')
-    expect(cellStatusKind('변경됨')).toBe('change')
-    expect(cellStatusKind('충돌')).toBe('conflict')
-    expect(cellStatusKind('')).toBe('')
-  })
-
   it('같은 교사 칸으로는 옮기지 못한다', () => {
     expect(dropRejection(byDay, { day: '월', period: 1 }, { day: '화', period: 1 })).toBe('이 교시에 같은 교사 수업이 있습니다')
     expect(dropRejection(byDay, { day: '월', period: 1 }, { day: '화', period: 2 })).toBe('')

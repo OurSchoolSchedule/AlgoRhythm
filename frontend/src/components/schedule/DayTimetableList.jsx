@@ -1,11 +1,5 @@
 import { buildDayRows, buildTodayRows, formatRowDetail } from '@/utils/homeFocus.js'
 
-function badgeKind(status) {
-  if (status === '변경') return 'change'
-  if (status === '보결' || status === '대타 대기') return 'wait'
-  return 'neutral'
-}
-
 /**
  * 홈의 오늘 시간표. 수업이 없는 날은 행을 그리지 않는다.
  * @param {Object} props
@@ -13,16 +7,28 @@ function badgeKind(status) {
  * @param {Date} [props.now]
  * @param {string} [props.dayKey]
  * @param {Date} [props.date]
+ * @param {number} [props.limit] 홈 미리보기용 행 수 제한
+ * @param {() => void} [props.onMore] 잘린 행이 있을 때 더보기
  */
-export default function DayTimetableList({ timetable, now = new Date(), dayKey, date }) {
+export default function DayTimetableList({
+  timetable,
+  now = new Date(),
+  dayKey,
+  date,
+  limit,
+  onMore,
+}) {
   const rows = dayKey
     ? buildDayRows(timetable, dayKey, now, date ?? null)
     : buildTodayRows(timetable, now)
   if (rows.length === 0) return null
 
+  const visible = typeof limit === 'number' ? rows.slice(0, limit) : rows
+  const hiddenCount = Math.max(0, rows.length - visible.length)
+
   return (
     <div className="day-list">
-      {rows.map((row) => {
+      {visible.map((row) => {
         if (row.kind === 'lunch') {
           return (
             <div key={row.id} className="day-row-lunch">
@@ -46,12 +52,6 @@ export default function DayTimetableList({ timetable, now = new Date(), dayKey, 
                 <>
                   <span className="day-subject">{cell.subject || '수업'}</span>
                   {formatRowDetail(cell) && <span className="day-meta">{formatRowDetail(cell)}</span>}
-                  {cell.previousTeacher && (
-                    <span className="day-change">
-                      <s>{cell.previousTeacher}</s>
-                      {cell.teacher ? ` → ${cell.teacher}` : ''}
-                    </span>
-                  )}
                 </>
               ) : (
                 <span className="day-subject day-empty">공강</span>
@@ -59,13 +59,15 @@ export default function DayTimetableList({ timetable, now = new Date(), dayKey, 
             </div>
             <div className="day-badges">
               {row.isNow && <span className="day-badge day-badge-now">지금</span>}
-              {cell?.status && (
-                <span className={`day-badge day-badge-${badgeKind(cell.status)}`}>{cell.status}</span>
-              )}
             </div>
           </div>
         )
       })}
+      {hiddenCount > 0 && onMore && (
+        <button type="button" className="home-more" onClick={onMore}>
+          더보기 {hiddenCount}건
+        </button>
+      )}
     </div>
   )
 }

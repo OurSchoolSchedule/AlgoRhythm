@@ -1,10 +1,10 @@
 /**
- * 마이페이지(MyPage) 타입.
+ * 마이페이지(MyPage) 타입. swagger 학교 필드 기준.
  */
 
 /**
  * 활성 학교 (GET /api/mypage/active-school).
- * @typedef {Object} ActiveStoreResponse
+ * @typedef {Object} ActiveSchoolResponse
  * @property {number} schoolId
  * @property {string} schoolCode
  * @property {string} name
@@ -14,36 +14,29 @@
  * @property {import('./common.js').EmploymentStatus} employmentStatus
  */
 
+/** @typedef {ActiveSchoolResponse} ActiveStoreResponse */
+
 /**
  * @typedef {Object} OwnerProfileResponse
  * @property {number} userId
  * @property {string} username
  * @property {string} email
- * @property {string} profileImageUrl
+ * @property {string} [profileImageUrl]
  * @property {string} position
  * @property {string} employmentStatus
- * @property {string} businessRegistrationNumber
  */
 
 /**
  * @typedef {Object} OwnerProfileUpdateRequest
  * @property {string} [username]
  * @property {string} [email]
- * @property {string} [businessRegistrationNumber]
  */
 
 /**
- * @typedef {Object} StaffCurrentStore
- * @property {number} storeId
+ * @typedef {Object} StaffCurrentSchool
+ * @property {number} schoolId
  * @property {string} name
- * @property {string} storeCode
- */
-
-/**
- * @typedef {Object} StaffBankAccount
- * @property {number} bankId
- * @property {string} bankName
- * @property {string} accountNumber
+ * @property {string} schoolCode
  */
 
 /**
@@ -51,63 +44,71 @@
  * @property {number} userId
  * @property {string} username
  * @property {string} email
- * @property {string} profileImageUrl
+ * @property {string} [profileImageUrl]
  * @property {string} position
  * @property {string} employmentStatus
- * @property {StaffCurrentStore} currentStore
- * @property {StaffBankAccount} bankAccount
+ * @property {StaffCurrentSchool} [currentSchool]
  */
 
 /**
  * @typedef {Object} StaffProfileUpdateRequest
  * @property {string} [username]
  * @property {string} [email]
- * @property {number} [bankId]
- * @property {string} [accountNumber]
  */
 
 /**
- * @typedef {Object} OwnerStoreResponse
- * @property {number} storeId
- * @property {string} storeCode
+ * 관리자 학교 조회 (GET /api/mypage/admin/school).
+ * @typedef {Object} AdminSchoolResponse
+ * @property {number} schoolId
+ * @property {string} schoolCode
  * @property {string} name
  * @property {string} address
  * @property {string} phoneNumber
  */
 
+/** @typedef {AdminSchoolResponse} OwnerStoreResponse */
+
 /**
- * @typedef {Object} OwnerStoreUpdateRequest
+ * @typedef {Object} AdminSchoolUpdateRequest
  * @property {string} [name]
  * @property {string} [address]
  * @property {string} [phoneNumber]
  */
 
+/** @typedef {AdminSchoolUpdateRequest} OwnerStoreUpdateRequest */
+
 /**
- * @typedef {Object} StoreSimpleResponse
- * @property {number} storeId
- * @property {string} storeCode
+ * @typedef {Object} SchoolSimpleResponse
+ * @property {number} schoolId
+ * @property {string} schoolCode
  * @property {string} name
  * @property {string} address
  * @property {string} phoneNumber
- * @property {string} businessRegistrationNumber
  * @property {import('./common.js').Position} [position]
  * @property {import('./common.js').EmploymentStatus} [employmentStatus]
  * @property {string} [hireDate]
  */
 
+/** @typedef {SchoolSimpleResponse} StoreSimpleResponse */
+
 /**
- * @typedef {Object} OwnerCreateStoreRequest
+ * 관리자 학교 생성 (POST /api/mypage/admin/schools).
+ * @typedef {Object} AdminCreateSchoolRequest
  * @property {string} name
  * @property {string} address
  * @property {string} phoneNumber
- * @property {string} businessRegistrationNumber
  * @property {string} [hireDate]
  */
 
+/** @typedef {AdminCreateSchoolRequest} OwnerCreateStoreRequest */
+
 /**
- * @typedef {Object} StaffJoinStoreRequest
- * @property {string} storeCode
+ * 교사 학교 가입 (POST /api/mypage/teacher/schools/join).
+ * @typedef {Object} TeacherJoinSchoolRequest
+ * @property {string} schoolCode
  * @property {string} [hireDate]
  */
+
+/** @typedef {TeacherJoinSchoolRequest} StaffJoinStoreRequest */
 
 export {}

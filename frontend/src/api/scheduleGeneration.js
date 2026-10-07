@@ -12,24 +12,21 @@ export async function createScheduleRequest() {
 
 /**
  * 불가 교시 미제출 교사 (GET /api/timetable-generation/teachers/without-availability).
- * 예전 제출 현황 API는 없다.
+ * swagger 응답은 additionalProperties:{} 뿐이라 필드를 강제하지 않는다.
+ * 런타임에 allSubmitted / unsubmittedUserIds 가 오면 그대로 쓰고, 없으면 null.
  * @returns {Promise<import('@/types/scheduleGeneration.js').TeachersWithoutAvailabilityResponse>}
  */
 export async function getTeachersWithoutAvailability() {
   const { data } = await client.get(
     '/api/timetable-generation/teachers/without-availability',
   )
-  return {
-    allSubmitted: Boolean(data?.allSubmitted),
-    unsubmittedUserIds: Array.isArray(data?.unsubmittedUserIds)
-      ? data.unsubmittedUserIds
-      : [],
-  }
-}
-
-/** @deprecated getTeachersWithoutAvailability 를 쓴다. storeId는 무시한다. */
-export async function getSubmissionStatus() {
-  return getTeachersWithoutAvailability()
+  const unsubmittedUserIds = Array.isArray(data?.unsubmittedUserIds)
+    ? data.unsubmittedUserIds.map(Number).filter((id) => Number.isFinite(id))
+    : null
+  const allSubmitted = typeof data?.allSubmitted === 'boolean'
+    ? data.allSubmitted
+    : null
+  return { allSubmitted, unsubmittedUserIds }
 }
 
 /**

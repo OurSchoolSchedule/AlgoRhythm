@@ -1,12 +1,22 @@
 import { SCHOOL_PERIOD_SLOTS } from '@/constants/schoolTimetable.js'
 import { formatClassName } from '@/utils/homeFocus.js'
+import { getPeriodFromDatetime } from '@/utils/schoolTimetable.js'
+import { resolveSubjectColor } from '@/utils/subjectColor.js'
 import {
-  STATUS_BADGE,
   boardPeriods,
   cellSlotKey,
-  cellStatusKind,
   periodsWithLunch,
 } from '@/utils/timetableBoard.js'
+
+const STATUS_META = {
+  wait: { label: '대기', className: 'is-wait' },
+  대기: { label: '대기', className: 'is-wait' },
+  대기중: { label: '대기', className: 'is-wait' },
+  change: { label: '변경', className: 'is-change' },
+  변경: { label: '변경', className: 'is-change' },
+  conflict: { label: '충돌', className: 'is-conflict' },
+  충돌: { label: '충돌', className: 'is-conflict' },
+}
 
 function clockOf(period) {
   const slot = SCHOOL_PERIOD_SLOTS.find((item) => item.period === period)
@@ -22,9 +32,15 @@ function shortClock(value) {
 
 function subline(cell, detailMode) {
   const klass = formatClassName(cell.class)
-  if (detailMode === 'class') return [cell.teacher, cell.location].filter(Boolean).join(' · ')
+  if (detailMode === 'class') return cell.teacher || ''
   if (detailMode === 'all') return [klass, cell.teacher].filter(Boolean).join(' · ')
-  return [klass, cell.location].filter(Boolean).join(' · ')
+  return klass
+}
+
+function statusMeta(cell) {
+  const raw = cell?.status || cell?.cellStatus || cell?.flag
+  if (!raw) return null
+  return STATUS_META[String(raw)] || STATUS_META[String(raw).toLowerCase()] || null
 }
 
 /**
@@ -41,6 +57,8 @@ export default function WeeklyTimetableGrid({
   dragFrom = null,
   hoverKey = '',
   hoverReason = '',
+  showFreeLabel = true,
+  now = null,
   onSelect,
   onDragStart,
   onDragHover,
@@ -49,6 +67,7 @@ export default function WeeklyTimetableGrid({
 }) {
   const periods = boardPeriods(timetable.periods, timetable.byDay)
   const rows = periodsWithLunch(periods)
+  const currentPeriod = timetable.currentPeriod ?? getPeriodFromDatetime(now || new Date())
 
   return (
     <div className="tt-board show-scrollbar">
@@ -75,8 +94,9 @@ export default function WeeklyTimetableGrid({
             </div>
           )
         }
+        const isCurrentPeriod = currentPeriod != null && row.period === currentPeriod
         return (
-          <div key={row.period} className="tt-period-row">
+          <div key={row.period} className={`tt-period-row${isCurrentPeriod ? ' is-now-row' : ''}`}>
             <div className="tt-time">
               <span className="tt-period-num">{row.period}교시</span>
               <span className="tt-period-clock">{clockOf(row.period)}</span>
@@ -84,25 +104,43 @@ export default function WeeklyTimetableGrid({
             {days.map((day) => {
               const cell = timetable.byDay?.[day.key]?.[row.period] ?? null
               const key = cellSlotKey(day.key, row.period)
-              const kind = cell ? cellStatusKind(cell.status) : ''
               const dragging = dragFrom && cellSlotKey(dragFrom.day, dragFrom.period) === key
               const hovered = hoverKey === key && dragFrom
               const rejected = hovered && hoverReason
+              const isNowSlot = Boolean(day.isToday && isCurrentPeriod)
+              const status = cell ? statusMeta(cell) : null
+              const subjectColor = cell
+                ? resolveSubjectColor({
+                    id: cell.subjectId,
+                    name: cell.subject,
+                  })
+                : null
               const className = [
                 'tt-slot',
                 day.isToday ? 'is-today' : '',
+                isNowSlot ? 'is-now' : '',
                 day.holiday ? 'is-off' : '',
                 day.isPast ? 'is-past' : '',
                 selectedKey === key ? 'is-selected' : '',
                 dragging ? 'is-drag' : '',
                 hovered && !rejected ? 'is-allow' : '',
                 rejected ? 'is-reject' : '',
+                cell ? 'has-subject' : '',
+                status ? status.className : '',
               ].filter(Boolean).join(' ')
+              const style = subjectColor
+                ? {
+                    background: subjectColor.bg,
+                    color: subjectColor.text,
+                    '--tt-subject-text': subjectColor.text,
+                  }
+                : undefined
               return (
                 <button
                   key={key}
                   type="button"
                   className={className}
+                  style={style}
                   draggable={editing && Boolean(cell)}
                   title={rejected ? hoverReason : undefined}
                   onClick={() => onSelect?.({ day: day.key, period: row.period })}
@@ -127,11 +165,11 @@ export default function WeeklyTimetableGrid({
                     <>
                       <span className="tt-subject">{cell.subject || '수업'}</span>
                       {subline(cell, detailMode) ? <span className="tt-sub">{subline(cell, detailMode)}</span> : null}
-                      {kind ? <span className={`tt-badge is-${kind}`}>{STATUS_BADGE[kind]}</span> : null}
+                      {status ? <span className={`tt-badge ${status.className}`}>{status.label}</span> : null}
                     </>
-                  ) : (
-                    <span className="tt-free">공강</span>
-                  )}
+                  ) : showFreeLabel ? (
+                    <span className="tt-free">—</span>
+                  ) : null}
                 </button>
               )
             })}

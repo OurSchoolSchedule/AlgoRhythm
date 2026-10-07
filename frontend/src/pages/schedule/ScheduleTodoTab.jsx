@@ -9,7 +9,10 @@ import {
   useOwnerProfile,
   useStaffProfile,
 } from '@/hooks'
+import LoadError from '@/components/LoadError.jsx'
+import TodoCompose from '@/components/schedule/TodoCompose.jsx'
 import TodoPage from '@/pages/schedule/TodoPage.jsx'
+import { getApiErrorMessage } from '@/utils/timetableGeneration.js'
 
 const TODO_SECTIONS = [
   { key: 'schoolTodos', label: '전체 공지', type: 'SCHOOL' },
@@ -173,7 +176,7 @@ function actionBtnStyle(color) {
   }
 }
 
-function TodoEmbed({ date, userRole }) {
+function TodoEmbed({ date, userRole, quietError = false, limit = 3, onMore }) {
   const [content, setContent] = useState('')
   const [todoType, setTodoType] = useState('PERSONAL')
 
@@ -192,9 +195,13 @@ function TodoEmbed({ date, userRole }) {
   const toggleTodo = useToggleTodo()
 
   const availableTypes = CREATE_TYPE_OPTIONS.filter((opt) => !opt.ownerOnly || isAdmin)
+  const openItems = TODO_SECTIONS.flatMap(({ key }) => todoData?.[key] ?? []).filter(
+    (todo) => !todo.completed && !todo.done,
+  )
+  const previewItems = openItems.slice(0, limit)
+  const hiddenCount = Math.max(0, openItems.length - previewItems.length)
 
-  const handleCreate = (e) => {
-    e.preventDefault()
+  const submitCreate = () => {
     const trimmed = content.trim()
     if (!trimmed) return
     createTodo.mutate(
@@ -209,144 +216,92 @@ function TodoEmbed({ date, userRole }) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <form
-        onSubmit={handleCreate}
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 8,
-          alignItems: 'center',
-        }}
-      >
-        <select
-          value={todoType}
-          onChange={(e) => setTodoType(e.target.value)}
-          style={{
-            padding: '9px 12px',
-            borderRadius: 8,
-            border: '1px solid var(--color-border-input)',
-            fontSize: 13,
-            color: 'var(--color-text)',
-            background: 'var(--color-surface)',
-          }}
-        >
-          {availableTypes.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-        <input
-          type="text"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="할 일을 입력하세요"
-          maxLength={500}
-          style={{
-            flex: 1,
-            minWidth: 180,
-            padding: '9px 12px',
-            borderRadius: 8,
-            border: '1px solid var(--color-border-input)',
-            fontSize: 14,
-            color: 'var(--color-text)',
-            outline: 'none',
-          }}
-        />
-        <button
-          type="submit"
-          disabled={createTodo.isPending || !content.trim()}
-          style={{
-            padding: '9px 18px',
-            borderRadius: 8,
-            border: 'none',
-            background: createTodo.isPending || !content.trim() ? 'var(--color-border)' : 'var(--color-primary-button)',
-            color: createTodo.isPending || !content.trim() ? 'var(--color-text-muted)' : 'var(--color-on-primary)',
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: createTodo.isPending || !content.trim() ? 'default' : 'pointer',
-          }}
-        >
-          {createTodo.isPending ? '추가 중...' : '추가'}
-        </button>
-      </form>
+    <div className="home-todo-embed">
+      <TodoCompose
+        content={content}
+        onContentChange={setContent}
+        todoType={todoType}
+        onTodoTypeChange={setTodoType}
+        typeOptions={availableTypes}
+        showTypeOptions={isAdmin}
+        disabled={isError}
+        pending={createTodo.isPending}
+        error={createTodo.isError}
+        errorMessage={getApiErrorMessage(createTodo.error, '추가하지 못했어요.')}
+        onSubmit={submitCreate}
+        onRetry={submitCreate}
+      />
 
-      {createTodo.isError && (
-        <p style={{ margin: 0, fontSize: 13, color: 'var(--color-danger)' }}>
-          할 일 추가에 실패했습니다.{' '}
-          <button type="button" className="history-link" onClick={() => createTodo.reset()}>다시 시도</button>
-        </p>
-      )}
       {(updateTodo.isError || deleteTodo.isError || toggleTodo.isError) && (
-        <p style={{ margin: 0, fontSize: 13, color: 'var(--color-danger)' }}>
-          할 일을 바꾸지 못했습니다.{' '}
+        <p className="todo-row-error">
+          할 일을 바꾸지 못했어요.{' '}
           <button
             type="button"
-            className="history-link"
+            className="todo-retry"
             onClick={() => {
               updateTodo.reset()
               deleteTodo.reset()
               toggleTodo.reset()
             }}
-          >다시 시도</button>
+          >
+            다시 시도
+          </button>
         </p>
       )}
 
-      {isLoading && <p style={{ margin: 0, fontSize: 14, color: 'var(--color-text-muted)' }}>불러오는 중...</p>}
-      {isError && (
-        <p style={{ margin: 0, fontSize: 14, color: 'var(--color-danger)' }}>
-          할 일을 불러오지 못했습니다.{' '}
-          <button type="button" className="history-link" onClick={() => refetch()}>다시 시도</button>
-        </p>
+      {(isLoading || (isError && quietError)) && (
+        <div className="home-skeleton-list" aria-hidden="true">
+          <span className="home-skeleton" style={{ width: '100%', height: 44 }} />
+          <span className="home-skeleton" style={{ width: '100%', height: 44 }} />
+        </div>
+      )}
+      {isError && !quietError && (
+        <LoadError onRetry={() => refetch()} />
       )}
 
-      {!isLoading && !isError && todoData && (
-        <>
-          {TODO_SECTIONS.map(({ key, label }) => {
-            const items = todoData[key] ?? []
-            if (items.length === 0) return null
-            return (
-              <section key={key}>
-                <h3
-                  style={{
-                    margin: '0 0 8px',
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: 'var(--color-text-muted)',
-                  }}
-                >
-                  {label}
-                </h3>
-                <div>
-                  {items.map((todo) => (
-                    <TodoRow
-                      key={todo.id}
-                      todo={todo}
-                      isAdmin={isAdmin}
-                      userId={userId}
-                      toggleTodo={toggleTodo}
-                      updateTodo={updateTodo}
-                      deleteTodo={deleteTodo}
-                    />
-                  ))}
-                </div>
-              </section>
-            )
-          })}
+      {!isLoading && !isError && todoData && previewItems.length === 0 && (
+        <p className="home-empty">오늘 할 일이 없습니다</p>
+      )}
 
-          {TODO_SECTIONS.every(({ key }) => (todoData[key] ?? []).length === 0) && (
-            <p style={{ margin: 0, fontSize: 14, color: 'var(--color-text-muted)' }}>
-              오늘 할 일이 없습니다. 위에서 추가하세요.
-            </p>
-          )}
-        </>
+      {!isLoading && !isError && previewItems.map((todo) => (
+        <TodoRow
+          key={todo.id}
+          todo={todo}
+          isAdmin={isAdmin}
+          userId={userId}
+          toggleTodo={toggleTodo}
+          updateTodo={updateTodo}
+          deleteTodo={deleteTodo}
+        />
+      ))}
+
+      {!isLoading && !isError && hiddenCount > 0 && onMore && (
+        <button type="button" className="home-more" onClick={onMore}>
+          더보기 {hiddenCount}건
+        </button>
       )}
     </div>
   )
 }
 
-export default function ScheduleTodoTab({ embedded = false, date, userRole }) {
-  if (embedded) return <TodoEmbed date={date} userRole={userRole} />
+export default function ScheduleTodoTab({
+  embedded = false,
+  date,
+  userRole,
+  quietError = false,
+  limit = 3,
+  onMore,
+}) {
+  if (embedded) {
+    return (
+      <TodoEmbed
+        date={date}
+        userRole={userRole}
+        quietError={quietError}
+        limit={limit}
+        onMore={onMore}
+      />
+    )
+  }
   return <TodoPage date={date} userRole={userRole} />
 }
