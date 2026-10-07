@@ -2392,6 +2392,88 @@ body {
   opacity: 0.85;
 }
 
+.tt-slot.is-crowd {
+  background: var(--surface-0);
+  color: var(--color-text);
+}
+
+.tt-crowd-count {
+  display: block;
+  font-size: var(--font-micro);
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.tt-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.tt-chip {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-micro);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.tt-chip-more {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--font-micro);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.tt-lesson-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tt-lesson-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.tt-lesson-main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.tt-lesson-class {
+  flex-shrink: 0;
+  font-size: var(--font-caption);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.tt-lesson-subject {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-body);
+  color: var(--color-text);
+}
+
+.tt-lesson-teacher {
+  flex-shrink: 0;
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+
 .tt-sub,
 .tt-free {
   display: block;

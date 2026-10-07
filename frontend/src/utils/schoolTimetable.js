@@ -100,13 +100,44 @@ function emptyDayMap(periods) {
   )
 }
 
+function asLesson(cell) {
+  if (!cell) return null
+  const { lessons: _lessons, ...lesson } = cell
+  return lesson
+}
+
+function classSortKey(label) {
+  const match = String(label || '').match(/(\d+)\s*-\s*(\d+)/)
+  if (!match) return [999, 999, String(label || '')]
+  return [Number(match[1]), Number(match[2]), String(label)]
+}
+
+function compareLessons(left, right) {
+  const [leftGrade, leftClass, leftLabel] = classSortKey(left.class)
+  const [rightGrade, rightClass, rightLabel] = classSortKey(right.class)
+  if (leftGrade !== rightGrade) return leftGrade - rightGrade
+  if (leftClass !== rightClass) return leftClass - rightClass
+  if (leftLabel !== rightLabel) return leftLabel.localeCompare(rightLabel, 'ko')
+  return String(left.subject || '').localeCompare(String(right.subject || ''), 'ko')
+}
+
+/** 칸에 들어 있는 수업. 여러 학급이 겹치면 lessons, 하나면 칸 자체. */
+export function lessonsOf(cell) {
+  if (!cell) return []
+  if (Array.isArray(cell.lessons) && cell.lessons.length) return cell.lessons.map(asLesson)
+  return [asLesson(cell)]
+}
+
+/** 걸러진 수업으로 칸을 다시 만든다. 하나면 단일 수업, 둘 이상이면 목록을 붙인다. */
+export function cellFromLessons(lessons) {
+  const list = (lessons || []).map(asLesson).filter(Boolean).sort(compareLessons)
+  if (list.length === 0) return null
+  if (list.length === 1) return list[0]
+  return { ...list[0], lessons: list }
+}
+
 function mergeCell(existing, cell) {
-  return {
-    ...existing,
-    class: `${existing.class}, ${cell.class}`,
-    subject: [existing.subject, cell.subject].filter(Boolean).join(', '),
-    teacher: [existing.teacher, cell.teacher].filter(Boolean).join(', '),
-  }
+  return cellFromLessons([...lessonsOf(existing), cell])
 }
 
 /**
