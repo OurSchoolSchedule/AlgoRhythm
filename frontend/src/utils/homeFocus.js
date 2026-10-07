@@ -102,7 +102,6 @@ export function resolveHomeFocus(timetable, now) {
         label: '지금',
         headline: headline(ongoing.period, ongoing.cell.startTime, ongoing.cell.endTime),
         detail: formatHeroDetail(ongoing.cell),
-        empty: false,
       }
     }
 
@@ -115,8 +114,15 @@ export function resolveHomeFocus(timetable, now) {
         label: '다음 수업',
         headline: headline(upcoming.period, upcoming.cell.startTime, upcoming.cell.endTime),
         detail: formatHeroDetail(upcoming.cell),
-        empty: false,
       }
+    }
+
+    // 오늘 수업은 있으나 모두 끝남
+    return {
+      label: '',
+      headline: '오늘은 수업이 없는 날입니다',
+      detail: '',
+      empty: true,
     }
   }
 

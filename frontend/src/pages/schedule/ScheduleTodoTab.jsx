@@ -10,7 +10,6 @@ import {
   useStaffProfile,
 } from '@/hooks'
 import TodoCompose from '@/components/schedule/TodoCompose.jsx'
-import LoadError from '@/components/LoadError.jsx'
 import TodoPage from '@/pages/schedule/TodoPage.jsx'
 import { getApiErrorMessage } from '@/utils/timetableGeneration.js'
 
@@ -176,7 +175,7 @@ function actionBtnStyle(color) {
   }
 }
 
-function TodoEmbed({ date, userRole, quietError = false }) {
+function TodoEmbed({ date, userRole }) {
   const [content, setContent] = useState('')
   const [todoType, setTodoType] = useState('PERSONAL')
 
@@ -195,13 +194,13 @@ function TodoEmbed({ date, userRole, quietError = false }) {
   const toggleTodo = useToggleTodo()
 
   const availableTypes = CREATE_TYPE_OPTIONS.filter((opt) => !opt.ownerOnly || isAdmin)
-  const preview = TODO_SECTIONS.flatMap(({ key }) => todoData?.[key] ?? []).slice(0, 3)
+  const previewItems = TODO_SECTIONS.flatMap(({ key }) => todoData?.[key] ?? []).slice(0, 3)
 
   const submitCreate = () => {
     const trimmed = content.trim()
     if (!trimmed) return
     createTodo.mutate(
-      { date, todoType: isAdmin ? todoType : 'PERSONAL', content: trimmed },
+      { date, todoType, content: trimmed },
       {
         onSuccess: () => {
           setContent('')
@@ -245,39 +244,39 @@ function TodoEmbed({ date, userRole, quietError = false }) {
         </p>
       )}
 
-      {(isLoading || (isError && quietError)) && (
+      {isLoading && (
         <div className="home-skeleton-list" aria-hidden="true">
           <span className="home-skeleton" style={{ width: '100%', height: 44 }} />
           <span className="home-skeleton" style={{ width: '100%', height: 44 }} />
         </div>
       )}
-      {isError && !quietError && (
-        <LoadError onRetry={() => refetch()} />
+      {isError && (
+        <p className="todo-row-error">
+          할 일을 불러오지 못했어요.{' '}
+          <button type="button" className="todo-retry" onClick={() => refetch()}>다시 시도</button>
+        </p>
       )}
 
-      {!isLoading && !isError && todoData && (
-        <>
-          {preview.map((todo) => (
-            <TodoRow
-              key={todo.id}
-              todo={todo}
-              isAdmin={isAdmin}
-              userId={userId}
-              toggleTodo={toggleTodo}
-              updateTodo={updateTodo}
-              deleteTodo={deleteTodo}
-            />
-          ))}
-          {preview.length === 0 && (
-            <p className="home-empty">오늘 할 일이 없습니다</p>
-          )}
-        </>
+      {!isLoading && !isError && todoData && previewItems.length === 0 && (
+        <p className="home-empty">오늘 할 일이 없습니다</p>
       )}
+
+      {!isLoading && !isError && previewItems.map((todo) => (
+        <TodoRow
+          key={todo.id}
+          todo={todo}
+          isAdmin={isAdmin}
+          userId={userId}
+          toggleTodo={toggleTodo}
+          updateTodo={updateTodo}
+          deleteTodo={deleteTodo}
+        />
+      ))}
     </div>
   )
 }
 
-export default function ScheduleTodoTab({ embedded = false, date, userRole, quietError = false }) {
-  if (embedded) return <TodoEmbed date={date} userRole={userRole} quietError={quietError} />
+export default function ScheduleTodoTab({ embedded = false, date, userRole }) {
+  if (embedded) return <TodoEmbed date={date} userRole={userRole} />
   return <TodoPage date={date} userRole={userRole} />
 }

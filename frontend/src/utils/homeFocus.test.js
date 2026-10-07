@@ -32,12 +32,12 @@ function timetable(todayKey, todayByPeriod) {
 describe('resolveHomeFocus', () => {
   it('shows the class in progress', () => {
     const focus = resolveHomeFocus(
-      timetable('월', { 3: cell(3, '10:10', '10:55', { location: '본관 3층' }) }),
+      timetable('월', { 3: cell(3, '10:10', '10:55') }),
       new Date(2026, 9, 5, 10, 20),
     )
     expect(focus.label).toBe('지금')
     expect(focus.headline).toBe('3교시 · 10:10–10:55')
-    expect(focus.detail).toBe('2-3반 국어 · 본관 3층')
+    expect(focus.detail).toBe('2-3반 국어')
   })
 
   it('shows the next class between periods', () => {
@@ -52,8 +52,17 @@ describe('resolveHomeFocus', () => {
     expect(focus.headline).toBe('4교시 · 11:05–11:50')
   })
 
-  it('shows an empty day line when today has no class', () => {
+  it('shows empty day copy when today has no class', () => {
     const focus = resolveHomeFocus(timetable(null, {}), new Date(2026, 9, 4, 9, 0))
+    expect(focus.empty).toBe(true)
+    expect(focus.headline).toBe('오늘은 수업이 없는 날입니다')
+  })
+
+  it('shows empty day copy when today classes are finished', () => {
+    const focus = resolveHomeFocus(
+      timetable('월', { 3: cell(3, '10:10', '10:55') }),
+      new Date(2026, 9, 5, 18, 0),
+    )
     expect(focus.empty).toBe(true)
     expect(focus.headline).toBe('오늘은 수업이 없는 날입니다')
   })

@@ -31,8 +31,7 @@
   --color-text: #1f2328;
   --color-text-secondary: #4b5563;
   --color-text-subtle: var(--color-text-secondary);
-  /* 흰 배경 대비 4.54:1 이상 (WCAG AA) */
-  --color-text-muted: #667085;
+  --color-text-muted: #6b7280;
   --color-border-input: #d1d5db;
   --color-border: #e5e7eb;
   --color-border-light: #f0f1f3;
@@ -569,7 +568,6 @@ body {
   font-size: var(--font-body);
   font-weight: 600;
   flex-shrink: 0;
-  cursor: pointer;
 }
 
 .home-hero {
@@ -579,14 +577,20 @@ body {
   margin-bottom: 32px;
 }
 
-.home-hero-focus-mobile {
+.home-hero-focus-mobile-only {
   display: none;
 }
 
-.home-hero-focus.is-empty .home-hero-title {
+.home-hero.is-empty .home-hero-title {
   font-size: var(--font-body);
   font-weight: 500;
   color: var(--color-text-muted);
+}
+
+.home-todo-embed {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .home-hero-label {
@@ -637,7 +641,7 @@ body {
   flex: 1;
   min-width: 0;
   text-align: left;
-  padding: 0 16px;
+  padding: 0 12px;
 }
 
 .home-stat-cell:first-child .home-stat {
@@ -703,7 +707,6 @@ body {
   color: var(--color-primary-600);
 }
 
-.load-error,
 .home-load-error {
   display: flex;
   align-items: center;
@@ -713,7 +716,6 @@ body {
   color: var(--color-text);
 }
 
-.load-error-mark,
 .home-error-mark {
   color: var(--color-danger);
   font-weight: 700;
@@ -940,16 +942,6 @@ body {
   font-size: var(--font-title);
   font-weight: 700;
   color: var(--color-text);
-}
-
-.history-month > .history-month-arrow {
-  width: 32px;
-  font-size: 20px;
-  color: var(--color-text-secondary);
-}
-
-.history-status-tabs {
-  margin-top: 4px;
 }
 
 .history-search {
@@ -1843,17 +1835,9 @@ body {
 }
 
 .tt-note-plain {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  height: auto;
-  min-height: 0;
-  margin-bottom: 12px;
   background: transparent;
   padding: 0;
-  color: var(--color-text-secondary);
-  font-size: var(--font-caption);
+  color: var(--color-text-muted);
 }
 
 .tt-board {
@@ -2211,6 +2195,26 @@ body {
 
 /* 모바일 <768 */
 @media (max-width: 767px) {
+  .home-hero-work {
+    display: none;
+  }
+
+  .home-hero-focus-mobile-only {
+    display: flex;
+  }
+
+  .home-create-button {
+    height: 32px;
+    padding: 0 12px;
+    font-size: var(--font-caption);
+  }
+
+  .home-todo-embed {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
   .top-nav {
     padding: 0 var(--space-4);
   }
@@ -2337,6 +2341,7 @@ body {
   .action-button,
   .icon-button,
   .panel-close,
+  .home-create-button,
   .ai-assistant-panel button {
     min-height: 44px;
   }
@@ -2344,32 +2349,9 @@ body {
   .theme-switch button,
   .tt-text,
   .tt-nav-arrow,
-  .tt-nav-today,
-  .home-create-button {
+  .tt-nav-today {
     min-height: 0;
     min-width: 0;
-  }
-
-  .home-title-row h1 {
-    font-size: var(--font-title);
-  }
-
-  .home-create-button {
-    height: 32px;
-    padding: 0 12px;
-    font-size: var(--font-caption);
-  }
-
-  .home-hero-admin {
-    display: none;
-  }
-
-  .home-hero-focus-mobile {
-    display: flex;
-  }
-
-  .home-todo-embed {
-    margin-top: 4px;
   }
 
   .menu-item,
@@ -2991,24 +2973,4 @@ body {
   .todo-toast {
     bottom: 72px;
   }
-}
-
-.subject-manage-form {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.subject-manage-input {
-  width: 320px;
-  max-width: 100%;
-  height: 36px;
-  padding: 0 10px;
-  border-radius: 8px;
-  border: 1px solid var(--color-border-input);
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: var(--font-body);
 }
