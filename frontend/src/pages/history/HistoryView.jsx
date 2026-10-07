@@ -5,17 +5,14 @@ import {
   useStoreStaffSummary,
   useSubstituteHistory,
 } from "@/hooks";
-import LoadError from "@/components/LoadError.jsx";
 import SchoolClassPanel from "@/components/schedule/SchoolClassPanel.jsx";
 import SchoolSettingPanel from "@/components/schedule/SchoolSettingPanel.jsx";
 import {
   HISTORY_PAGE_SIZE,
   HISTORY_STATUSES,
   HISTORY_TYPES,
-  countByStatus,
   countByType,
   countPending,
-  currentMonthKey,
   emptyMonthMessage,
   filterHistory,
   formatGroupDate,
@@ -23,10 +20,11 @@ import {
   groupHistoryByDate,
   monthsWithData,
   recordsInMonth,
-  shiftMonth,
   substituteToHistoryRecord,
   swapToHistoryRecord,
 } from "@/utils/historyList.js";
+import { getApiErrorMessage } from "@/utils/timetableGeneration.js";
+
 const typeColor = {
   보결: "var(--color-warning)",
   변경: "var(--color-info)",
@@ -79,10 +77,13 @@ function HistoryDetail({ record, onClose }) {
           <button ref={closeRef} type="button" className="panel-close" onClick={onClose}>닫기</button>
         </div>
         <h2 id={titleId}>{record.title}</h2>
-        <p className="history-detail-change">
-          {record.before ? <s>{record.before}</s> : <span className="is-muted">없음</span>}
-          <span> → {record.after || "없음"}</span>
-        </p>
+        {(record.before || record.after) ? (
+          <p className="history-detail-change">
+            {record.before ? <s>{record.before}</s> : null}
+            {record.before && record.after ? <span> → </span> : null}
+            {record.after ? <span>{record.after}</span> : null}
+          </p>
+        ) : null}
         <dl>
           {record.status ? (
             <div>
@@ -92,7 +93,7 @@ function HistoryDetail({ record, onClose }) {
           ) : null}
           {record.actor ? (
             <div>
-              <dt>처리자</dt>
+              <dt>관련</dt>
               <dd>{record.actor}</dd>
             </div>
           ) : null}
@@ -129,8 +130,8 @@ export function HistoryView() {
     swapQuery.refetch();
   };
   const months = monthsWithData(historyData);
-  const [monthChoice, setMonthChoice] = useState(() => currentMonthKey());
-  const month = monthChoice || currentMonthKey();
+  const [monthChoice, setMonthChoice] = useState("");
+  const month = months.includes(monthChoice) ? monthChoice : (months[0] ?? "");
   const [monthOpen, setMonthOpen] = useState(false);
   const [type, setType] = useState("전체");
   const [query, setQuery] = useState("");
@@ -141,7 +142,6 @@ export function HistoryView() {
 
   const monthItems = recordsInMonth(historyData, month);
   const counts = countByType(monthItems);
-  const statusCounts = countByStatus(monthItems);
   const pending = countPending(monthItems);
   const filtered = filterHistory(monthItems, { type, query, status });
   const visible = filtered.slice(0, visibleCount);
@@ -201,7 +201,8 @@ export function HistoryView() {
           {(record.before || record.after || record.time) ? (
             <p className="history-line2">
               {record.before ? <s>{record.before}</s> : null}
-              {record.after ? <span>{record.before ? " → " : ""}{record.after}</span> : null}
+              {record.before && record.after ? <span> → </span> : null}
+              {record.after ? <span>{record.after}</span> : null}
               {record.time ? <span className="history-time-mobile"> · {record.time}</span> : null}
             </p>
           ) : null}
@@ -234,32 +235,16 @@ export function HistoryView() {
         <div className="history-month" ref={monthRef}>
           <button
             type="button"
-            className="history-month-arrow"
-            aria-label="이전 달"
-            onClick={() => changeMonth(shiftMonth(month, -1))}
-          >
-            ‹
-          </button>
-          <button
-            type="button"
             className="history-month-label"
             aria-expanded={monthOpen}
             aria-haspopup="listbox"
             onClick={() => setMonthOpen((open) => !open)}
           >
-            {formatMonthTitle(month)} ▾
-          </button>
-          <button
-            type="button"
-            className="history-month-arrow"
-            aria-label="다음 달"
-            onClick={() => changeMonth(shiftMonth(month, 1))}
-          >
-            ›
+            {month ? formatMonthTitle(month) : "월 선택"} ▾
           </button>
           {monthOpen && (
             <div className="dropdown-panel dropdown-panel-top" role="listbox" aria-label="월 선택">
-              {(months.includes(month) ? months : [month, ...months]).map((item) => (
+              {months.map((item) => (
                 <button
                   key={item}
                   type="button"
@@ -290,22 +275,45 @@ export function HistoryView() {
 
       <div className="history-summary">
         <p>
-          변동 <strong>{listLoading || listError ? "—" : monthItems.length}</strong>
-          {!(listLoading || listError) ? "건" : ""}
+          변동 <strong>{monthItems.length}</strong>건
           <span aria-hidden="true"> · </span>
-          {listLoading || listError ? (
-            <span className="is-muted">미처리 —</span>
-          ) : pending > 0 ? (
+          {pending > 0 ? (
             <>미처리 <strong className="is-danger">{pending}</strong>건</>
           ) : (
             <span className="is-muted">미처리 없음</span>
           )}
         </p>
+        {monthItems.length > 0 && (
+          <div className="history-status" role="group" aria-label="상태">
+            {HISTORY_STATUSES.map((item) => (
+              <button
+                key={item}
+                type="button"
+                aria-pressed={status === item}
+                onClick={() => {
+                  setStatus((current) => (current === item ? "" : item));
+                  setVisibleCount(HISTORY_PAGE_SIZE);
+                }}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {listLoading && <p className="history-empty">불러오는 중...</p>}
-      {(listError || listPartialError) && (
-        <LoadError onRetry={refetchList} />
+      {listError && (
+        <p className="history-empty">
+          내역을 불러오지 못했습니다.{" "}
+          <button type="button" className="history-link" onClick={refetchList}>다시 시도</button>
+        </p>
+      )}
+      {listPartialError && (
+        <p className="history-empty">
+          {historyQuery.isError ? "보결" : "교환"} 내역을 불러오지 못했습니다.{" "}
+          <button type="button" className="history-link" onClick={refetchList}>다시 시도</button>
+        </p>
       )}
       {!listLoading && !listError && historyData.length === 0 && (
         <p className="history-empty">변동 내역이 없습니다</p>
@@ -330,36 +338,6 @@ export function HistoryView() {
               >
                 {item}
                 <span>{counts[item]}</span>
-              </button>
-            ))}
-          </div>
-          <div className="history-tabs history-status-tabs" role="tablist" aria-label="상태">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={!status}
-              onClick={() => {
-                setStatus("");
-                setVisibleCount(HISTORY_PAGE_SIZE);
-              }}
-            >
-              전체
-              <span>{monthItems.length}</span>
-            </button>
-            {HISTORY_STATUSES.map((item) => (
-              <button
-                key={item}
-                type="button"
-                role="tab"
-                aria-selected={status === item}
-                className={statusCounts[item] === 0 ? "is-zero" : undefined}
-                onClick={() => {
-                  setStatus(item);
-                  setVisibleCount(HISTORY_PAGE_SIZE);
-                }}
-              >
-                {item}
-                <span>{statusCounts[item]}</span>
               </button>
             ))}
           </div>
@@ -474,7 +452,9 @@ export function AdminView({ navigate }) {
             <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>불러오는 중...</p>
           )}
           {staffError && (
-            <LoadError />
+            <p style={{ margin: 0, fontSize: 13, color: "var(--color-danger)" }}>
+              교사 목록을 불러오지 못했습니다. 관리자 권한으로 다시 확인하세요.
+            </p>
           )}
           {!staffLoading && !staffError && staffList.length === 0 && (
             <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>등록된 구성원이 없습니다.</p>
@@ -532,7 +512,10 @@ export function AdminView({ navigate }) {
             <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>불러오는 중...</p>
           )}
           {schoolUnavail.isError && (
-            <LoadError onRetry={() => schoolUnavail.refetch()} />
+            <p style={{ margin: 0, fontSize: 13, color: "var(--color-danger)" }}>
+              {getApiErrorMessage(schoolUnavail.error, "근무 불가를 불러오지 못했습니다.")}{" "}
+              <button type="button" className="history-link" onClick={() => schoolUnavail.refetch()}>다시 시도</button>
+            </p>
           )}
           {!schoolUnavail.isLoading && !schoolUnavail.isError && (schoolUnavail.data?.length ?? 0) === 0 && (
             <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>등록된 근무 불가가 없습니다.</p>
