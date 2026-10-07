@@ -81,14 +81,14 @@ describe('buildSchoolTimetable', () => {
     expect(result.todayClassCount).toBe(1)
   })
 
-  it('같은 요일/교시의 수업은 학급과 과목을 병합한다', () => {
+  it('같은 요일/교시의 수업은 학급 순 목록으로 둔다', () => {
     const result = buildSchoolTimetable([
-      { id: 1, dayOfWeek: 'MON', periodNumber: 1, grade: 1, classNumber: 1, subjectName: '국어' },
       { id: 2, dayOfWeek: 'MON', periodNumber: 1, grade: 1, classNumber: 2, subjectName: '수학' },
+      { id: 1, dayOfWeek: 'MON', periodNumber: 1, grade: 1, classNumber: 1, subjectName: '국어' },
     ])
 
-    expect(result.byDay['월'][1].class).toContain(',')
-    expect(result.byDay['월'][1].subject).toContain('수학')
+    expect(result.byDay['월'][1].lessons.map((lesson) => lesson.class)).toEqual(['1-1', '1-2'])
+    expect(result.byDay['월'][1].lessons.map((lesson) => lesson.subject)).toEqual(['국어', '수학'])
   })
 
   it('응답에 있는 교시 시각으로 현재 수업을 고른다', () => {

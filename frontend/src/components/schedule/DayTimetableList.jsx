@@ -48,7 +48,9 @@ export default function DayTimetableList({
               <span className="day-period-time">{row.time}</span>
             </div>
             <div className="day-main">
-              {cell ? (
+              {cell?.lessons?.length > 1 ? (
+                <span className="day-subject">{cell.lessons.length}학급</span>
+              ) : cell ? (
                 <>
                   <span className="day-subject">{cell.subject || '수업'}</span>
                   {formatRowDetail(cell) && <span className="day-meta">{formatRowDetail(cell)}</span>}

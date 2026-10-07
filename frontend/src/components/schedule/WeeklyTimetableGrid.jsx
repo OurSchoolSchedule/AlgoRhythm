@@ -1,6 +1,6 @@
 import { SCHOOL_PERIOD_SLOTS } from '@/constants/schoolTimetable.js'
 import { formatClassName } from '@/utils/homeFocus.js'
-import { getPeriodFromDatetime } from '@/utils/schoolTimetable.js'
+import { getPeriodFromDatetime, lessonsOf } from '@/utils/schoolTimetable.js'
 import { resolveSubjectColor } from '@/utils/subjectColor.js'
 import {
   boardPeriods,
@@ -28,6 +28,12 @@ function shortClock(value) {
   const [hour, minute] = String(value).split(':')
   if (hour == null || minute == null) return ''
   return `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`
+}
+
+const CROWD_PREVIEW = 3
+
+function chipLabel(lesson) {
+  return [lesson.class, lesson.subject].filter(Boolean).join(' ')
 }
 
 function subline(cell, detailMode) {
@@ -103,13 +109,17 @@ export default function WeeklyTimetableGrid({
             </div>
             {days.map((day) => {
               const cell = timetable.byDay?.[day.key]?.[row.period] ?? null
+              const lessons = lessonsOf(cell)
+              const crowded = lessons.length > 1
+              const preview = crowded ? lessons.slice(0, CROWD_PREVIEW) : []
+              const hiddenCount = crowded ? lessons.length - preview.length : 0
               const key = cellSlotKey(day.key, row.period)
               const dragging = dragFrom && cellSlotKey(dragFrom.day, dragFrom.period) === key
               const hovered = hoverKey === key && dragFrom
               const rejected = hovered && hoverReason
               const isNowSlot = Boolean(day.isToday && isCurrentPeriod)
-              const status = cell ? statusMeta(cell) : null
-              const subjectColor = cell
+              const status = cell && !crowded ? statusMeta(cell) : null
+              const subjectColor = cell && !crowded
                 ? resolveSubjectColor({
                     id: cell.subjectId,
                     name: cell.subject,
@@ -126,6 +136,7 @@ export default function WeeklyTimetableGrid({
                 hovered && !rejected ? 'is-allow' : '',
                 rejected ? 'is-reject' : '',
                 cell ? 'has-subject' : '',
+                crowded ? 'is-crowd' : '',
                 status ? status.className : '',
               ].filter(Boolean).join(' ')
               const style = subjectColor
@@ -141,8 +152,9 @@ export default function WeeklyTimetableGrid({
                   type="button"
                   className={className}
                   style={style}
-                  draggable={editing && Boolean(cell)}
+                  draggable={editing && Boolean(cell) && !crowded}
                   title={rejected ? hoverReason : undefined}
+                  aria-label={crowded ? `${day.key}요일 ${row.period}교시, ${lessons.length}학급` : undefined}
                   onClick={() => onSelect?.({ day: day.key, period: row.period })}
                   onDragStart={(event) => {
                     event.dataTransfer.effectAllowed = 'move'
@@ -161,7 +173,29 @@ export default function WeeklyTimetableGrid({
                   }}
                   onDragEnd={() => onDragEnd?.()}
                 >
-                  {cell ? (
+                  {crowded ? (
+                    <>
+                      <span className="tt-crowd-count">{lessons.length}학급</span>
+                      <span className="tt-chips">
+                        {preview.map((lesson, index) => {
+                          const color = resolveSubjectColor({
+                            id: lesson.subjectId,
+                            name: lesson.subject,
+                          })
+                          return (
+                            <span
+                              key={lesson.id ?? `${chipLabel(lesson)}-${index}`}
+                              className="tt-chip"
+                              style={{ background: color.bg, color: color.text }}
+                            >
+                              {chipLabel(lesson)}
+                            </span>
+                          )
+                        })}
+                      </span>
+                      {hiddenCount > 0 ? <span className="tt-chip-more">+{hiddenCount}</span> : null}
+                    </>
+                  ) : cell ? (
                     <>
                       <span className="tt-subject">{cell.subject || '수업'}</span>
                       {subline(cell, detailMode) ? <span className="tt-sub">{subline(cell, detailMode)}</span> : null}

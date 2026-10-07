@@ -22,6 +22,7 @@ export function formatClassName(classLabel) {
  */
 export function formatHeroDetail(cell) {
   if (!cell) return ''
+  if (cell.lessons?.length > 1) return `${cell.lessons.length}학급`
   const main = [formatClassName(cell.class), cell.subject].filter(Boolean).join(' ')
   return [main, cell.location].filter(Boolean).join(' · ')
 }

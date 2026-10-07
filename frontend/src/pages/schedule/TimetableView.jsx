@@ -8,6 +8,7 @@ import WeeklyTimetableGrid from '@/components/schedule/WeeklyTimetableGrid.jsx'
 import { SCHOOL_PERIOD_SLOTS, TIMETABLE_DAYS } from '@/constants/schoolTimetable.js'
 import { useDeleteTimetable, useSchoolTimetable, useUpdateTimetable } from '@/hooks'
 import { formatClassName, formatClock } from '@/utils/homeFocus.js'
+import { cellFromLessons, lessonsOf } from '@/utils/schoolTimetable.js'
 import { toISODate } from '@/utils'
 import {
   formatWeekCaption,
@@ -36,8 +37,8 @@ function maskByDay(byDay, periods, accept) {
   for (const day of TIMETABLE_DAYS) {
     next[day] = {}
     for (const period of periods) {
-      const cell = byDay?.[day]?.[period] ?? null
-      next[day][period] = cell && accept(cell) ? cell : null
+      const lessons = lessonsOf(byDay?.[day]?.[period]).filter((lesson) => accept(lesson))
+      next[day][period] = cellFromLessons(lessons)
     }
   }
   return next
@@ -56,8 +57,10 @@ function uniqueField(byDay, periods, field) {
   const values = new Set()
   for (const day of TIMETABLE_DAYS) {
     for (const period of periods) {
-      const value = byDay?.[day]?.[period]?.[field]
-      if (value) values.add(value)
+      for (const lesson of lessonsOf(byDay?.[day]?.[period])) {
+        const value = lesson?.[field]
+        if (value) values.add(value)
+      }
     }
   }
   return [...values].sort((left, right) => left.localeCompare(right, 'ko'))
@@ -135,6 +138,8 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
   const teachers = uniqueField(timetable.byDay, timetable.periods, 'teacher')
   const detailMode = activeScope === 'class' ? 'class' : activeScope === 'all' ? 'all' : 'teacher'
   const selectedCell = selected ? shown.byDay?.[selected.day]?.[selected.period] ?? null : null
+  const selectedLessons = lessonsOf(selectedCell)
+  const selectedCrowded = selectedLessons.length > 1
   const selectedDate = days.find((day) => day.key === selected?.day)
   const hoverReason = dragFrom && hover
     ? dropRejection(shown.byDay, dragFrom, hover, days.find((day) => day.key === hover.day)?.holiday || '')
@@ -541,8 +546,24 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
               </p>
               <button type="button" className="panel-close" onClick={() => setSelected(null)}>닫기</button>
             </div>
-            <h2>{selectedCell?.subject || (creating ? '수업 추가' : '공강')}</h2>
-            {selectedCell ? (
+            <h2>
+              {selectedCrowded
+                ? `${selectedLessons.length}학급`
+                : (selectedCell?.subject || (creating ? '수업 추가' : '공강'))}
+            </h2>
+            {selectedCrowded ? (
+              <ul className="tt-lesson-list">
+                {selectedLessons.map((lesson) => (
+                  <li key={lesson.id ?? `${lesson.class}-${lesson.subject}`}>
+                    <span className="tt-lesson-main">
+                      <span className="tt-lesson-class">{formatClassName(lesson.class) || '학급 없음'}</span>
+                      <span className="tt-lesson-subject">{lesson.subject || '수업'}</span>
+                    </span>
+                    <span className="tt-lesson-teacher">{lesson.teacher || '교사 없음'}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : selectedCell ? (
               <dl className="tt-detail-list">
                 <div><dt>학급</dt><dd>{formatClassName(selectedCell.class) || '없음'}</dd></div>
                 <div><dt>교사</dt><dd>{selectedCell.teacher || '없음'}</dd></div>
@@ -563,15 +584,15 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
                   setCreating(false)
                 }}
               />
-            ) : selectedCell && requestMode === 'substitute' ? (
+            ) : selectedCell && !selectedCrowded && requestMode === 'substitute' ? (
               <CreateSubstituteForm
                 timetableId={selectedCell.id}
                 defaultDate={selectedDate ? toISODate(selectedDate.date) : toISODate()}
                 periodLabel={`${selected.period}교시`}
               />
-            ) : selectedCell && requestMode === 'swap' ? (
+            ) : selectedCell && !selectedCrowded && requestMode === 'swap' ? (
               <CreateShiftSwapForm />
-            ) : selectedCell ? (
+            ) : selectedCell && !selectedCrowded ? (
               <div className="tt-actions">
                 <button type="button" className="tt-secondary" onClick={() => setRequestMode('substitute')}>대타 요청</button>
                 <button type="button" className="tt-secondary" onClick={() => setRequestMode('swap')}>교환 요청</button>
