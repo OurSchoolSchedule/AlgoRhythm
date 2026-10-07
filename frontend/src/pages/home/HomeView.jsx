@@ -4,6 +4,7 @@ import DayTimetableList from "@/components/schedule/DayTimetableList.jsx";
 import NotificationActionButtons from "@/components/schedule/NotificationActionButtons.jsx";
 import SubstituteRequestList from "@/components/schedule/SubstituteRequestList.jsx";
 import LoadError from "@/components/LoadError.jsx";
+import SectionHeader from "@/components/ui/SectionHeader.jsx";
 import { toISODate } from "@/utils";
 import { DOMAIN, localizeNotificationMessage, categoryLabel } from "@/constants/domainLabels.js";
 import {
@@ -25,22 +26,6 @@ function formatBriefTime(iso) {
 
 function SkeletonBlock({ width = "100%", height = 16, radius = 8 }) {
   return <div className="home-skeleton" style={{ width, height, borderRadius: radius }} aria-hidden="true" />;
-}
-
-function SectionHeader({ title, count, countReady = true, onViewAll }) {
-  return (
-    <div className="home-section-head">
-      <div className="home-section-title-wrap">
-        <h2 className="home-section-title">{title}</h2>
-        <span className="home-section-count">{countReady ? count : "—"}</span>
-      </div>
-      {onViewAll && (
-        <button type="button" className="home-text-button" onClick={onViewAll}>
-          전체 보기
-        </button>
-      )}
-    </div>
-  );
 }
 
 function homeStatTone(value, tone) {
@@ -201,9 +186,8 @@ export default function HomeView({ user, navigate }) {
         <section className="home-timetable">
           <SectionHeader
             title="오늘 시간표"
-            count={hasClass ? todayClassCount : 0}
-            countReady={!timetableLoading && !timetableError}
-            onViewAll={() => navigate("timetable")}
+            meta={!timetableLoading && !timetableError ? (hasClass ? todayClassCount : 0) : "—"}
+            onAction={() => navigate("timetable")}
           />
           {timetableLoading && (
             <div className="home-skeleton-list" aria-hidden="true">
@@ -230,9 +214,8 @@ export default function HomeView({ user, navigate }) {
           <section className="home-tasks">
             <SectionHeader
               title="오늘 할 일"
-              count={taskCount}
-              countReady={!tasksLoading && !tasksFailed}
-              onViewAll={() => navigate("todos")}
+              meta={!tasksLoading && !tasksFailed ? taskCount : "—"}
+              onAction={() => navigate("todos")}
             />
             <div className="home-task-summary" aria-label="처리할 일">
               <div className="home-stat">
@@ -255,7 +238,7 @@ export default function HomeView({ user, navigate }) {
               <>
                 <SubstituteRequestList position={position} notifications={notifications} />
                 {actionable.slice(0, 3).map((item) => (
-                  <div key={item.id ?? item.createdAt} className="home-row">
+                  <div key={item.id ?? item.createdAt} className="home-row list-row">
                     <p className="home-item-title">{localizeNotificationMessage(item.message)}</p>
                     {formatBriefTime(item.createdAt) && (
                       <p className="home-item-meta">{formatBriefTime(item.createdAt)}</p>
@@ -271,9 +254,8 @@ export default function HomeView({ user, navigate }) {
           <section className="home-changes">
             <SectionHeader
               title="오늘 변동"
-              count={briefs.length}
-              countReady={!notificationsLoading && !notificationsError}
-              onViewAll={() => navigate("history")}
+              meta={!notificationsLoading && !notificationsError ? briefs.length : "—"}
+              onAction={() => navigate("history")}
             />
             {notificationsLoading && (
               <div className="home-skeleton-list" aria-hidden="true">
@@ -290,7 +272,7 @@ export default function HomeView({ user, navigate }) {
             )}
             {!notificationsError &&
               briefs.slice(0, 8).map((item) => (
-                <div key={item.key} className="home-row home-change">
+                <div key={item.key} className="home-row home-change list-row">
                   <span className="home-change-time">{item.time}</span>
                   <span
                     className="day-badge"

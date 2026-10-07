@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { createSubject } from "@/api";
 import LoadError from "@/components/LoadError.jsx";
+import SectionHeader from "@/components/ui/SectionHeader.jsx";
 import { useCreateSubject, useDeleteSubject, useSubjects, useUpdateSubject } from "@/hooks";
 import { queryKeys } from "@/hooks/queryKeys.js";
 import { useQueryClient } from "@tanstack/react-query";
@@ -59,9 +60,12 @@ export default function SubjectManageView() {
   };
 
   return (
-    <div>
-      <h1 style={{ margin: "0 0 16px", fontSize: 20, fontWeight: 700, color: "var(--color-text)" }}>과목·수업 관리</h1>
-      <p style={{ margin: "0 0 16px", fontSize: 13, color: "var(--color-text-muted)" }}>
+    <div className="subject-page">
+      <SectionHeader
+        title="과목·수업 관리"
+        meta={!subjects.isLoading && !subjects.isError ? rows.length : "—"}
+      />
+      <p className="subject-help">
         과목 이름을 등록합니다. 수업별 학급·교사 배정은 시간표 생성 단계에서 설정합니다.
       </p>
       <form onSubmit={handleAdd} className="subject-compose">
@@ -93,15 +97,16 @@ export default function SubjectManageView() {
         <LoadError onRetry={() => subjects.refetch()} />
       )}
       {!subjects.isLoading && !subjects.isError && rows.length === 0 && (
-        <p style={{ color: "var(--color-text-muted)", fontSize: 13 }}>등록된 과목이 없습니다.</p>
+        <p className="subject-help">등록된 과목이 없습니다.</p>
       )}
       {!subjects.isError && rows.map((subject) => (
-        <div key={subject.id} style={{ display: "flex", gap: 8, alignItems: "center", padding: "8px 0", borderBottom: "1px solid var(--color-border-light)" }}>
+        <div key={subject.id} className="subject-row list-row">
           {editingId === subject.id ? (
             <input
               value={editingName}
               onChange={(event) => setEditingName(event.target.value)}
-              style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid var(--color-border-input)" }}
+              className="subject-compose-input"
+              style={{ flex: 1, width: "auto" }}
             />
           ) : (
             <span style={{ flex: 1, color: "var(--color-text)" }}>{subject.name}</span>
@@ -158,7 +163,7 @@ const secondaryButton = {
   padding: "8px 12px",
   borderRadius: 8,
   border: "1px solid var(--color-border-input)",
-  background: "var(--color-surface)",
+  background: "var(--surface-0)",
   color: "var(--color-text)",
   cursor: "pointer",
 };

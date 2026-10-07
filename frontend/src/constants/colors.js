@@ -78,11 +78,15 @@ export const colors = {
   textMuted: 'var(--color-text-muted)',
   textSubtle: 'var(--color-text-subtle)',
 
-  border: 'var(--color-border)',
-  borderLight: 'var(--color-border-light)',
+  border: 'var(--border)',
+  borderSubtle: 'var(--border-subtle)',
+  borderLight: 'var(--border-subtle)',
   borderInput: 'var(--color-border-input)',
 
-  bg: 'var(--color-bg)',
-  surface: 'var(--color-surface)',
-  surfaceHover: 'var(--color-surface-hover)',
+  bg: 'var(--surface-0)',
+  surface: 'var(--surface-0)',
+  surface0: 'var(--surface-0)',
+  surface1: 'var(--surface-1)',
+  surface2: 'var(--surface-2)',
+  surfaceHover: 'var(--surface-1)',
 }

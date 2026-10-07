@@ -179,7 +179,7 @@ export function HistoryView() {
     return (
       <div
         key={record.id}
-        className={`history-row${record.status === "미처리" ? " is-pending" : ""}`}
+        className={`history-row list-row${record.status === "미처리" ? " is-pending" : ""}${selectedId === record.id ? " is-selected" : ""}`}
         role="button"
         tabIndex={0}
         onClick={() => openRecord(record.id)}
@@ -395,45 +395,39 @@ export function AdminView({ navigate }) {
   );
 
   return (
-    <div>
-      <div style={{ marginBottom: 24 }}>
+    <div className="admin-page">
+      <div style={{ marginBottom: "var(--space-8)" }}>
         <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--color-text)" }}>관리자 도구</h1>
       </div>
 
-      <div style={{
-        background: "var(--color-surface)", borderRadius: 12, border: "1px solid var(--color-border)",
-        padding: "20px 24px", marginBottom: 16,
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-      }}>
+      <div className="admin-create-strip">
         <div>
-          <p style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 600, color: "var(--color-text)" }}>시간표 생성</p>
+          <p style={{ margin: "0 0 var(--space-1)", fontSize: 16, fontWeight: 600, color: "var(--color-text)" }}>시간표 생성</p>
           <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>새 학기 시간표를 만듭니다.</p>
         </div>
         <button
+          type="button"
           onClick={() => navigate("schedule-create")}
-          style={{
-            padding: "10px 20px", borderRadius: 8, border: "none",
-            background: "var(--color-primary-button)", color: "var(--color-on-primary)", fontSize: 14, fontWeight: 500, cursor: "pointer",
-            flexShrink: 0,
-          }}
+          className="btn btn-primary"
+          style={{ flexShrink: 0 }}
         >
           시간표 생성
         </button>
       </div>
 
-      <div style={{ display: "flex", gap: 0, marginBottom: 16, borderBottom: "1px solid var(--color-border)" }}>
+      <div style={{ display: "flex", gap: 0, marginBottom: "var(--space-4)", borderBottom: "1px solid var(--border-subtle)" }}>
         {tabs.map(t => (
-          <button key={t} onClick={() => setTab(t)} style={{
+          <button key={t} type="button" onClick={() => setTab(t)} style={{
             padding: "10px 20px", border: "none", background: "none", cursor: "pointer", fontSize: 14,
-            color: tab === t ? "var(--color-primary)" : "var(--color-text-muted)", fontWeight: tab === t ? 600 : 400,
-            borderBottom: tab === t ? "2px solid var(--color-primary)" : "2px solid transparent",
+            color: tab === t ? "var(--color-primary-text)" : "var(--color-text-muted)", fontWeight: tab === t ? 600 : 400,
+            borderBottom: tab === t ? "2px solid var(--color-primary-solid)" : "2px solid transparent",
           }}>{t}</button>
         ))}
       </div>
 
       {tab === "교사" && (
-        <div style={{ background: "var(--color-surface)", borderRadius: 12, border: "1px solid var(--color-border)", padding: "20px 24px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <div className="admin-panel">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-4)" }}>
             <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>
               구성원 목록{staffSummary ? ` · 총 ${staffSummary.totalStaffCount}명` : ""}
             </p>
@@ -496,8 +490,8 @@ export function AdminView({ navigate }) {
       {tab === "학급" && <SchoolClassPanel />}
 
       {tab === "불가" && (
-        <div style={{ background: "var(--color-surface)", borderRadius: 12, border: "1px solid var(--color-border)", padding: "20px 24px" }}>
-          <p style={{ margin: "0 0 14px", fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>
+        <div className="admin-panel">
+          <p style={{ margin: "0 0 var(--space-4)", fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>
             학교 전체 근무 불가
           </p>
           {schoolUnavail.isLoading && (
