@@ -96,6 +96,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
   const [scope, setScope] = useState(isAdmin ? 'class' : 'mine')
   const [target, setTarget] = useState('')
   const [termOpen, setTermOpen] = useState(false)
+  const [kindOpen, setKindOpen] = useState(false)
   const [scopeSearchOpen, setScopeSearchOpen] = useState(false)
   const [scopeQuery, setScopeQuery] = useState('')
   const [moreOpen, setMoreOpen] = useState(false)
@@ -136,7 +137,11 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
 
   const classes = uniqueField(timetable.byDay, timetable.periods, 'class')
   const teachers = uniqueField(timetable.byDay, timetable.periods, 'teacher')
-  const detailMode = activeScope === 'class' ? 'class' : activeScope === 'all' ? 'all' : 'teacher'
+  const detailMode = !isAdmin
+    ? (activeScope === 'class' ? 'class' : 'teacher')
+    : target
+      ? (scope === 'teacher' ? 'teacher' : 'class')
+      : 'all'
   const selectedCell = selected ? shown.byDay?.[selected.day]?.[selected.period] ?? null : null
   const selectedLessons = lessonsOf(selectedCell)
   const selectedCrowded = selectedLessons.length > 1
@@ -156,15 +161,18 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
   }, [moves.length])
 
   useEffect(() => {
-    if (!termOpen && !scopeSearchOpen && !moreOpen) return undefined
+    if (!termOpen && !kindOpen && !scopeSearchOpen && !moreOpen) return undefined
     const onPointer = (event) => {
       if (termRef.current && !termRef.current.contains(event.target)) setTermOpen(false)
-      if (scopeSearchRef.current && !scopeSearchRef.current.contains(event.target)) setScopeSearchOpen(false)
+      if (scopeSearchRef.current && !scopeSearchRef.current.contains(event.target)) {
+        setKindOpen(false)
+        setScopeSearchOpen(false)
+      }
       if (moreRef.current && !moreRef.current.contains(event.target)) setMoreOpen(false)
     }
     document.addEventListener('mousedown', onPointer)
     return () => document.removeEventListener('mousedown', onPointer)
-  }, [termOpen, scopeSearchOpen, moreOpen])
+  }, [termOpen, kindOpen, scopeSearchOpen, moreOpen])
 
   const requestLeave = (action) => {
     if (moves.length === 0) {
@@ -237,14 +245,6 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
     ? '아직 등록된 시간표가 없습니다'
     : '시간표가 확정되면 알림으로 알려드립니다'
 
-  const scopeOptions = isAdmin
-    ? [
-      { id: 'class', label: '학급별' },
-      { id: 'teacher', label: '교사별' },
-      { id: 'all', label: '전체' },
-    ]
-    : [{ id: 'mine', label: '내 시간표' }]
-
   const queryText = scopeQuery.trim()
   const classHits = classes
     .filter((item) => !queryText || item.includes(queryText))
@@ -252,7 +252,8 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
   const teacherHits = teachers
     .filter((item) => !queryText || item.includes(queryText))
     .map((item) => ({ id: `teacher:${item}`, kind: 'teacher', value: item, label: item }))
-  const searchHits = [...classHits, ...teacherHits]
+  const searchHits = scope === 'teacher' ? teacherHits : classHits
+  const searchKindLabel = scope === 'teacher' ? '교사별' : '학급별'
   const targetChipLabel = target
     ? (activeScope === 'class' ? formatClassName(target) : target)
     : ''
@@ -367,33 +368,60 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
 
       {isAdmin && (
         <div className="tt-scope-bar">
-          <div className="tt-scope" role="group" aria-label="시간표 보기">
-            {scopeOptions.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                aria-pressed={activeScope === item.id}
-                onClick={() => {
-                  setScope(item.id)
-                  setTarget('')
-                  setScopeSearchOpen(false)
-                  setScopeQuery('')
-                }}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
           <div className="tt-scope-search" ref={scopeSearchRef}>
             <div className="tt-scope-search-field">
+              <div className="tt-scope-kind">
+                <button
+                  type="button"
+                  className="tt-scope-kind-trigger"
+                  aria-expanded={kindOpen}
+                  aria-haspopup="listbox"
+                  aria-label="검색 조건"
+                  onClick={() => {
+                    setKindOpen((open) => !open)
+                    setScopeSearchOpen(false)
+                  }}
+                >
+                  <span>{searchKindLabel}</span>
+                  <span aria-hidden="true">▾</span>
+                </button>
+                {kindOpen && (
+                  <div className="dropdown-panel dropdown-panel-top tt-scope-kind-panel" role="listbox" aria-label="검색 조건">
+                    {[
+                      { id: 'class', label: '학급별' },
+                      { id: 'teacher', label: '교사별' },
+                    ].map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        role="option"
+                        className="menu-item"
+                        aria-selected={scope === item.id}
+                        onClick={() => {
+                          setScope(item.id)
+                          setTarget('')
+                          setScopeQuery('')
+                          setKindOpen(false)
+                          setScopeSearchOpen(false)
+                        }}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <span className="tt-scope-kind-rule" aria-hidden="true" />
               <input
                 value={scopeQuery}
-                placeholder="학급/교사 검색"
-                aria-label="학급/교사 검색"
+                placeholder={scope === 'teacher' ? '교사 검색' : '학급 검색'}
+                aria-label={scope === 'teacher' ? '교사 검색' : '학급 검색'}
                 onChange={(event) => setScopeQuery(event.target.value)}
+                onFocus={() => setKindOpen(false)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') {
                     event.preventDefault()
+                    setKindOpen(false)
                     setScopeSearchOpen(true)
                   }
                 }}
@@ -402,7 +430,10 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
                 type="button"
                 className="tt-scope-search-submit"
                 aria-label="검색"
-                onClick={() => setScopeSearchOpen(true)}
+                onClick={() => {
+                  setKindOpen(false)
+                  setScopeSearchOpen(true)
+                }}
               >
                 <SearchIcon />
               </button>
@@ -438,7 +469,6 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
                       setScopeQuery('')
                     }}
                   >
-                    <span className="tt-scope-hit-kind">{item.kind === 'class' ? '학급' : '교사'}</span>
                     {item.label}
                   </button>
                 ))}

@@ -1925,38 +1925,14 @@ body {
   margin: 0 0 12px;
 }
 
-.tt-scope {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
-.tt-scope button {
-  height: 28px;
-  padding: 0 10px;
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-full);
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-size: var(--font-micro);
-  cursor: pointer;
-}
-
-.tt-scope button[aria-pressed='true'] {
-  background: var(--color-surface-hover);
-  border-color: var(--color-border);
-  color: var(--color-text);
-  font-weight: 600;
-}
-
 .tt-scope-search {
   position: relative;
   display: flex;
   align-items: center;
   gap: 6px;
-  flex: 1 1 160px;
-  min-width: 140px;
-  max-width: 280px;
+  flex: 1 1 220px;
+  min-width: 200px;
+  max-width: 360px;
 }
 
 .tt-scope-search-field {
@@ -1965,10 +1941,48 @@ body {
   gap: 2px;
   width: 100%;
   height: 28px;
-  padding: 0 4px 0 10px;
+  padding: 0 4px 0 4px;
   border: 1px solid var(--color-border-input);
   border-radius: var(--radius-full);
   background: var(--color-surface);
+}
+
+.tt-scope-kind {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.tt-scope-kind-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 22px;
+  padding: 0 6px 0 8px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--font-micro);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tt-scope-kind-trigger:hover,
+.tt-scope-kind-trigger[aria-expanded='true'] {
+  background: var(--color-surface-hover);
+}
+
+.tt-scope-kind-rule {
+  flex-shrink: 0;
+  width: 1px;
+  height: 14px;
+  margin: 0 6px 0 2px;
+  background: var(--color-border);
+}
+
+.tt-scope-kind-panel {
+  min-width: 96px;
 }
 
 .tt-scope-search-field input {
@@ -2023,12 +2037,9 @@ body {
   overflow: auto;
 }
 
-.tt-scope-hit-kind {
-  display: inline-block;
-  min-width: 2.5em;
-  margin-right: 8px;
-  color: var(--color-text-muted);
-  font-size: var(--font-micro);
+.tt-scope-kind-panel [aria-selected='true'] {
+  font-weight: 600;
+  color: var(--color-text);
 }
 
 .tt-edit-banner {
