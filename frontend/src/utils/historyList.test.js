@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  countByStatus,
   countByType,
+  currentMonthKey,
   substituteToHistoryRecord,
   swapToHistoryRecord,
   countPending,
@@ -71,6 +73,10 @@ describe('history months', () => {
     expect(monthsWithData(records)).toEqual(['2026-5', '2026-4'])
   })
 
+  it('defaults to the calendar month of today', () => {
+    expect(currentMonthKey(new Date(2026, 9, 5))).toBe('2026-10')
+  })
+
   it('moves to the next calendar month even when it has no records', () => {
     expect(shiftMonth('2026-5', 1)).toBe('2026-6')
     expect(emptyMonthMessage('2026-6')).toBe('6월에는 변동 내역이 없습니다')
@@ -82,6 +88,10 @@ describe('history filters', () => {
     expect(countByType(records.filter((item) => item.date.startsWith('2026-05')))).toMatchObject({
       전체: 3,
       보결: 2,
+    })
+    expect(countByStatus(records)).toMatchObject({
+      미처리: 1,
+      완료: 3,
     })
     expect(countPending(records)).toBe(1)
   })

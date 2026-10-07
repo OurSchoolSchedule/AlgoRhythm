@@ -11,8 +11,10 @@ import {
   HISTORY_PAGE_SIZE,
   HISTORY_STATUSES,
   HISTORY_TYPES,
+  countByStatus,
   countByType,
   countPending,
+  currentMonthKey,
   emptyMonthMessage,
   filterHistory,
   formatGroupDate,
@@ -20,6 +22,7 @@ import {
   groupHistoryByDate,
   monthsWithData,
   recordsInMonth,
+  shiftMonth,
   substituteToHistoryRecord,
   swapToHistoryRecord,
 } from "@/utils/historyList.js";
@@ -88,6 +91,12 @@ function HistoryDetail({ record, onClose }) {
               <dd>{record.status}</dd>
             </div>
           ) : null}
+          {record.actor ? (
+            <div>
+              <dt>처리자</dt>
+              <dd>{record.actor}</dd>
+            </div>
+          ) : null}
           {record.time ? (
             <div>
               <dt>등록</dt>
@@ -121,8 +130,8 @@ export function HistoryView() {
     swapQuery.refetch();
   };
   const months = monthsWithData(historyData);
-  const [monthChoice, setMonthChoice] = useState("");
-  const month = months.includes(monthChoice) ? monthChoice : (months[0] ?? "");
+  const [monthChoice, setMonthChoice] = useState(() => currentMonthKey());
+  const month = monthChoice || currentMonthKey();
   const [monthOpen, setMonthOpen] = useState(false);
   const [type, setType] = useState("전체");
   const [query, setQuery] = useState("");
@@ -133,6 +142,7 @@ export function HistoryView() {
 
   const monthItems = recordsInMonth(historyData, month);
   const counts = countByType(monthItems);
+  const statusCounts = countByStatus(monthItems);
   const pending = countPending(monthItems);
   const filtered = filterHistory(monthItems, { type, query, status });
   const visible = filtered.slice(0, visibleCount);
@@ -189,16 +199,18 @@ export function HistoryView() {
               <span className="day-badge" style={{ color: badge.color, background: badge.background }}>{record.status}</span>
             )}
           </div>
-          <p className="history-line2">
-            {record.before && <s>{record.before}</s>}
-            {record.after && <span> → {record.after}</span>}
-            {record.time && <span className="history-time-mobile"> · {record.time}</span>}
-          </p>
+          {(record.before || record.after || record.time) ? (
+            <p className="history-line2">
+              {record.before ? <s>{record.before}</s> : null}
+              {record.after ? <span>{record.before ? " → " : ""}{record.after}</span> : null}
+              {record.time ? <span className="history-time-mobile"> · {record.time}</span> : null}
+            </p>
+          ) : null}
         </div>
         <div className="history-side">
-          {(record.actor || record.time) && (
+          {(record.actor || record.time) ? (
             <span className="history-actor">{[record.actor, record.time].filter(Boolean).join(" · ")}</span>
-          )}
+          ) : null}
           {record.status === "미처리" && (
             <button
               type="button"
@@ -223,16 +235,32 @@ export function HistoryView() {
         <div className="history-month" ref={monthRef}>
           <button
             type="button"
+            className="history-month-arrow"
+            aria-label="이전 달"
+            onClick={() => changeMonth(shiftMonth(month, -1))}
+          >
+            ‹
+          </button>
+          <button
+            type="button"
             className="history-month-label"
             aria-expanded={monthOpen}
             aria-haspopup="listbox"
             onClick={() => setMonthOpen((open) => !open)}
           >
-            {month ? formatMonthTitle(month) : "월 선택"} ▾
+            {formatMonthTitle(month)} ▾
+          </button>
+          <button
+            type="button"
+            className="history-month-arrow"
+            aria-label="다음 달"
+            onClick={() => changeMonth(shiftMonth(month, 1))}
+          >
+            ›
           </button>
           {monthOpen && (
             <div className="dropdown-panel dropdown-panel-top" role="listbox" aria-label="월 선택">
-              {months.map((item) => (
+              {(months.includes(month) ? months : [month, ...months]).map((item) => (
                 <button
                   key={item}
                   type="button"
@@ -271,23 +299,6 @@ export function HistoryView() {
             <span className="is-muted">미처리 없음</span>
           )}
         </p>
-        {monthItems.length > 0 && (
-          <div className="history-status" role="group" aria-label="상태">
-            {HISTORY_STATUSES.map((item) => (
-              <button
-                key={item}
-                type="button"
-                aria-pressed={status === item}
-                onClick={() => {
-                  setStatus((current) => (current === item ? "" : item));
-                  setVisibleCount(HISTORY_PAGE_SIZE);
-                }}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {listLoading && <p className="history-empty">불러오는 중...</p>}
@@ -325,7 +336,37 @@ export function HistoryView() {
                 }}
               >
                 {item}
-                <span>{counts[item]}</span>
+                <span>{counts[item]}}</span>
+              </button>
+            ))}
+          </div>
+          <div className="history-tabs history-status-tabs" role="tablist" aria-label="상태">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={!status}
+              onClick={() => {
+                setStatus("");
+                setVisibleCount(HISTORY_PAGE_SIZE);
+              }}
+            >
+              전체
+              <span>{monthItems.length}</span>
+            </button>
+            {HISTORY_STATUSES.map((item) => (
+              <button
+                key={item}
+                type="button"
+                role="tab"
+                aria-selected={status === item}
+                className={statusCounts[item] === 0 ? "is-zero" : undefined}
+                onClick={() => {
+                  setStatus(item);
+                  setVisibleCount(HISTORY_PAGE_SIZE);
+                }}
+              >
+                {item}
+                <span>{statusCounts[item]}</span>
               </button>
             ))}
           </div>

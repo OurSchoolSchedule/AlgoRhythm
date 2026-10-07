@@ -22,6 +22,20 @@ export function formatMonthTitle(key) {
   return `${year}년 ${Number(month)}월`
 }
 
+/** @param {Date} [date] */
+export function currentMonthKey(date = new Date()) {
+  return `${date.getFullYear()}-${date.getMonth() + 1}`
+}
+
+/** @param {{ status?: string }[]} records */
+export function countByStatus(records) {
+  const counts = {}
+  for (const status of HISTORY_STATUSES) {
+    counts[status] = records.filter((record) => record.status === status).length
+  }
+  return counts
+}
+
 /** @param {string} key */
 export function emptyMonthMessage(key) {
   return `${Number(key.split('-')[1])}월에는 변동 내역이 없습니다`

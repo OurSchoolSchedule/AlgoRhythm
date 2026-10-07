@@ -939,6 +939,16 @@ body {
   color: var(--color-text);
 }
 
+.history-month > .history-month-arrow {
+  width: 32px;
+  font-size: 20px;
+  color: var(--color-text-secondary);
+}
+
+.history-status-tabs {
+  margin-top: 4px;
+}
+
 .history-search {
   display: flex;
   align-items: center;
