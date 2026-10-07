@@ -224,9 +224,13 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
     }
   }
 
+  /** 셀 수정·저장 API가 없어 수정 진입을 막는다. 코드는 유지한다. */
+  const SHOW_EDIT = false
+
   const emptyCopy = isAdmin
     ? '아직 등록된 시간표가 없습니다'
     : '시간표가 확정되면 알림으로 알려드립니다'
+  const hasTimetable = timetable.weekClassCount > 0
 
   const scopeOptions = isAdmin
     ? [
@@ -335,15 +339,20 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
 
         {isAdmin && !editing && (
           <div className="tt-head-tools">
-            <button type="button" className="tt-secondary" onClick={toggleEditing}>
-              시간표 수정
-            </button>
+            {SHOW_EDIT && (
+              <button type="button" className="tt-secondary" onClick={toggleEditing}>
+                시간표 수정
+              </button>
+            )}
             <button type="button" className="tt-create" onClick={openCreate}>시간표 생성</button>
             <div className="tt-more" ref={moreRef}>
               <button type="button" className="tt-text tt-more-button" aria-label="시간표 메뉴" aria-expanded={moreOpen} onClick={() => setMoreOpen((open) => !open)}>⋯</button>
               {moreOpen && (
                 <div className="dropdown-panel dropdown-panel-top">
                   <button type="button" className="menu-item" onClick={() => { setMoreOpen(false); openCreate() }}>시간표 생성</button>
+                  {SHOW_EDIT && (
+                    <button type="button" className="menu-item" onClick={() => { setMoreOpen(false); toggleEditing() }}>시간표 수정</button>
+                  )}
                 </div>
               )}
             </div>
@@ -463,9 +472,12 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
         </div>
       ) : (
         <>
-          {timetable.weekClassCount === 0 && (
+          {!hasTimetable && (
             <div className="tt-note tt-note-plain">
-              {emptyCopy}
+              <span>{emptyCopy}</span>
+              {isAdmin && (
+                <button type="button" className="history-link" onClick={openCreate}>시간표 생성</button>
+              )}
             </div>
           )}
 
@@ -476,6 +488,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
             days={days}
             detailMode={detailMode}
             selectedKey={selected ? cellSlotKey(selected.day, selected.period) : ''}
+            showFreeLabel={hasTimetable}
             editing={editing}
             dragFrom={dragFrom}
             hoverKey={hover ? cellSlotKey(hover.day, hover.period) : ''}

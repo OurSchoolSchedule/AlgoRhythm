@@ -35,6 +35,7 @@ export default function WeeklyTimetableGrid({
   days,
   detailMode = 'teacher',
   selectedKey = '',
+  showFreeLabel = true,
   editing = false,
   dragFrom = null,
   hoverKey = '',
@@ -125,9 +126,9 @@ export default function WeeklyTimetableGrid({
                       <span className="tt-subject">{cell.subject || '수업'}</span>
                       {subline(cell, detailMode) ? <span className="tt-sub">{subline(cell, detailMode)}</span> : null}
                     </>
-                  ) : (
+                  ) : showFreeLabel ? (
                     <span className="tt-free">공강</span>
-                  )}
+                  ) : null}
                 </button>
               )
             })}

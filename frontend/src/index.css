@@ -1830,9 +1830,17 @@ body {
 }
 
 .tt-note-plain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  height: auto;
+  min-height: 0;
+  margin-bottom: 12px;
   background: transparent;
   padding: 0;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
+  font-size: var(--font-caption);
 }
 
 .tt-board {
