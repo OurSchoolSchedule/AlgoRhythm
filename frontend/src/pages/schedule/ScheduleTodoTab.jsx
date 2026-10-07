@@ -176,7 +176,7 @@ function actionBtnStyle(color) {
   }
 }
 
-function TodoEmbed({ date, userRole, quietError = false }) {
+function TodoEmbed({ date, userRole, quietError = false, limit = 3, onMore }) {
   const [content, setContent] = useState('')
   const [todoType, setTodoType] = useState('PERSONAL')
 
@@ -195,7 +195,11 @@ function TodoEmbed({ date, userRole, quietError = false }) {
   const toggleTodo = useToggleTodo()
 
   const availableTypes = CREATE_TYPE_OPTIONS.filter((opt) => !opt.ownerOnly || isAdmin)
-  const previewItems = TODO_SECTIONS.flatMap(({ key }) => todoData?.[key] ?? []).slice(0, 3)
+  const openItems = TODO_SECTIONS.flatMap(({ key }) => todoData?.[key] ?? []).filter(
+    (todo) => !todo.completed && !todo.done,
+  )
+  const previewItems = openItems.slice(0, limit)
+  const hiddenCount = Math.max(0, openItems.length - previewItems.length)
 
   const submitCreate = () => {
     const trimmed = content.trim()
@@ -270,11 +274,34 @@ function TodoEmbed({ date, userRole, quietError = false }) {
           deleteTodo={deleteTodo}
         />
       ))}
+
+      {!isLoading && !isError && hiddenCount > 0 && onMore && (
+        <button type="button" className="home-more" onClick={onMore}>
+          더보기 {hiddenCount}건
+        </button>
+      )}
     </div>
   )
 }
 
-export default function ScheduleTodoTab({ embedded = false, date, userRole, quietError = false }) {
-  if (embedded) return <TodoEmbed date={date} userRole={userRole} quietError={quietError} />
+export default function ScheduleTodoTab({
+  embedded = false,
+  date,
+  userRole,
+  quietError = false,
+  limit = 3,
+  onMore,
+}) {
+  if (embedded) {
+    return (
+      <TodoEmbed
+        date={date}
+        userRole={userRole}
+        quietError={quietError}
+        limit={limit}
+        onMore={onMore}
+      />
+    )
+  }
   return <TodoPage date={date} userRole={userRole} />
 }

@@ -4,14 +4,14 @@ export const SUBJECT_KEYS = ['rose', 'sky', 'violet', 'yellow', 'lime', 'cyan', 
 
 /** 라이트 hex (대비 스크립트·문서용). 렌더에는 쓰지 않는다. */
 export const SUBJECT_HEX = {
-  rose: { bg: '#fbe4e8', text: '#8f2a45', dot: '#e0607e' },
-  sky: { bg: '#dff0fa', text: '#0b5278', dot: '#3a9bd0' },
-  violet: { bg: '#ebe6f8', text: '#4a3590', dot: '#8a73d6' },
-  yellow: { bg: '#f8f0cc', text: '#6b5400', dot: '#d9b32a' },
-  lime: { bg: '#e8f3cf', text: '#4a6412', dot: '#8fb83a' },
-  cyan: { bg: '#d6f1f2', text: '#0b5c63', dot: '#2fa4ad' },
-  sand: { bg: '#f3e7da', text: '#6b4423', dot: '#c49563' },
-  slate: { bg: '#e9ecf0', text: '#3b4654', dot: '#8794a5' },
+  rose: { bg: '#fdf4f6', text: '#8f2a45', dot: '#e0607e' },
+  sky: { bg: '#eef7fc', text: '#0b5278', dot: '#3a9bd0' },
+  violet: { bg: '#f5f2fb', text: '#4a3590', dot: '#8a73d6' },
+  yellow: { bg: '#fbf7e8', text: '#6b5400', dot: '#d9b32a' },
+  lime: { bg: '#f3f8e8', text: '#4a6412', dot: '#8fb83a' },
+  cyan: { bg: '#eaf7f8', text: '#0b5c63', dot: '#2fa4ad' },
+  sand: { bg: '#f9f3ec', text: '#6b4423', dot: '#c49563' },
+  slate: { bg: '#f3f5f7', text: '#3b4654', dot: '#8794a5' },
 }
 
 export const SEMANTIC_HEX = {

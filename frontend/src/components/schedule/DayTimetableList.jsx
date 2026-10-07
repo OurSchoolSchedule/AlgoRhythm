@@ -7,16 +7,28 @@ import { buildDayRows, buildTodayRows, formatRowDetail } from '@/utils/homeFocus
  * @param {Date} [props.now]
  * @param {string} [props.dayKey]
  * @param {Date} [props.date]
+ * @param {number} [props.limit] 홈 미리보기용 행 수 제한
+ * @param {() => void} [props.onMore] 잘린 행이 있을 때 더보기
  */
-export default function DayTimetableList({ timetable, now = new Date(), dayKey, date }) {
+export default function DayTimetableList({
+  timetable,
+  now = new Date(),
+  dayKey,
+  date,
+  limit,
+  onMore,
+}) {
   const rows = dayKey
     ? buildDayRows(timetable, dayKey, now, date ?? null)
     : buildTodayRows(timetable, now)
   if (rows.length === 0) return null
 
+  const visible = typeof limit === 'number' ? rows.slice(0, limit) : rows
+  const hiddenCount = Math.max(0, rows.length - visible.length)
+
   return (
     <div className="day-list">
-      {rows.map((row) => {
+      {visible.map((row) => {
         if (row.kind === 'lunch') {
           return (
             <div key={row.id} className="day-row-lunch">
@@ -51,6 +63,11 @@ export default function DayTimetableList({ timetable, now = new Date(), dayKey, 
           </div>
         )
       })}
+      {hiddenCount > 0 && onMore && (
+        <button type="button" className="home-more" onClick={onMore}>
+          더보기 {hiddenCount}건
+        </button>
+      )}
     </div>
   )
 }

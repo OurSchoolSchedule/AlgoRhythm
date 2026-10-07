@@ -15,6 +15,13 @@ import {
 } from '@/hooks'
 import LoadError from '@/components/LoadError.jsx'
 import TodoCompose from '@/components/schedule/TodoCompose.jsx'
+import NotificationActionButtons from '@/components/schedule/NotificationActionButtons.jsx'
+import SectionHeader from '@/components/ui/SectionHeader.jsx'
+import { localizeNotificationMessage, categoryLabel } from '@/constants/domainLabels.js'
+import {
+  filterActionableNotifications,
+  getNotificationAction,
+} from '@/utils/notificationActions.js'
 import { getApiErrorMessage } from '@/utils/timetableGeneration.js'
 
 const TYPE_OPTIONS = [
@@ -178,9 +185,23 @@ export default function TodoPage({ date, userRole }) {
     ...item,
     responseId: position === 'ADMIN' ? responseIdFor(item, notifications) : null,
   }))
+  const coveredSubIds = new Set(actionRows.map((item) => item.id))
+  const actionableExtras = filterActionableNotifications(notifications, position).filter((item) => {
+    const action = getNotificationAction(item, position)
+    if (!action) return false
+    if (
+      (action.kind === 'extra-shift-respond' || action.kind === 'extra-shift-approve') &&
+      coveredSubIds.has(action.requestId)
+    ) {
+      return false
+    }
+    return true
+  })
+  const needCount = actionRows.length + actionableExtras.length
 
   const showSkeleton = !isError && (isLoading || (substitutes.isLoading && !todoData))
   const listFailed = isError
+  const needFailed = substitutes.isError
 
   const submitCreate = () => {
     const trimmed = content.trim()
@@ -372,63 +393,161 @@ export default function TodoPage({ date, userRole }) {
       </div>
       <TodoStats
         loading={showSkeleton}
-        failed={listFailed}
-        need={substitutes.isSuccess ? actionRows.length : null}
+        failed={listFailed && needFailed}
+        need={!needFailed ? needCount : null}
         open={todoData && !listFailed ? openItems.length : null}
         done={todoData && !listFailed ? doneItems.length : null}
         onJump={jumpTo}
       />
 
-      <TodoCompose
-        content={content}
-        onContentChange={setContent}
-        todoType={todoType}
-        onTodoTypeChange={setTodoType}
-        typeOptions={typeOptions}
-        showTypeOptions={isAdmin}
-        disabled={listFailed}
-        pending={createTodo.isPending}
-        error={createTodo.isError}
-        errorMessage={getApiErrorMessage(createTodo.error, '추가하지 못했어요.')}
-        onSubmit={submitCreate}
-        onRetry={submitCreate}
-      />
-
-      {showSkeleton && (
-        <div className="todo-groups" aria-hidden="true">
-          {Array.from({ length: 4 }, (_, index) => (
-            <div key={index} className="todo-skeleton-row">
-              <span className="home-skeleton todo-skeleton-check" />
-              <span className="todo-skeleton-lines">
-                <span className="home-skeleton" style={{ width: '46%' }} />
-                <span className="home-skeleton" style={{ width: '28%' }} />
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {(listFailed || substitutes.isError) && (
+      {(listFailed || needFailed) && (
         <LoadError
           onRetry={() => {
             if (listFailed) refetch()
-            if (substitutes.isError) substitutes.refetch()
+            if (needFailed) substitutes.refetch()
           }}
         />
       )}
 
-      {!showSkeleton && !listFailed && (
-        <div className="todo-groups">
-          {substitutes.isError ? (
-            <div className="home-skeleton-list" aria-hidden="true">
-              <span className="home-skeleton" style={{ width: '100%', height: 44 }} />
-            </div>
-          ) : null}
+      {showSkeleton && (
+        <div className="todo-split" aria-hidden="true">
+          <div className="todo-col">
+            {Array.from({ length: 3 }, (_, index) => (
+              <div key={index} className="todo-skeleton-row">
+                <span className="home-skeleton todo-skeleton-check" />
+                <span className="todo-skeleton-lines">
+                  <span className="home-skeleton" style={{ width: '46%' }} />
+                  <span className="home-skeleton" style={{ width: '28%' }} />
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="todo-col">
+            {Array.from({ length: 2 }, (_, index) => (
+              <div key={index} className="todo-skeleton-row">
+                <span className="todo-skeleton-lines">
+                  <span className="home-skeleton" style={{ width: '52%' }} />
+                  <span className="home-skeleton" style={{ width: '34%' }} />
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-          {substitutes.isSuccess && actionRows.length > 0 && (
-            <section id="todo-group-need">
-              <h2 className="todo-group-title">처리 필요 {actionRows.length}건</h2>
-              {actionRows.map((item) => {
+      {!showSkeleton && (
+        <div className="todo-split">
+          <div className="todo-col todo-col-mine">
+            <div className="todo-col-head">
+              <SectionHeader
+                title="내 할 일"
+                meta={listFailed ? '—' : `${openItems.length}건`}
+              />
+              <p className="todo-col-hint">직접 등록한 할 일</p>
+            </div>
+
+            <div className="todo-col-body">
+              <TodoCompose
+                content={content}
+                onContentChange={setContent}
+                todoType={todoType}
+                onTodoTypeChange={setTodoType}
+                typeOptions={typeOptions}
+                showTypeOptions={isAdmin}
+                disabled={listFailed}
+                pending={createTodo.isPending}
+                error={createTodo.isError}
+                errorMessage={getApiErrorMessage(createTodo.error, '추가하지 못했어요.')}
+                onSubmit={submitCreate}
+                onRetry={submitCreate}
+              />
+
+              {!listFailed && (
+                <div className="todo-groups">
+                  <section id="todo-group-open">
+                    {openItems.length === 0 && (
+                      <p className="todo-empty">할 일이 없습니다</p>
+                    )}
+                    {openItems.map((todo) => (
+                      <TodoLine
+                        key={todo.id}
+                        todo={todo}
+                        done={false}
+                        checked={armed.has(todo.id) || isCompleted(todo)}
+                        canModify={canModifyTodo(todo, isAdmin, userId)}
+                        editing={editingId === todo.id}
+                        editValue={editValue}
+                        menuOpen={menuFor === todo.id}
+                        fault={rowFault?.id === todo.id ? rowFault : null}
+                        onCheck={() => onCheck(todo)}
+                        onStartEdit={() => startEdit(todo)}
+                        onEditChange={setEditValue}
+                        onSave={() => saveEdit(todo)}
+                        onCancelEdit={cancelEdit}
+                        onDelete={() => removeTodo(todo)}
+                        onToggleMenu={() => setMenuFor((current) => (current === todo.id ? null : todo.id))}
+                      />
+                    ))}
+                  </section>
+
+                  {doneItems.length > 0 && (
+                    <section id="todo-group-done">
+                      <button
+                        type="button"
+                        className="todo-group-toggle"
+                        aria-expanded={completedOpen}
+                        onClick={() => setCompletedOpen((open) => !open)}
+                      >
+                        완료 {doneItems.length}건 {completedOpen ? '▾' : '▸'}
+                      </button>
+                      {completedOpen && doneItems.map((todo) => (
+                        <TodoLine
+                          key={todo.id}
+                          todo={todo}
+                          done
+                          checked
+                          canModify={canModifyTodo(todo, isAdmin, userId)}
+                          editing={editingId === todo.id}
+                          editValue={editValue}
+                          menuOpen={menuFor === todo.id}
+                          fault={rowFault?.id === todo.id ? rowFault : null}
+                          onCheck={() => onCheck(todo)}
+                          onStartEdit={() => startEdit(todo)}
+                          onEditChange={setEditValue}
+                          onSave={() => saveEdit(todo)}
+                          onCancelEdit={cancelEdit}
+                          onDelete={() => removeTodo(todo)}
+                          onToggleMenu={() => setMenuFor((current) => (current === todo.id ? null : todo.id))}
+                        />
+                      ))}
+                    </section>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="todo-col todo-col-need">
+            <div className="todo-col-head">
+              <SectionHeader
+                title="처리 필요"
+                meta={needFailed ? '—' : `${needCount}건`}
+              />
+              <p className="todo-col-hint">보결·교환 등 시간표 변경 확인</p>
+            </div>
+
+            <section id="todo-group-need" className="todo-col-body todo-groups">
+              {needFailed && (
+                <div className="home-skeleton-list" aria-hidden="true">
+                  <span className="home-skeleton" style={{ width: '100%', height: 44 }} />
+                </div>
+              )}
+
+              {!needFailed && needCount === 0 && (
+                <p className="todo-empty">처리할 시간표 변경이 없습니다</p>
+              )}
+
+              {!needFailed && actionRows.map((item) => {
                 const title = item.note?.trim() || '보결 요청'
                 const meta = [
                   formatShortDate(item.substituteDate),
@@ -483,71 +602,31 @@ export default function TodoPage({ date, userRole }) {
                   </div>
                 )
               })}
-            </section>
-          )}
 
-          {openItems.length > 0 && (
-            <section id="todo-group-open">
-              <h2 className="todo-group-title">내 할 일 {openItems.length}건</h2>
-              {openItems.map((todo) => (
-                <TodoLine
-                  key={todo.id}
-                  todo={todo}
-                  done={false}
-                  checked={armed.has(todo.id) || isCompleted(todo)}
-                  canModify={canModifyTodo(todo, isAdmin, userId)}
-                  editing={editingId === todo.id}
-                  editValue={editValue}
-                  menuOpen={menuFor === todo.id}
-                  fault={rowFault?.id === todo.id ? rowFault : null}
-                  onCheck={() => onCheck(todo)}
-                  onStartEdit={() => startEdit(todo)}
-                  onEditChange={setEditValue}
-                  onSave={() => saveEdit(todo)}
-                  onCancelEdit={cancelEdit}
-                  onDelete={() => removeTodo(todo)}
-                  onToggleMenu={() => setMenuFor((current) => (current === todo.id ? null : todo.id))}
-                />
-              ))}
+              {!needFailed && actionableExtras.map((item) => {
+                const action = getNotificationAction(item, position)
+                const badge =
+                  action?.kind?.startsWith('shift-swap')
+                    ? '교환'
+                    : action?.kind?.startsWith('extra-shift')
+                      ? '보결'
+                      : categoryLabel(item.category) || '변경'
+                return (
+                  <div key={item.id ?? item.createdAt} className="todo-row todo-row-need">
+                    <div className="todo-row-main">
+                      <p className="todo-row-title is-static">
+                        {localizeNotificationMessage(item.message)}
+                      </p>
+                      <p className="todo-row-meta">
+                        <span className="day-badge day-badge-now">{badge}</span>
+                      </p>
+                      <NotificationActionButtons notification={item} position={position} />
+                    </div>
+                  </div>
+                )
+              })}
             </section>
-          )}
-
-          {openItems.length === 0 && actionRows.length === 0 && substitutes.isSuccess && (
-            <p className="todo-empty">할 일이 없습니다</p>
-          )}
-
-          {doneItems.length > 0 && (
-            <section id="todo-group-done">
-              <button
-                type="button"
-                className="todo-group-toggle"
-                aria-expanded={completedOpen}
-                onClick={() => setCompletedOpen((open) => !open)}
-              >
-                완료 {doneItems.length}건 {completedOpen ? '▾' : '▸'}
-              </button>
-              {completedOpen && doneItems.map((todo) => (
-                <TodoLine
-                  key={todo.id}
-                  todo={todo}
-                  done
-                  checked
-                  canModify={canModifyTodo(todo, isAdmin, userId)}
-                  editing={editingId === todo.id}
-                  editValue={editValue}
-                  menuOpen={menuFor === todo.id}
-                  fault={rowFault?.id === todo.id ? rowFault : null}
-                  onCheck={() => onCheck(todo)}
-                  onStartEdit={() => startEdit(todo)}
-                  onEditChange={setEditValue}
-                  onSave={() => saveEdit(todo)}
-                  onCancelEdit={cancelEdit}
-                  onDelete={() => removeTodo(todo)}
-                  onToggleMenu={() => setMenuFor((current) => (current === todo.id ? null : todo.id))}
-                />
-              ))}
-            </section>
-          )}
+          </div>
         </div>
       )}
 

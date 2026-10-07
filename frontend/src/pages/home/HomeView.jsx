@@ -1,21 +1,23 @@
 import { useTodos, useNotifications, useSchoolTimetable, useSubstituteRequests } from "@/hooks";
 import ScheduleTodoTab from "@/pages/schedule/ScheduleTodoTab.jsx";
 import DayTimetableList from "@/components/schedule/DayTimetableList.jsx";
-import NotificationActionButtons from "@/components/schedule/NotificationActionButtons.jsx";
-import SubstituteRequestList from "@/components/schedule/SubstituteRequestList.jsx";
 import LoadError from "@/components/LoadError.jsx";
 import SectionHeader from "@/components/ui/SectionHeader.jsx";
 import { toISODate } from "@/utils";
 import { DOMAIN, localizeNotificationMessage, categoryLabel } from "@/constants/domainLabels.js";
 import {
-  filterActionableNotifications,
   filterBriefingNotifications,
-  filterTeacherBriefingNotifications,
   getNotificationAction,
 } from "@/utils/notificationActions.js";
 import { resolveHomeFocus } from "@/utils/homeFocus.js";
 
 const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
+/** 홈 미리보기: 넘치면 더보기로 해당 탭 이동 */
+const HOME_PREVIEW = {
+  timetable: 5,
+  todos: 3,
+  changes: 4,
+};
 
 function formatBriefTime(iso) {
   if (!iso) return "";
@@ -98,9 +100,6 @@ export default function HomeView({ user, navigate }) {
   const { requests: substituteRequests } = useSubstituteRequests({ role: userRole });
 
   const openTodos = (todos || []).filter((t) => !t.done && !t.completed);
-  const actionable = filterActionableNotifications(notifications || []);
-  const briefing = filterBriefingNotifications(notifications || []);
-  const teacherBriefing = filterTeacherBriefingNotifications(notifications || []);
   const todayClassCount = (timetable?.periods || []).filter((p) => p.subject && p.subject !== "공강").length;
   const hasClass = todayClassCount > 0;
   const unreadCount = (notifications || []).filter((n) => !n.read).length;
@@ -108,11 +107,12 @@ export default function HomeView({ user, navigate }) {
     const status = String(r.status || "").toUpperCase();
     return status === "PENDING" || status === "REQUESTED" || status === "OPEN";
   }).length;
-  const taskCount = openTodos.length + actionable.length;
+  // 보결·교환 등 확인 필요 건은 알림 사이드바로만 — 오늘 할 일에는 실제 할 일만
+  const taskCount = openTodos.length;
   const summaryLoading = todosLoading || notificationsLoading || timetableLoading;
   const summaryFailed = Boolean(todoError || notificationsError || timetableError);
-  const tasksLoading = todosLoading || notificationsLoading;
-  const tasksFailed = Boolean(todoError || notificationsError);
+  const tasksLoading = todosLoading;
+  const tasksFailed = Boolean(todoError);
   const pageError = todoError || notificationsError || timetableError;
   const retryPage = () => {
     if (todoError) refetchTodos();
@@ -121,23 +121,17 @@ export default function HomeView({ user, navigate }) {
   };
   const focus = resolveHomeFocus(timetable, now);
 
-  const briefs = [
-    ...teacherBriefing.map((n) => ({
-      key: `tb-${n.id ?? n.createdAt}`,
+  const briefs = filterBriefingNotifications(notifications || []).map((n) => {
+    const action = getNotificationAction(n);
+    return {
+      key: `br-${n.id ?? n.createdAt}`,
       time: formatBriefTime(n.createdAt),
-      type: categoryLabel(n.category) || "안내",
+      type: action?.label || categoryLabel(n.category) || "변동",
       text: localizeNotificationMessage(n.message),
-    })),
-    ...briefing.map((n) => {
-      const action = getNotificationAction(n);
-      return {
-        key: `br-${n.id ?? n.createdAt}`,
-        time: formatBriefTime(n.createdAt),
-        type: action?.label || categoryLabel(n.category) || "변동",
-        text: localizeNotificationMessage(n.message),
-      };
-    }),
-  ];
+    };
+  });
+  const visibleBriefs = briefs.slice(0, HOME_PREVIEW.changes);
+  const hiddenBriefs = Math.max(0, briefs.length - visibleBriefs.length);
 
   const typeBg = {
     [DOMAIN.SUBSTITUTE]: "var(--color-warning-subtle)",
@@ -206,7 +200,12 @@ export default function HomeView({ user, navigate }) {
             <p className="home-empty">오늘({weekdayLabel})은 수업이 없는 날입니다</p>
           )}
           {!timetableLoading && !timetableError && hasClass && (
-            <DayTimetableList timetable={timetable} now={now} />
+            <DayTimetableList
+              timetable={timetable}
+              now={now}
+              limit={HOME_PREVIEW.timetable}
+              onMore={() => navigate("timetable")}
+            />
           )}
         </section>
 
@@ -216,6 +215,7 @@ export default function HomeView({ user, navigate }) {
               title="오늘 할 일"
               meta={!tasksLoading && !tasksFailed ? taskCount : "—"}
               onAction={() => navigate("todos")}
+              actionLabel="전체 보기"
             />
             <div className="home-task-summary" aria-label="처리할 일">
               <div className="home-stat">
@@ -235,19 +235,13 @@ export default function HomeView({ user, navigate }) {
               </div>
             )}
             {!tasksLoading && !tasksFailed && (
-              <>
-                <SubstituteRequestList position={position} notifications={notifications} />
-                {actionable.slice(0, 3).map((item) => (
-                  <div key={item.id ?? item.createdAt} className="home-row list-row">
-                    <p className="home-item-title">{localizeNotificationMessage(item.message)}</p>
-                    {formatBriefTime(item.createdAt) && (
-                      <p className="home-item-meta">{formatBriefTime(item.createdAt)}</p>
-                    )}
-                    <NotificationActionButtons notification={item} position={position} />
-                  </div>
-                ))}
-                <ScheduleTodoTab embedded date={todayDateStr} userRole={userRole} />
-              </>
+              <ScheduleTodoTab
+                embedded
+                date={todayDateStr}
+                userRole={userRole}
+                limit={HOME_PREVIEW.todos}
+                onMore={() => navigate("todos")}
+              />
             )}
           </section>
 
@@ -256,6 +250,7 @@ export default function HomeView({ user, navigate }) {
               title="오늘 변동"
               meta={!notificationsLoading && !notificationsError ? briefs.length : "—"}
               onAction={() => navigate("history")}
+              actionLabel="전체 보기"
             />
             {notificationsLoading && (
               <div className="home-skeleton-list" aria-hidden="true">
@@ -271,7 +266,7 @@ export default function HomeView({ user, navigate }) {
               <p className="home-empty">오늘 변동이 없습니다</p>
             )}
             {!notificationsError &&
-              briefs.slice(0, 8).map((item) => (
+              visibleBriefs.map((item) => (
                 <div key={item.key} className="home-row home-change list-row">
                   <span className="home-change-time">{item.time}</span>
                   <span
@@ -286,6 +281,11 @@ export default function HomeView({ user, navigate }) {
                   <span className="home-change-text">{item.text}</span>
                 </div>
               ))}
+            {hiddenBriefs > 0 && (
+              <button type="button" className="home-more" onClick={() => navigate("history")}>
+                더보기 {hiddenBriefs}건
+              </button>
+            )}
           </section>
         </div>
       </div>
