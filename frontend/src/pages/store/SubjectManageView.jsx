@@ -1,6 +1,5 @@
 import { useRef, useState } from "react";
 import { createSubject } from "@/api";
-import LoadError from "@/components/LoadError.jsx";
 import { useCreateSubject, useDeleteSubject, useSubjects, useUpdateSubject } from "@/hooks";
 import { queryKeys } from "@/hooks/queryKeys.js";
 import { useQueryClient } from "@tanstack/react-query";
@@ -64,23 +63,18 @@ export default function SubjectManageView() {
       <p style={{ margin: "0 0 16px", fontSize: 13, color: "var(--color-text-muted)" }}>
         과목 이름을 등록합니다. 수업별 학급·교사 배정은 시간표 생성 단계에서 설정합니다.
       </p>
-      <form onSubmit={handleAdd} className="subject-manage-form">
+      <form onSubmit={handleAdd} className="subject-compose">
         <input
           value={name}
           onChange={(event) => setName(event.target.value)}
           placeholder="과목명"
-          className="subject-manage-input"
+          className="subject-compose-input"
         />
         <button type="submit" disabled={create.isPending || !name.trim()} style={primaryButton}>
           {create.isPending ? "추가 중..." : "과목 추가"}
         </button>
         <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={handleCsv} style={{ display: "none" }} />
-        <button
-          type="button"
-          disabled={csvPending}
-          className="home-text-button"
-          onClick={() => fileRef.current?.click()}
-        >
+        <button type="button" disabled={csvPending} onClick={() => fileRef.current?.click()} className="subject-csv-button">
           {csvPending ? "올리는 중..." : "CSV 올리기"}
         </button>
       </form>
@@ -95,7 +89,10 @@ export default function SubjectManageView() {
       )}
       {subjects.isLoading && <p style={{ color: "var(--color-text-muted)", fontSize: 13 }}>불러오는 중...</p>}
       {subjects.isError && (
-        <LoadError onRetry={() => subjects.refetch()} />
+        <p style={{ color: "var(--color-danger)", fontSize: 13 }}>
+          {getApiErrorMessage(subjects.error, "과목을 불러오지 못했습니다.")}{" "}
+          <button type="button" className="history-link" onClick={() => subjects.refetch()}>다시 시도</button>
+        </p>
       )}
       {!subjects.isLoading && !subjects.isError && rows.length === 0 && (
         <p style={{ color: "var(--color-text-muted)", fontSize: 13 }}>등록된 과목이 없습니다.</p>
