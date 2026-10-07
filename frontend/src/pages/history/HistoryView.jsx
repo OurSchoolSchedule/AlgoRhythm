@@ -336,7 +336,7 @@ export function HistoryView() {
                 }}
               >
                 {item}
-                <span>{counts[item]}}</span>
+                <span>{counts[item]}</span>
               </button>
             ))}
           </div>
