@@ -59,22 +59,27 @@ export default function SubjectManageView() {
 
   return (
     <div>
-      <h1 style={{ margin: "0 0 16px", fontSize: 20, fontWeight: 700, color: "var(--color-text)" }}>과목 관리</h1>
+      <h1 style={{ margin: "0 0 16px", fontSize: 20, fontWeight: 700, color: "var(--color-text)" }}>과목·수업 관리</h1>
       <p style={{ margin: "0 0 16px", fontSize: 13, color: "var(--color-text-muted)" }}>
-        과목은 이름만 저장됩니다. 학년·학급·시수·담당 교사는 이 화면에서 바꾸지 않습니다.
+        과목 이름을 등록합니다. 수업별 학급·교사 배정은 시간표 생성 단계에서 설정합니다.
       </p>
-      <form onSubmit={handleAdd} style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+      <form onSubmit={handleAdd} className="subject-manage-form">
         <input
           value={name}
           onChange={(event) => setName(event.target.value)}
           placeholder="과목명"
-          style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--color-border-input)" }}
+          className="subject-manage-input"
         />
         <button type="submit" disabled={create.isPending || !name.trim()} style={primaryButton}>
           {create.isPending ? "추가 중..." : "과목 추가"}
         </button>
         <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={handleCsv} style={{ display: "none" }} />
-        <button type="button" disabled={csvPending} onClick={() => fileRef.current?.click()} style={secondaryButton}>
+        <button
+          type="button"
+          disabled={csvPending}
+          className="home-text-button"
+          onClick={() => fileRef.current?.click()}
+        >
           {csvPending ? "올리는 중..." : "CSV 올리기"}
         </button>
       </form>
