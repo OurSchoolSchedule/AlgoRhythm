@@ -152,16 +152,12 @@ export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onL
   const profileQuery = isAdmin ? ownerProfile : staffProfile
   const profileLoading = teachers.isLoading || profileQuery.isLoading
   const profileFailed = teachers.isError || profileQuery.isError
-  const subjectLabel = profileLoading
-    ? '불러오는 중...'
-    : profileFailed
-      ? '불러오지 못했습니다'
-      : formatSubjects(assignment?.subjects)
-  const homeroomLabel = profileLoading
-    ? '불러오는 중...'
-    : profileFailed
-      ? '불러오지 못했습니다'
-      : formatHomeroom(assignment?.homeroomClasses)
+  const subjectLabel = profileLoading || profileFailed
+    ? '—'
+    : formatSubjects(assignment?.subjects)
+  const homeroomLabel = profileLoading || profileFailed
+    ? '—'
+    : formatHomeroom(assignment?.homeroomClasses)
   const displayName = me?.username || profile.label
   const { data: notifications = [] } = useNotifications()
   const hasUnread = notifications.some((item) => item?.isRead === false)
