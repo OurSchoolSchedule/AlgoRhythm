@@ -3,30 +3,81 @@
 :root {
   color-scheme: light;
 
-  --color-primary-50: #e8f7ee;
-  --color-primary-100: #c8ebd6;
-  --color-primary-200: #9dd9b8;
-  --color-primary-400: #42b876;
-  --color-primary-500: #27a859;
-  --color-primary-600: #1f8f4a;
-  --color-primary-700: #18753c;
+  /* 의미색 4단계: subtle / border / solid / text */
+  --color-primary-subtle: #e8f7ee;
+  --color-primary-border: #9dd9b8;
+  --color-primary-solid: #27a859;
+  --color-primary-text: #18753c;
 
-  --color-primary: var(--color-primary-500);
-  --color-primary-light: var(--color-primary-50);
-  --color-primary-muted: var(--color-primary-100);
+  --color-success-subtle: #e1f5ee;
+  --color-success-border: #9fd9c4;
+  --color-success-solid: #1d9e75;
+  --color-success-text: #0f6e56;
+
+  --color-warning-subtle: #faeeda;
+  --color-warning-border: #f0cf9c;
+  --color-warning-solid: #f09500;
+  --color-warning-text: #8a5300;
+
+  --color-danger-subtle: #faece7;
+  --color-danger-border: #f0b9a5;
+  --color-danger-solid: #d85a30;
+  --color-danger-text: #a63a16;
+
+  --color-info-subtle: #e6f1fb;
+  --color-info-border: #a9cdee;
+  --color-info-solid: #185fa5;
+  --color-info-text: #0f4478;
+
+  --color-primary: var(--color-primary-solid);
+  --color-primary-50: var(--color-primary-subtle);
+  --color-primary-100: var(--color-primary-subtle);
+  --color-primary-200: var(--color-primary-border);
+  --color-primary-400: #42b876;
+  --color-primary-500: var(--color-primary-solid);
+  --color-primary-600: #1f8f4a;
+  --color-primary-700: var(--color-primary-text);
+  --color-primary-light: var(--color-primary-subtle);
+  --color-primary-muted: var(--color-primary-subtle);
   --color-primary-dark: var(--color-primary-600);
-  /* 흰 글자 대비: #27a859 3.07:1, #1f8f4a 4.13:1, #18753c 5.76:1 */
-  --color-primary-button: var(--color-primary-700);
+  /* 흰 글자 대비: #27a859 3.07:1 → 버튼은 #18753c (5.76:1) */
+  --color-primary-button: var(--color-primary-text);
   --color-on-primary: #ffffff;
 
-  --color-success: #1d9e75;
-  --color-warning: #f09500;
-  --color-danger: #d85a30;
-  --color-info: #185fa5;
-  --color-success-light: color-mix(in srgb, var(--color-success) 14%, transparent);
-  --color-warning-light: color-mix(in srgb, var(--color-warning) 14%, transparent);
-  --color-danger-light: color-mix(in srgb, var(--color-danger) 14%, transparent);
-  --color-info-light: color-mix(in srgb, var(--color-info) 14%, transparent);
+  --color-success: var(--color-success-solid);
+  --color-warning: var(--color-warning-solid);
+  --color-danger: var(--color-danger-solid);
+  --color-info: var(--color-info-solid);
+  --color-success-light: var(--color-success-subtle);
+  --color-warning-light: var(--color-warning-subtle);
+  --color-danger-light: var(--color-danger-subtle);
+  --color-info-light: var(--color-info-subtle);
+
+  /* 과목 8색: bg / text / dot */
+  --color-subject-rose-bg: #fbe4e8;
+  --color-subject-rose-text: #8f2a45;
+  --color-subject-rose-dot: #e0607e;
+  --color-subject-sky-bg: #dff0fa;
+  --color-subject-sky-text: #0b5278;
+  --color-subject-sky-dot: #3a9bd0;
+  --color-subject-violet-bg: #ebe6f8;
+  --color-subject-violet-text: #4a3590;
+  --color-subject-violet-dot: #8a73d6;
+  --color-subject-yellow-bg: #f8f0cc;
+  --color-subject-yellow-text: #6b5400;
+  --color-subject-yellow-dot: #d9b32a;
+  --color-subject-lime-bg: #e8f3cf;
+  --color-subject-lime-text: #4a6412;
+  --color-subject-lime-dot: #8fb83a;
+  --color-subject-cyan-bg: #d6f1f2;
+  --color-subject-cyan-text: #0b5c63;
+  --color-subject-cyan-dot: #2fa4ad;
+  --color-subject-sand-bg: #f3e7da;
+  --color-subject-sand-text: #6b4423;
+  --color-subject-sand-dot: #c49563;
+  --color-subject-slate-bg: #e9ecf0;
+  --color-subject-slate-text: #3b4654;
+  --color-subject-slate-dot: #8794a5;
 
   --color-text: #1f2328;
   --color-text-secondary: #4b5563;
@@ -66,18 +117,9 @@
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
 }
 
+/* 다크: bg/subtle=18%+surface, text=65%+#fff, border=35%+surface */
 [data-theme='dark'] {
   color-scheme: dark;
-
-  --color-primary: var(--color-primary-400);
-  --color-primary-50: color-mix(in srgb, var(--color-primary-400) 18%, var(--color-surface));
-  --color-primary-100: color-mix(in srgb, var(--color-primary-400) 28%, var(--color-surface));
-  --color-primary-200: color-mix(in srgb, var(--color-primary-400) 40%, var(--color-surface));
-  --color-on-primary: var(--color-text);
-
-  /* 다크 표면에서 info #185fa5는 2.65:1, danger #d85a30은 4.46:1 */
-  --color-info: color-mix(in srgb, #185fa5 50%, #e8eaed);
-  --color-danger: color-mix(in srgb, #d85a30 90%, #e8eaed);
 
   --color-bg: #111316;
   --color-surface: #181b1f;
@@ -88,6 +130,79 @@
   --color-text: #e8eaed;
   --color-text-secondary: #b4bac2;
   --color-text-muted: #8b929b;
+  --color-on-primary: var(--color-text);
+
+  --color-primary-subtle: color-mix(in srgb, #27a859 18%, var(--color-surface));
+  --color-primary-border: color-mix(in srgb, #27a859 35%, var(--color-surface));
+  --color-primary-solid: #27a859;
+  --color-primary-text: color-mix(in srgb, #27a859 65%, #fff);
+
+  --color-success-subtle: color-mix(in srgb, #1d9e75 18%, var(--color-surface));
+  --color-success-border: color-mix(in srgb, #1d9e75 35%, var(--color-surface));
+  --color-success-solid: #1d9e75;
+  --color-success-text: color-mix(in srgb, #1d9e75 65%, #fff);
+
+  --color-warning-subtle: color-mix(in srgb, #f09500 18%, var(--color-surface));
+  --color-warning-border: color-mix(in srgb, #f09500 35%, var(--color-surface));
+  --color-warning-solid: #f09500;
+  --color-warning-text: color-mix(in srgb, #f09500 65%, #fff);
+
+  --color-danger-subtle: color-mix(in srgb, #d85a30 18%, var(--color-surface));
+  --color-danger-border: color-mix(in srgb, #d85a30 35%, var(--color-surface));
+  --color-danger-solid: #d85a30;
+  --color-danger-text: color-mix(in srgb, #d85a30 65%, #fff);
+
+  --color-info-subtle: color-mix(in srgb, #185fa5 18%, var(--color-surface));
+  --color-info-border: color-mix(in srgb, #185fa5 35%, var(--color-surface));
+  --color-info-solid: #185fa5;
+  --color-info-text: color-mix(in srgb, #185fa5 65%, #fff);
+
+  --color-primary: var(--color-primary-text);
+  --color-primary-50: var(--color-primary-subtle);
+  --color-primary-100: var(--color-primary-subtle);
+  --color-primary-200: var(--color-primary-border);
+  --color-primary-400: #42b876;
+  --color-primary-500: var(--color-primary-solid);
+  --color-primary-600: var(--color-primary-text);
+  --color-primary-700: var(--color-primary-text);
+  --color-primary-light: var(--color-primary-subtle);
+  --color-primary-muted: var(--color-primary-subtle);
+  --color-primary-dark: var(--color-primary-text);
+  --color-primary-button: color-mix(in srgb, #27a859 40%, var(--color-surface));
+
+  --color-success: var(--color-success-solid);
+  --color-warning: var(--color-warning-solid);
+  --color-danger: var(--color-danger-text);
+  --color-info: var(--color-info-text);
+  --color-success-light: var(--color-success-subtle);
+  --color-warning-light: var(--color-warning-subtle);
+  --color-danger-light: var(--color-danger-subtle);
+  --color-info-light: var(--color-info-subtle);
+
+  --color-subject-rose-bg: color-mix(in srgb, #e0607e 18%, var(--color-surface));
+  --color-subject-rose-text: color-mix(in srgb, #e0607e 65%, #fff);
+  --color-subject-rose-dot: #e0607e;
+  --color-subject-sky-bg: color-mix(in srgb, #3a9bd0 18%, var(--color-surface));
+  --color-subject-sky-text: color-mix(in srgb, #3a9bd0 65%, #fff);
+  --color-subject-sky-dot: #3a9bd0;
+  --color-subject-violet-bg: color-mix(in srgb, #8a73d6 18%, var(--color-surface));
+  --color-subject-violet-text: color-mix(in srgb, #8a73d6 65%, #fff);
+  --color-subject-violet-dot: #8a73d6;
+  --color-subject-yellow-bg: color-mix(in srgb, #d9b32a 18%, var(--color-surface));
+  --color-subject-yellow-text: color-mix(in srgb, #d9b32a 65%, #fff);
+  --color-subject-yellow-dot: #d9b32a;
+  --color-subject-lime-bg: color-mix(in srgb, #8fb83a 18%, var(--color-surface));
+  --color-subject-lime-text: color-mix(in srgb, #8fb83a 65%, #fff);
+  --color-subject-lime-dot: #8fb83a;
+  --color-subject-cyan-bg: color-mix(in srgb, #2fa4ad 18%, var(--color-surface));
+  --color-subject-cyan-text: color-mix(in srgb, #2fa4ad 65%, #fff);
+  --color-subject-cyan-dot: #2fa4ad;
+  --color-subject-sand-bg: color-mix(in srgb, #c49563 18%, var(--color-surface));
+  --color-subject-sand-text: color-mix(in srgb, #c49563 65%, #fff);
+  --color-subject-sand-dot: #c49563;
+  --color-subject-slate-bg: color-mix(in srgb, #8794a5 18%, var(--color-surface));
+  --color-subject-slate-text: color-mix(in srgb, #8794a5 65%, #fff);
+  --color-subject-slate-dot: #8794a5;
 }
 
 [data-theme='dark'] .home-hero-label,
@@ -95,7 +210,7 @@
 [data-theme='dark'] .home-text-button.home-accent,
 [data-theme='dark'] .history-link,
 [data-theme='dark'] .day-badge-now {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 *,
@@ -974,23 +1089,43 @@ body {
 }
 
 .day-badge-now {
-  color: var(--color-primary-600);
-  background: var(--color-primary-100);
+  color: var(--color-primary-text);
+  background: var(--color-primary-subtle);
 }
 
 .day-badge-change {
-  color: var(--color-info);
-  background: var(--color-info-light);
+  color: var(--color-info-text);
+  background: var(--color-info-subtle);
 }
 
 .day-badge-wait {
-  color: var(--color-warning);
-  background: var(--color-warning-light);
+  color: var(--color-warning-text);
+  background: var(--color-warning-subtle);
 }
 
 .day-badge-neutral {
   color: var(--color-text-secondary);
   background: var(--color-surface-hover);
+}
+
+.home-stat-value.is-zero {
+  color: var(--color-text-muted);
+}
+
+.home-stat-value.is-primary {
+  color: var(--color-primary-text);
+}
+
+.home-stat-value.is-warning {
+  color: var(--color-warning-text);
+}
+
+.home-stat-value.is-info {
+  color: var(--color-info-text);
+}
+
+.home-stat-value.is-danger {
+  color: var(--color-danger-text);
 }
 
 .history-head {
@@ -1997,7 +2132,7 @@ body {
 
 .tt-dom.is-today {
   border-radius: var(--radius-full);
-  background: var(--color-primary);
+  background: var(--color-primary-solid);
   color: var(--color-on-primary);
 }
 
@@ -2006,13 +2141,19 @@ body {
   color: var(--color-text-muted);
 }
 
-.tt-headcell.is-today,
-.tt-slot.is-today {
-  background: var(--color-primary-50);
+.tt-headcell.is-today {
+  background: var(--color-primary-subtle);
+  box-shadow: inset 0 -2px 0 var(--color-primary-solid);
+}
+
+/* 빈 오늘·현재 교시만 primary subtle. 수업 칸은 과목색 유지 */
+.tt-slot.is-today:not(.has-subject),
+.tt-slot.is-now:not(.has-subject) {
+  background: var(--color-primary-subtle);
 }
 
 .tt-headcell.is-off,
-.tt-slot.is-off {
+.tt-slot.is-off:not(.has-subject) {
   background: var(--color-surface-hover);
 }
 
@@ -2064,16 +2205,39 @@ body {
   font: inherit;
 }
 
-.tt-slot.is-past .tt-subject,
-.tt-slot.is-past .tt-sub,
+.tt-slot.is-past:not(.has-subject) .tt-subject,
+.tt-slot.is-past:not(.has-subject) .tt-sub,
 .tt-headcell.is-past .tt-dow,
 .tt-headcell.is-past .tt-dom {
   color: var(--color-text-muted);
 }
 
 .tt-slot.is-selected {
-  box-shadow: inset 0 0 0 1px var(--color-primary);
-  background: var(--color-primary-50);
+  box-shadow: inset 0 0 0 2px var(--color-primary-border);
+}
+
+.tt-slot.is-wait {
+  box-shadow: inset 0 0 0 2px var(--color-warning-border);
+}
+
+.tt-slot.is-change {
+  box-shadow: inset 0 0 0 2px var(--color-info-border);
+}
+
+.tt-slot.is-conflict {
+  box-shadow: inset 0 0 0 2px var(--color-danger-border);
+}
+
+.tt-slot.is-selected.is-wait {
+  box-shadow: inset 0 0 0 2px var(--color-warning-solid);
+}
+
+.tt-slot.is-selected.is-change {
+  box-shadow: inset 0 0 0 2px var(--color-info-solid);
+}
+
+.tt-slot.is-selected.is-conflict {
+  box-shadow: inset 0 0 0 2px var(--color-danger-solid);
 }
 
 .tt-slot.is-drag {
@@ -2097,7 +2261,12 @@ body {
   padding-right: 36px;
   font-size: var(--font-caption);
   font-weight: 600;
-  color: var(--color-text);
+  color: inherit;
+}
+
+.tt-slot.has-subject .tt-sub {
+  color: inherit;
+  opacity: 0.85;
 }
 
 .tt-sub,
@@ -2110,6 +2279,7 @@ body {
 
 .tt-free {
   color: var(--color-text-muted);
+  background: transparent;
 }
 
 .tt-badge {
@@ -2124,20 +2294,20 @@ body {
 
 .tt-badge.is-wait,
 .tt-legend .is-wait {
-  color: var(--color-warning);
-  background: var(--color-warning-light);
+  color: var(--color-warning-text);
+  background: var(--color-warning-subtle);
 }
 
 .tt-badge.is-change,
 .tt-legend .is-change {
-  color: var(--color-info);
-  background: var(--color-info-light);
+  color: var(--color-info-text);
+  background: var(--color-info-subtle);
 }
 
 .tt-badge.is-conflict,
 .tt-legend .is-conflict {
-  color: var(--color-danger);
-  background: var(--color-danger-light);
+  color: var(--color-danger-text);
+  background: var(--color-danger-subtle);
 }
 
 .tt-legend {

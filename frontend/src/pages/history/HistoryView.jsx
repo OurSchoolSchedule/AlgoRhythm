@@ -26,23 +26,23 @@ import {
 } from "@/utils/historyList.js";
 
 const typeColor = {
-  보결: "var(--color-warning)",
-  변경: "var(--color-info)",
-  생성: "var(--color-success)",
+  보결: "var(--color-warning-text)",
+  변경: "var(--color-info-text)",
+  생성: "var(--color-success-text)",
   수정: "var(--color-text)",
   교환: "var(--color-text)",
 };
 const typeBg = {
-  보결: "var(--color-warning-light)",
-  변경: "var(--color-info-light)",
-  생성: "var(--color-success-light)",
+  보결: "var(--color-warning-subtle)",
+  변경: "var(--color-info-subtle)",
+  생성: "var(--color-success-subtle)",
   수정: "var(--color-surface-hover)",
   교환: "var(--color-surface-hover)",
 };
 
 const STATUS_BADGE = {
-  미처리: { color: "var(--color-danger)", background: "var(--color-danger-light)" },
-  "대기 중": { color: "var(--color-warning)", background: "var(--color-warning-light)" },
+  미처리: { color: "var(--color-danger-text)", background: "var(--color-danger-subtle)" },
+  "대기 중": { color: "var(--color-warning-text)", background: "var(--color-warning-subtle)" },
   취소됨: { color: "var(--color-text-muted)", background: "var(--color-surface-hover)" },
 };
 

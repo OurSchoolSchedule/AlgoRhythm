@@ -43,11 +43,16 @@ function SectionHeader({ title, count, countReady = true, onViewAll }) {
   );
 }
 
+function homeStatTone(value, tone) {
+  if (value == null || Number(value) === 0) return "is-zero";
+  return `is-${tone}`;
+}
+
 function HomeStats({ lessons, substitutes, alerts, loading, failed }) {
   const items = [
-    { label: "오늘 수업", value: lessons },
-    { label: "이번 주 보결", value: substitutes },
-    { label: "알림", value: alerts },
+    { label: "오늘 수업", value: lessons, tone: "primary" },
+    { label: "이번 주 보결", value: substitutes, tone: "warning" },
+    { label: "알림", value: alerts, tone: "info" },
   ];
   return (
     <div className="home-stats" aria-label="요약">
@@ -57,7 +62,9 @@ function HomeStats({ lessons, substitutes, alerts, loading, failed }) {
           {loading ? (
             <SkeletonBlock width={36} height={28} />
           ) : (
-            <p className="home-stat-value">{failed ? "—" : item.value}</p>
+            <p className={`home-stat-value ${failed ? "is-zero" : homeStatTone(item.value, item.tone)}`}>
+              {failed ? "—" : item.value}
+            </p>
           )}
         </div>
       ))}
@@ -148,17 +155,17 @@ export default function HomeView({ user, navigate }) {
   ];
 
   const typeBg = {
-    [DOMAIN.SUBSTITUTE]: "var(--color-warning-soft)",
-    보결: "var(--color-warning-soft)",
-    [DOMAIN.SWAP]: "var(--color-info-soft)",
-    수업교환: "var(--color-info-soft)",
+    [DOMAIN.SUBSTITUTE]: "var(--color-warning-subtle)",
+    보결: "var(--color-warning-subtle)",
+    [DOMAIN.SWAP]: "var(--color-info-subtle)",
+    수업교환: "var(--color-info-subtle)",
     안내: "var(--color-surface-hover)",
   };
   const typeColor = {
-    [DOMAIN.SUBSTITUTE]: "var(--color-warning)",
-    보결: "var(--color-warning)",
-    [DOMAIN.SWAP]: "var(--color-info)",
-    수업교환: "var(--color-info)",
+    [DOMAIN.SUBSTITUTE]: "var(--color-warning-text)",
+    보결: "var(--color-warning-text)",
+    [DOMAIN.SWAP]: "var(--color-info-text)",
+    수업교환: "var(--color-info-text)",
     안내: "var(--color-text-muted)",
   };
 
@@ -233,7 +240,9 @@ export default function HomeView({ user, navigate }) {
                 {tasksLoading ? (
                   <SkeletonBlock width={36} height={28} />
                 ) : (
-                  <p className="home-stat-value">{tasksFailed ? "—" : taskCount}</p>
+                  <p className={`home-stat-value ${tasksFailed ? "is-zero" : homeStatTone(taskCount, "warning")}`}>
+                    {tasksFailed ? "—" : taskCount}
+                  </p>
                 )}
               </div>
             </div>

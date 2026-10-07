@@ -1,10 +1,22 @@
 import { SCHOOL_PERIOD_SLOTS } from '@/constants/schoolTimetable.js'
 import { formatClassName } from '@/utils/homeFocus.js'
+import { getPeriodFromDatetime } from '@/utils/schoolTimetable.js'
+import { resolveSubjectColor } from '@/utils/subjectColor.js'
 import {
   boardPeriods,
   cellSlotKey,
   periodsWithLunch,
 } from '@/utils/timetableBoard.js'
+
+const STATUS_META = {
+  wait: { label: '대기', className: 'is-wait' },
+  대기: { label: '대기', className: 'is-wait' },
+  대기중: { label: '대기', className: 'is-wait' },
+  change: { label: '변경', className: 'is-change' },
+  변경: { label: '변경', className: 'is-change' },
+  conflict: { label: '충돌', className: 'is-conflict' },
+  충돌: { label: '충돌', className: 'is-conflict' },
+}
 
 function clockOf(period) {
   const slot = SCHOOL_PERIOD_SLOTS.find((item) => item.period === period)
@@ -25,6 +37,12 @@ function subline(cell, detailMode) {
   return klass
 }
 
+function statusMeta(cell) {
+  const raw = cell?.status || cell?.cellStatus || cell?.flag
+  if (!raw) return null
+  return STATUS_META[String(raw)] || STATUS_META[String(raw).toLowerCase()] || null
+}
+
 /**
  * @param {Object} props
  * @param {ReturnType<import('@/utils/schoolTimetable.js').buildSchoolTimetable>} props.timetable
@@ -40,6 +58,7 @@ export default function WeeklyTimetableGrid({
   hoverKey = '',
   hoverReason = '',
   showFreeLabel = true,
+  now = null,
   onSelect,
   onDragStart,
   onDragHover,
@@ -48,6 +67,7 @@ export default function WeeklyTimetableGrid({
 }) {
   const periods = boardPeriods(timetable.periods, timetable.byDay)
   const rows = periodsWithLunch(periods)
+  const currentPeriod = timetable.currentPeriod ?? getPeriodFromDatetime(now || new Date())
 
   return (
     <div className="tt-board show-scrollbar">
@@ -74,8 +94,9 @@ export default function WeeklyTimetableGrid({
             </div>
           )
         }
+        const isCurrentPeriod = currentPeriod != null && row.period === currentPeriod
         return (
-          <div key={row.period} className="tt-period-row">
+          <div key={row.period} className={`tt-period-row${isCurrentPeriod ? ' is-now-row' : ''}`}>
             <div className="tt-time">
               <span className="tt-period-num">{row.period}교시</span>
               <span className="tt-period-clock">{clockOf(row.period)}</span>
@@ -86,21 +107,40 @@ export default function WeeklyTimetableGrid({
               const dragging = dragFrom && cellSlotKey(dragFrom.day, dragFrom.period) === key
               const hovered = hoverKey === key && dragFrom
               const rejected = hovered && hoverReason
+              const isNowSlot = Boolean(day.isToday && isCurrentPeriod)
+              const status = cell ? statusMeta(cell) : null
+              const subjectColor = cell
+                ? resolveSubjectColor({
+                    id: cell.subjectId,
+                    name: cell.subject,
+                  })
+                : null
               const className = [
                 'tt-slot',
                 day.isToday ? 'is-today' : '',
+                isNowSlot ? 'is-now' : '',
                 day.holiday ? 'is-off' : '',
                 day.isPast ? 'is-past' : '',
                 selectedKey === key ? 'is-selected' : '',
                 dragging ? 'is-drag' : '',
                 hovered && !rejected ? 'is-allow' : '',
                 rejected ? 'is-reject' : '',
+                cell ? 'has-subject' : '',
+                status ? status.className : '',
               ].filter(Boolean).join(' ')
+              const style = subjectColor
+                ? {
+                    background: subjectColor.bg,
+                    color: subjectColor.text,
+                    '--tt-subject-text': subjectColor.text,
+                  }
+                : undefined
               return (
                 <button
                   key={key}
                   type="button"
                   className={className}
+                  style={style}
                   draggable={editing && Boolean(cell)}
                   title={rejected ? hoverReason : undefined}
                   onClick={() => onSelect?.({ day: day.key, period: row.period })}
@@ -125,9 +165,10 @@ export default function WeeklyTimetableGrid({
                     <>
                       <span className="tt-subject">{cell.subject || '수업'}</span>
                       {subline(cell, detailMode) ? <span className="tt-sub">{subline(cell, detailMode)}</span> : null}
+                      {status ? <span className={`tt-badge ${status.className}`}>{status.label}</span> : null}
                     </>
                   ) : showFreeLabel ? (
-                    <span className="tt-free">공강</span>
+                    <span className="tt-free">—</span>
                   ) : null}
                 </button>
               )
