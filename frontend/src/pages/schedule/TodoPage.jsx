@@ -12,10 +12,11 @@ import {
   useSubstituteRequests,
   useRespondExtraShift,
   useApproveExtraShift,
+  useRespondShiftSwap,
+  useApproveShiftSwap,
 } from '@/hooks'
 import LoadError from '@/components/LoadError.jsx'
 import TodoCompose from '@/components/schedule/TodoCompose.jsx'
-import NotificationActionButtons from '@/components/schedule/NotificationActionButtons.jsx'
 import SectionHeader from '@/components/ui/SectionHeader.jsx'
 import { localizeNotificationMessage, categoryLabel } from '@/constants/domainLabels.js'
 import {
@@ -145,6 +146,8 @@ export default function TodoPage({ date, userRole }) {
   const substitutes = useSubstituteRequests('OPEN')
   const respond = useRespondExtraShift()
   const approve = useApproveExtraShift()
+  const respondSwap = useRespondShiftSwap()
+  const approveSwap = useApproveShiftSwap()
   const createTodo = useCreateTodo()
   const updateTodo = useUpdateTodo()
   const deleteTodo = useDeleteTodo()
@@ -605,23 +608,87 @@ export default function TodoPage({ date, userRole }) {
 
               {!needFailed && actionableExtras.map((item) => {
                 const action = getNotificationAction(item, position)
+                if (!action) return null
+                const rowId = `act-${item.id ?? item.createdAt}`
                 const badge =
-                  action?.kind?.startsWith('shift-swap')
+                  action.kind.startsWith('shift-swap')
                     ? '교환'
-                    : action?.kind?.startsWith('extra-shift')
+                    : action.kind.startsWith('extra-shift')
                       ? '보결'
                       : categoryLabel(item.category) || '변경'
+                const isManager =
+                  action.kind === 'shift-swap-approve' || action.kind === 'extra-shift-approve'
+                const pending =
+                  respondSwap.isPending ||
+                  approveSwap.isPending ||
+                  respond.isPending ||
+                  approve.isPending
+                const fault = rowFault?.id === rowId ? rowFault : null
+                const run = (decision) => {
+                  setRowFault(null)
+                  const onError = (error) => setRowFault({
+                    id: rowId,
+                    message: getApiErrorMessage(error, '처리하지 못했습니다.'),
+                    retry: () => run(decision),
+                  })
+                  if (action.kind === 'shift-swap-respond') {
+                    respondSwap.mutate(
+                      { requestId: action.requestId, payload: { action: decision } },
+                      { onError },
+                    )
+                  } else if (action.kind === 'shift-swap-approve') {
+                    approveSwap.mutate(
+                      { requestId: action.requestId, payload: { action: decision } },
+                      { onError },
+                    )
+                  } else if (action.kind === 'extra-shift-respond') {
+                    respond.mutate(
+                      { requestId: action.requestId, payload: { action: decision } },
+                      { onError },
+                    )
+                  } else if (action.kind === 'extra-shift-approve') {
+                    approve.mutate(
+                      { responseId: action.responseId, payload: { action: decision } },
+                      { onError },
+                    )
+                  }
+                }
                 return (
-                  <div key={item.id ?? item.createdAt} className="todo-row todo-row-need">
-                    <div className="todo-row-main">
-                      <p className="todo-row-title is-static">
-                        {localizeNotificationMessage(item.message)}
-                      </p>
-                      <p className="todo-row-meta">
-                        <span className="day-badge day-badge-now">{badge}</span>
-                      </p>
-                      <NotificationActionButtons notification={item} position={position} />
+                  <div key={item.id ?? item.createdAt}>
+                    <div className="todo-row">
+                      <div className="todo-row-main">
+                        <p className="todo-row-title is-static">
+                          {localizeNotificationMessage(item.message)}
+                        </p>
+                        <p className="todo-row-meta">
+                          <span className="day-badge day-badge-now">{badge}</span>
+                        </p>
+                      </div>
+                      <div className="todo-inline-actions">
+                        <button
+                          type="button"
+                          className="is-primary"
+                          disabled={pending}
+                          onClick={() => run(isManager ? 'APPROVE' : 'ACCEPT')}
+                        >
+                          {isManager ? '승인' : '수락'}
+                        </button>
+                        <button
+                          type="button"
+                          className="is-secondary"
+                          disabled={pending}
+                          onClick={() => run('REJECT')}
+                        >
+                          거절
+                        </button>
+                      </div>
                     </div>
+                    {fault && (
+                      <p className="todo-row-error">
+                        {fault.message}{' '}
+                        <button type="button" className="todo-retry" onClick={fault.retry}>다시 시도</button>
+                      </p>
+                    )}
                   </div>
                 )
               })}
