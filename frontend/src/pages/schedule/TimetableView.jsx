@@ -107,6 +107,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
   const deleteTimetable = useDeleteTimetable()
   const [selected, setSelected] = useState(null)
   const [requestMode, setRequestMode] = useState('')
+  const [activeLesson, setActiveLesson] = useState(null)
   const [creating, setCreating] = useState(false)
   const [dragFrom, setDragFrom] = useState(null)
   const dragRef = useRef(null)
@@ -146,6 +147,29 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
   const selectedLessons = lessonsOf(selectedCell)
   const selectedCrowded = selectedLessons.length > 1
   const selectedDate = days.find((day) => day.key === selected?.day)
+  const actionLesson = selectedCrowded ? activeLesson : selectedCell
+  const actionDateIso = selectedDate ? toISODate(selectedDate.date) : toISODate()
+  const actionPeriodLabel = selected ? `${selected.period}교시` : ''
+  const actionLessonLabel = actionLesson
+    ? [
+        formatClassName(actionLesson.class),
+        actionLesson.subject,
+        actionLesson.teacher,
+        actionPeriodLabel,
+      ].filter(Boolean).join(' · ')
+    : ''
+
+  const clearDetail = () => {
+    setSelected(null)
+    setRequestMode('')
+    setActiveLesson(null)
+    setCreating(false)
+  }
+
+  const startLessonRequest = (lesson, mode) => {
+    setActiveLesson(lesson)
+    setRequestMode(mode)
+  }
   const hoverReason = dragFrom && hover
     ? dropRejection(shown.byDay, dragFrom, hover, days.find((day) => day.key === hover.day)?.holiday || '')
     : ''
@@ -186,7 +210,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
   const goWeek = (delta) => {
     requestLeave(() => {
       setWeekStart((current) => shiftSchoolWeek(current, delta))
-      setSelected(null)
+      clearDetail()
     })
   }
 
@@ -232,9 +256,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
     if (!selectedCell?.id) return
     try {
       await deleteTimetable.mutateAsync(selectedCell.id)
-      setSelected(null)
-      setRequestMode('')
-      setCreating(false)
+      clearDetail()
       setSaveError('')
     } catch (error) {
       setSaveError(getApiErrorMessage(error, '수업을 삭제하지 못했습니다.'))
@@ -530,6 +552,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
             onSelect={(slot) => {
               setSelected(slot)
               setRequestMode('')
+              setActiveLesson(null)
               setCreating(Boolean(SHOW_EDIT && editing && isAdmin && !shown.byDay?.[slot.day]?.[slot.period]))
             }}
             onDragStart={(slot) => {
@@ -566,7 +589,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
 
       {selected && (
         <>
-          <button type="button" className="history-scrim" aria-label="상세 닫기" onClick={() => setSelected(null)} />
+          <button type="button" className="history-scrim" aria-label="상세 닫기" onClick={clearDetail} />
           <aside className="tt-detail" role="dialog" aria-modal="true" aria-label="수업 상세">
             <div className="tt-detail-head">
               <p className="tt-detail-kicker">
@@ -574,7 +597,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
                 {` · ${selected.period}교시`}
                 {periodRange(selectedCell, selected.period) ? ` · ${periodRange(selectedCell, selected.period)}` : ''}
               </p>
-              <button type="button" className="panel-close" onClick={() => setSelected(null)}>닫기</button>
+              <button type="button" className="panel-close" onClick={clearDetail}>닫기</button>
             </div>
             <h2>
               {selectedCrowded
@@ -583,15 +606,41 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
             </h2>
             {selectedCrowded ? (
               <ul className="tt-lesson-list">
-                {selectedLessons.map((lesson) => (
-                  <li key={lesson.id ?? `${lesson.class}-${lesson.subject}`}>
-                    <span className="tt-lesson-main">
-                      <span className="tt-lesson-class">{formatClassName(lesson.class) || '학급 없음'}</span>
-                      <span className="tt-lesson-subject">{lesson.subject || '수업'}</span>
-                    </span>
-                    <span className="tt-lesson-teacher">{lesson.teacher || '교사 없음'}</span>
-                  </li>
-                ))}
+                {selectedLessons.map((lesson) => {
+                  const isActive = activeLesson?.id != null && lesson.id === activeLesson.id
+                  return (
+                    <li
+                      key={lesson.id ?? `${lesson.class}-${lesson.subject}`}
+                      className={isActive ? 'is-active' : undefined}
+                    >
+                      <span className="tt-lesson-main">
+                        <span className="tt-lesson-class">{formatClassName(lesson.class) || '학급 없음'}</span>
+                        <span className="tt-lesson-subject">{lesson.subject || '수업'}</span>
+                      </span>
+                      <div className="tt-lesson-aside">
+                        <span className="tt-lesson-teacher">{lesson.teacher || '교사 없음'}</span>
+                        <div className="todo-inline-actions">
+                          <button
+                            type="button"
+                            className="is-primary"
+                            disabled={lesson.id == null}
+                            onClick={() => startLessonRequest(lesson, 'substitute')}
+                          >
+                            보결
+                          </button>
+                          <button
+                            type="button"
+                            className="is-secondary"
+                            disabled={lesson.id == null}
+                            onClick={() => startLessonRequest(lesson, 'swap')}
+                          >
+                            교환
+                          </button>
+                        </div>
+                      </div>
+                    </li>
+                  )
+                })}
               </ul>
             ) : selectedCell ? (
               <dl className="tt-detail-list">
@@ -605,27 +654,39 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
                 period={selected.period}
                 academicYear={useTermFilter ? academicYear : selectedCell?.academicYear ?? academicYear}
                 semester={useTermFilter ? semester : selectedCell?.semester ?? semester}
-                onCreated={() => {
-                  setSelected(null)
-                  setCreating(false)
-                }}
-                onCancel={() => {
-                  setSelected(null)
-                  setCreating(false)
-                }}
+                onCreated={clearDetail}
+                onCancel={clearDetail}
               />
-            ) : selectedCell && !selectedCrowded && requestMode === 'substitute' ? (
+            ) : actionLesson && requestMode === 'substitute' ? (
               <CreateSubstituteForm
-                timetableId={selectedCell.id}
-                defaultDate={selectedDate ? toISODate(selectedDate.date) : toISODate()}
-                periodLabel={`${selected.period}교시`}
+                key={`sub-${actionLesson.id}`}
+                timetableId={actionLesson.id}
+                defaultDate={actionDateIso}
+                periodLabel={actionPeriodLabel}
               />
-            ) : selectedCell && !selectedCrowded && requestMode === 'swap' ? (
-              <CreateShiftSwapForm />
+            ) : actionLesson && requestMode === 'swap' ? (
+              <CreateShiftSwapForm
+                key={`swap-${actionLesson.id}-${actionDateIso}`}
+                initialRequesterTimetableId={actionLesson.id}
+                initialRequesterDate={actionDateIso}
+                initialRequesterLabel={actionLessonLabel}
+              />
             ) : selectedCell && !selectedCrowded ? (
               <div className="tt-actions">
-                <button type="button" className="tt-secondary" onClick={() => setRequestMode('substitute')}>대타 요청</button>
-                <button type="button" className="tt-secondary" onClick={() => setRequestMode('swap')}>교환 요청</button>
+                <button
+                  type="button"
+                  className="tt-secondary"
+                  onClick={() => startLessonRequest(selectedCell, 'substitute')}
+                >
+                  대타 요청
+                </button>
+                <button
+                  type="button"
+                  className="tt-secondary"
+                  onClick={() => startLessonRequest(selectedCell, 'swap')}
+                >
+                  교환 요청
+                </button>
                 {isAdmin && editing ? (
                   <button
                     type="button"

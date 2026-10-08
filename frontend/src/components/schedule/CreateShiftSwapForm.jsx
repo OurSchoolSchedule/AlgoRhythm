@@ -32,18 +32,28 @@ const fieldStyle = {
   fontSize: 12,
 }
 
-export default function CreateShiftSwapForm() {
+/**
+ * @param {{ initialRequesterTimetableId?: number | string | null, initialRequesterDate?: string | null, initialRequesterLabel?: string | null }} [props]
+ */
+export default function CreateShiftSwapForm({
+  initialRequesterTimetableId = null,
+  initialRequesterDate = null,
+  initialRequesterLabel = null,
+} = {}) {
   const mineQuery = useMyTimetable()
   const schoolQuery = useSchoolTimetableList()
   const createSwap = useCreateShiftSwapRequest()
   const today = toISODate()
-  const [requesterTimetableId, setRequesterTimetableId] = useState('')
-  const [requesterDate, setRequesterDate] = useState(today)
+  const [requesterTimetableId, setRequesterTimetableId] = useState(
+    initialRequesterTimetableId != null ? String(initialRequesterTimetableId) : '',
+  )
+  const [requesterDate, setRequesterDate] = useState(initialRequesterDate || today)
   const [receiverTimetableId, setReceiverTimetableId] = useState('')
   const [receiverDate, setReceiverDate] = useState(today)
   const [reason, setReason] = useState('')
 
   const mySlots = mineQuery.data ?? []
+  const requesterInMine = mySlots.some((slot) => String(slot.id) === String(requesterTimetableId))
   const otherSlots = useMemo(() => {
     const selected = Number(requesterTimetableId)
     return (schoolQuery.data ?? []).filter((slot) => slot.id !== selected)
@@ -91,12 +101,12 @@ export default function CreateShiftSwapForm() {
           내 시간표를 불러오지 못했습니다. 새로고침 후 다시 확인하세요.
         </p>
       )}
-      {!mineQuery.isLoading && !mineQuery.isError && mySlots.length === 0 && (
+      {!mineQuery.isLoading && !mineQuery.isError && mySlots.length === 0 && !requesterTimetableId && (
         <p style={{ margin: 0, fontSize: 12, color: 'var(--color-text-muted)' }}>
           등록된 내 수업이 없습니다. 시간표가 등록되면 교환을 요청할 수 있습니다.
         </p>
       )}
-      {mySlots.length > 0 && (
+      {(mySlots.length > 0 || requesterTimetableId) && (
         <>
           <label style={{ display: 'block', fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 4 }}>
             내 수업
@@ -110,6 +120,11 @@ export default function CreateShiftSwapForm() {
             style={fieldStyle}
           >
             <option value="">수업 선택</option>
+            {!requesterInMine && requesterTimetableId ? (
+              <option value={requesterTimetableId}>
+                {initialRequesterLabel || `선택한 수업 (#${requesterTimetableId})`}
+              </option>
+            ) : null}
             {mySlots.map((slot) => (
               <option key={slot.id} value={slot.id}>
                 {timetableLabel(slot)}

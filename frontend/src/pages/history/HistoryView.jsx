@@ -109,7 +109,8 @@ function HistoryDetail({ record, onClose }) {
   );
 }
 
-export function HistoryView() {
+export function HistoryView({ userRole = "worker" }) {
+  const isAdmin = userRole === "admin";
   const historyQuery = useSubstituteHistory();
   const swapQuery = useMySwapRequests();
   const historyData = useMemo(() => {
@@ -211,7 +212,7 @@ export function HistoryView() {
           {(record.actor || record.time) ? (
             <span className="history-actor">{[record.actor, record.time].filter(Boolean).join(" · ")}</span>
           ) : null}
-          {record.status === "미처리" && (
+          {isAdmin && record.status === "미처리" && (
             <button
               type="button"
               className="history-link"

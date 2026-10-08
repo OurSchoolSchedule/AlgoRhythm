@@ -83,7 +83,7 @@ export default function App() {
       case 'subject-manage':
         return <SubjectManageView />
       case 'history':
-        return <HistoryView navigate={navigate} />
+        return <HistoryView navigate={navigate} userRole={userRole} />
       case 'admin':
         return <AdminView navigate={navigate} />
       default:
