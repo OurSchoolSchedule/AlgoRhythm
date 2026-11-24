@@ -8,6 +8,7 @@ import { resolve } from 'node:path'
 import { stripVTControlCharacters } from 'node:util'
 import { afterAll, beforeAll, expect, it } from 'vitest'
 import client, { API_BASE_URL } from './client.js'
+import { getGenerationStatus, submitGeneration } from './generationJobs'
 import { validateTeachingLoad } from './loadValidation'
 import { clearTokens, setTokens } from './tokenStorage.js'
 
@@ -16,6 +17,9 @@ const path = '/api/v2/terms/547001/load-imports/validate?forGeneration=true'
 const filename = 'teaching_load_42.xlsx'
 const aliases = { 공수1: 20 }
 const validatedLoadId = '375d0754-c375-42c6-b1f0-f630a9693e37'
+const generationPath = '/api/v2/terms/547001/generations'
+const jobId = '7eb15cc6-193f-4519-9704-50035ae28371'
+const statusUrl = generationPath + '/' + jobId
 let vite: ChildProcess
 let upstream: Server
 let bytes: Uint8Array<ArrayBuffer>
@@ -30,6 +34,20 @@ beforeAll(async () => {
   upstream = createServer(async (req, res) => {
     res.setHeader('Content-Type', 'application/json')
     try {
+      if (req.method === 'POST' && req.url === generationPath) {
+        expect(req.headers.authorization).toBe('Bearer generation-test')
+        const chunks: Buffer[] = []
+        for await (const chunk of req) chunks.push(chunk)
+        expect(JSON.parse(Buffer.concat(chunks).toString())).toEqual({ validatedLoadId })
+        res.writeHead(202, { Location: statusUrl, 'Retry-After': '2' })
+        return res.end(JSON.stringify({ jobId, state: 'QUEUED', expectedPublishRev: 0, statusUrl }))
+      }
+      if (req.method === 'GET' && req.url === statusUrl) {
+        expect(req.headers.authorization).toBe('Bearer generation-test')
+        return res.end(
+          JSON.stringify({ jobId, state: 'RUNNING', expectedPublishRev: 0, result: null }),
+        )
+      }
       if (req.method === 'HEAD' && req.url === '/api/transport-probe') {
         probeHeader = req.headers['idempotency-key']
         res.writeHead(204)
@@ -150,4 +168,16 @@ it('로컬 프록시는 호출자가 지정한 Idempotency-Key를 그대로 전�
   const key = '177229cb-b51e-4c21-9757-7f4790122000'
   await client.head('/api/transport-probe', { headers: { 'Idempotency-Key': key } })
   expect(probeHeader).toBe(key)
+})
+
+it('로컬 Vite를 통해 편성 작업을 접수하고 202의 상대 statusUrl을 그대로 조회한다', async () => {
+  setTokens({ accessToken: 'generation-test', userId: 42 })
+  try {
+    const receipt = await submitGeneration(547001, { validatedLoadId })
+    expect(receipt.statusUrl).toBe(statusUrl)
+    const job = await getGenerationStatus(547001, receipt)
+    expect(job).toEqual({ jobId, state: 'RUNNING', expectedPublishRev: 0, result: null })
+  } catch (error) {
+    throw receiverError ?? error
+  }
 })

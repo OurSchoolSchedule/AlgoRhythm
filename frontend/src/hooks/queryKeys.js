@@ -34,6 +34,8 @@ export const queryKeys = {
     school: () => ['unavailability', 'school'],
   },
   schedule: {
+    generationAccepted: (termId, scope) => ['schedule', 'generation-accepted', termId, scope],
+    generationJob: (termId, jobId, scope) => ['schedule', 'generation-job', termId, jobId, scope],
     submissionStatus: () => ['schedule', 'without-availability'],
     candidates: (key) => ['schedule', 'candidates', key],
   },

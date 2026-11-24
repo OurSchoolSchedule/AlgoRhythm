@@ -1,16 +1,10 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { validateTeachingLoad } from '@/api/loadValidation'
-import { getSessionVersion } from '@/api/tokenStorage.js'
-import type { HomeTerm } from '@/types/datedLesson'
-import type { ActiveSchoolDto } from '@/types/home'
 import type { LoadUpload } from '@/types/loadValidation'
-import { homeAccess } from '@/utils/homeAccess'
 import { uploadProgress, validatedProgress, type ScheduleProgress } from '@/utils/scheduleProgress'
-import { useHomeSession } from './useHomeSession'
-import { queryKeys } from './queryKeys.js'
+import { useAdminTerm, type SchoolTerm } from './useAdminTerm'
 
-type Term = Pick<HomeTerm, 'schoolId' | 'termId'>
 interface Attempt {
   input: LoadUpload
   scope: string
@@ -18,18 +12,11 @@ interface Attempt {
   controller: AbortController
 }
 
-export function useLoadValidation(term: Term | null) {
-  const session = useHomeSession()
-  const cache = useQueryClient()
-  const termId = term?.termId
-  const canValidate =
-    term !== null &&
-    session.access.actions.generate &&
-    session.school?.schoolId === term.schoolId &&
-    Number.isSafeInteger(term.termId) &&
-    term.termId > 0
+export function useLoadValidation(term: SchoolTerm | null) {
+  const { session, termId, assertAccess } = useAdminTerm(term)
+  const canValidate = termId !== null
   const scope = canValidate
-    ? `${session.identity.generation}/${session.userId}/${term.schoolId}/${term.termId}`
+    ? `${session.identity.generation}/${session.userId}/${session.scope.schoolId}/${termId}`
     : null
   const current = useRef<{ scope: string | null; controller?: AbortController }>({ scope: null })
   const [transfer, setTransfer] = useState<{
@@ -51,17 +38,7 @@ export function useLoadValidation(term: Term | null) {
     mutationFn: async ({ input, termId, controller }: Attempt) => {
       const { signal } = controller
       signal.throwIfAborted()
-      // React Query can start a mutation after the render that enabled the button.
-      const active = cache.getQueryState<ActiveSchoolDto>(queryKeys.home.active(session.identity))
-      if (
-        active?.status !== 'success' ||
-        active.data?.schoolId !== term?.schoolId ||
-        !homeAccess(session.userId !== null, active.data ?? null).actions.generate ||
-        session.identity.generation !== getSessionVersion() ||
-        cache.isMutating({ mutationKey: queryKeys.home.switchSchool(session.identity) })
-      ) {
-        throw new Error('활성 학교 또는 로그인 계정이 변경되었습니다.')
-      }
+      assertAccess()
       const result = await validateTeachingLoad(termId, input, {
         signal,
         onUploadProgress: ({ loaded, total, lengthComputable }) => {
