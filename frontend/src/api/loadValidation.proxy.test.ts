@@ -9,6 +9,7 @@ import { stripVTControlCharacters } from 'node:util'
 import { afterAll, beforeAll, expect, it } from 'vitest'
 import client, { API_BASE_URL } from './client.js'
 import { getGenerationStatus, submitGeneration } from './generationJobs'
+import { approveLessonChange } from './lessonChanges'
 import { publishCandidate } from './publications'
 import { validateTeachingLoad } from './loadValidation'
 import { clearTokens, setTokens } from './tokenStorage.js'
@@ -35,12 +36,47 @@ let refreshes = 0
 let uploads = 0
 let expired = 0
 let probeHeader: string | string[] | undefined
+const approvalBodies: unknown[] = []
+const approvalKeys: (string | string[] | undefined)[] = []
 
 beforeAll(async () => {
   bytes = new Uint8Array(await readFile(resolve('src/test/fixtures/school42', filename)))
   upstream = createServer(async (req, res) => {
     res.setHeader('Content-Type', 'application/json')
     try {
+      if (req.method === 'POST' && req.url === '/api/v2/terms/547001/lesson-changes/101/approval') {
+        const chunks: Buffer[] = []
+        for await (const chunk of req) chunks.push(chunk)
+        approvalBodies.push(JSON.parse(Buffer.concat(chunks).toString()))
+        approvalKeys.push(req.headers['idempotency-key'])
+        if (req.headers.authorization === 'Bearer approval-expired') {
+          res.writeHead(401)
+          return res.end('{}')
+        }
+        expect(req.headers.authorization).toBe('Bearer approval-renewed')
+        return res.end(
+          JSON.stringify({
+            requestId: 101,
+            requestRev: 2,
+            state: 'APPROVED',
+            lessons: [
+              {
+                id: 51,
+                rev: 1,
+                originId: 31,
+                termId: 547001,
+                versionId: 83,
+                classId: 30,
+                subjectId: 20,
+                date: '2026-11-23',
+                originDate: '2026-11-23',
+                planned: { teacherId: 10, periodId: 1 },
+                actual: { teacherId: 19, periodId: 1 },
+              },
+            ],
+          }),
+        )
+      }
       if (req.method === 'POST' && req.url === '/api/v2/terms/547001/publications') {
         expect(req.headers.authorization).toBe('Bearer publication-test')
         const chunks: Buffer[] = []
@@ -69,6 +105,9 @@ beforeAll(async () => {
         return res.end()
       }
       if (req.url === '/api/auth/refresh-token') {
+        if (req.headers.authorization === 'Bearer approval-refresh') {
+          return res.end(JSON.stringify({ accessToken: 'approval-renewed' }))
+        }
         expect(req.headers.authorization).toBe('Bearer fixture-refresh')
         refreshes++
         return res.end(JSON.stringify({ accessToken: 'renewed' }))
@@ -183,6 +222,22 @@ it('로컬 프록시는 호출자가 지정한 Idempotency-Key를 그대로 전�
   const key = '177229cb-b51e-4c21-9757-7f4790122000'
   await client.head('/api/transport-probe', { headers: { 'Idempotency-Key': key } })
   expect(probeHeader).toBe(key)
+})
+
+it('실제 승인 경로에서 Vite 프록시와 공유 Axios의 401 재전송이 본문과 같은 승인 키를 전달한다', async () => {
+  setTokens({ accessToken: 'approval-expired', refreshToken: 'approval-refresh', userId: 42 })
+  const key = crypto.randomUUID()
+  const body = { expectedRequestRev: 1, expectedLessonRev: 0 }
+  try {
+    expect(await approveLessonChange(547001, 101, body, key)).toMatchObject({
+      state: 'APPROVED',
+      lessons: [{ id: 51, actual: { teacherId: 19 } }],
+    })
+  } catch (error) {
+    throw receiverError ?? error
+  }
+  expect(approvalBodies).toEqual([body, body])
+  expect(approvalKeys).toEqual([key, key])
 })
 
 it('로컬 Vite를 통해 편성 작업을 접수하고 202의 상대 statusUrl을 그대로 조회한다', async () => {

@@ -9,10 +9,13 @@ import type { TimetableDto } from '@/types/timetable.js'
 import { queryKeys } from './queryKeys.js'
 import { type HomeSession, type ReadOptions, useScopedRead } from './useHomeSession'
 
-export function useHomeDirectory(session: HomeSession) {
+export function useHomeDirectory(session: HomeSession, enabled = true) {
   const { members, teachers } = session.access.queries
-  return useScopedRead(session, queryKeys.home.directory(), members || teachers, (signal) =>
-    getHomeDirectory(members, signal),
+  return useScopedRead(
+    session,
+    queryKeys.home.directory(),
+    enabled && (members || teachers),
+    (signal) => getHomeDirectory(members, signal),
   )
 }
 

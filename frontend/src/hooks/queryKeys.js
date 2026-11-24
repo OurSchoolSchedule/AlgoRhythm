@@ -4,6 +4,7 @@
  */
 export const queryKeys = {
   home: {
+    lessonChanges: (termId) => ['lesson-changes', termId],
     active: (identity) => ['mypage', 'active-store', identity],
     switchSchool: (identity) => ['switch-school', identity],
     directory: () => ['store', 'directory'],
