@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { useHomeSession } from '@/hooks/useHomeSession'
 import { useSchoolHome } from '@/hooks/useSchoolHome'
-import { schoolDate } from '@/utils/homeContract'
-import { termFromStartDate } from '@/utils/timetableGeneration'
+import { useTermChoice } from '@/hooks/useTermChoice'
 import { getStoredTheme, setThemePreference } from '@/theme'
 import { ThemeSwitch } from '@/components/layout/HeaderUserMenu'
 import AIFloatingChat from '@/components/common/AIFloatingChat'
@@ -13,44 +12,13 @@ import { Actions, Dialog, Icon, Notices, Profile, TermForm } from './HomePanels'
 import HomeTimetable from './HomeTimetable'
 import './home.css'
 
-function calendarTerm(today) {
-  const { academicYear, semester } = termFromStartDate(today)
-  return {
-    academicYear: Number(today.slice(5, 7)) < 3 ? academicYear - 1 : academicYear,
-    semester,
-    termId: null,
-  }
-}
-
-function readTerm(key, fallback) {
-  try {
-    const v = JSON.parse(sessionStorage.getItem(key))
-    if (
-      v &&
-      Number.isSafeInteger(v.academicYear) &&
-      v.academicYear >= 1900 &&
-      v.academicYear <= 9999 &&
-      [1, 2].includes(v.semester) &&
-      (v.termId === null || (Number.isSafeInteger(v.termId) && v.termId > 0))
-    )
-      return v
-  } catch {
-    /* A restricted browser can still use the current selection. */
-  }
-  return fallback
-}
-
 function Workspace({ session, navigate, onLogout }) {
   const school = session.school
-  const defaultTerm = calendarTerm(schoolDate(new Date()))
-  const termKey = `school-home-term/${session.userId}/${school?.schoolId}/${defaultTerm.academicYear}/${defaultTerm.semester}`
-  const [choice, setChoice] = useState(() => readTerm(termKey, defaultTerm))
+  const { choice, saveChoice, term, weeklyTerm } = useTermChoice(session)
   const [date, setDate] = useState()
   const [classId, setClassId] = useState(null)
   const [panel, setPanel] = useState(null)
   const [theme, setTheme] = useState(getStoredTheme)
-  const weeklyTerm = school ? { schoolId: school.schoolId, ...choice } : null
-  const term = choice.termId ? weeklyTerm : null
   const home = useSchoolHome({ term, weeklyTerm, classId, date })
   const { menus } = home.access
   const go = (view) => {
@@ -64,6 +32,9 @@ function Workspace({ session, navigate, onLogout }) {
       ? [
           { icon: 'timetable', label: '시간표', run: () => go('timetable') },
           { icon: 'todos', label: '할 일', run: () => go('todos') },
+          ...(menus.respondToChange || menus.approve
+            ? [{ icon: 'history', label: '보결·교환 업무', run: () => go('lesson-changes') }]
+            : []),
           { icon: 'history', label: '요청 내역', run: () => go('history') },
         ]
       : []),
@@ -80,10 +51,16 @@ function Workspace({ session, navigate, onLogout }) {
       ? [{ icon: 'create', label: '시간표 생성', run: () => go('schedule-create') }]
       : []),
     ...(menus.requestSwap
-      ? [{ icon: 'timetable', label: '수업 교환 신청', run: () => go('timetable') }]
+      ? [{ icon: 'timetable', label: '수업 교환 신청', run: () => go('lesson-changes') }]
       : []),
     ...(menus.respondToChange || menus.approve
-      ? [{ icon: 'bell', label: menus.approve ? '승인 알림' : '보결·교환 알림', run: openCenter }]
+      ? [
+          {
+            icon: 'bell',
+            label: menus.approve ? '변경 신청 승인' : '변경 신청 응답',
+            run: () => go('lesson-changes'),
+          },
+        ]
       : []),
     { icon: 'todos', label: '할 일 확인', run: () => go('todos') },
   ]
@@ -242,7 +219,12 @@ function Workspace({ session, navigate, onLogout }) {
       )}
       {panel === 'notices' && menus.notifications && (
         <Dialog title="알림센터" onClose={() => setPanel(null)}>
-          <NotificationSidebar open userRole={role} onClose={() => setPanel(null)} />
+          <NotificationSidebar
+            onOpenChanges={() => go('lesson-changes')}
+            open
+            userRole={role}
+            onClose={() => setPanel(null)}
+          />
         </Dialog>
       )}
       {panel === 'settings' && menus.profile && (
@@ -256,15 +238,10 @@ function Workspace({ session, navigate, onLogout }) {
           <TermForm
             current={choice}
             onApply={(v) => {
-              setChoice(v)
+              saveChoice(v)
               setClassId(null)
               setDate(undefined)
               setPanel(null)
-              try {
-                sessionStorage.setItem(termKey, JSON.stringify(v))
-              } catch {
-                /* The choice remains available in memory. */
-              }
             }}
           />
         </Dialog>

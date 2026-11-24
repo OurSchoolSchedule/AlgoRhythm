@@ -3,6 +3,8 @@ import type { HomeMemberDto, HomeNoticeDto } from '@/types/home'
 import type { DatedLessonDto } from '@/types/datedLesson'
 
 export interface DirectoryMember extends HomeMemberDto {
+  position?: string
+  employmentStatus?: string
   username: string | null
 }
 

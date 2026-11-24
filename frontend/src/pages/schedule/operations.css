@@ -1,0 +1,214 @@
+.schedule-work {
+  max-width: 1040px;
+  margin: 0 auto;
+  color: var(--color-text);
+}
+.work-heading,
+.work-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.work-heading {
+  justify-content: space-between;
+  margin: 0 0 20px;
+}
+.schedule-work h1,
+.schedule-work h2,
+.schedule-work p {
+  margin: 0 0 10px;
+}
+.schedule-work h1 {
+  font-size: clamp(25px, 3vw, 34px);
+  letter-spacing: -0.045em;
+}
+.schedule-work h2 {
+  font-size: 20px;
+}
+.schedule-work small {
+  color: var(--color-text-muted);
+}
+.work-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  margin-bottom: 16px;
+  padding: clamp(16px, 3vw, 28px);
+}
+.schedule-work fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.schedule-work legend {
+  font-weight: 650;
+  margin: 8px 0;
+}
+.schedule-work label {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0;
+  font-weight: 550;
+}
+.schedule-work details {
+  padding: 10px 0;
+}
+.schedule-work summary {
+  cursor: pointer;
+  color: var(--color-text-secondary);
+}
+.schedule-work :is(input:not([type='radio']), select, textarea),
+.schedule-work button {
+  max-width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border-input);
+  border-radius: 7px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+.schedule-work textarea {
+  min-height: 75px;
+}
+.schedule-work button {
+  cursor: pointer;
+  font-weight: 600;
+}
+.schedule-work button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.schedule-work .work-primary {
+  color: var(--color-on-primary);
+  background: var(--color-primary-button);
+  border-color: var(--color-primary-button);
+}
+.schedule-work :is(button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--keyboard-focus-ring);
+  outline-offset: 3px;
+}
+.work-candidates {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 10px;
+}
+.work-candidates label {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+}
+.work-candidates label:has(:checked) {
+  border-color: var(--timetable-selection-ring);
+  background: var(--color-primary-subtle);
+}
+.work-candidates input {
+  accent-color: var(--color-primary-text);
+}
+.work-success,
+.work-error,
+.work-progress {
+  padding: 12px 14px;
+  margin-block: 12px !important;
+  border-radius: 8px;
+}
+.work-success,
+.work-progress {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary-text);
+}
+.work-error {
+  background: var(--color-warning-subtle);
+  color: var(--color-warning-text);
+}
+.work-detail table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.work-detail td,
+.work-detail th {
+  padding: 6px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+.work-requests {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.work-requests li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--border);
+  padding: 12px 0;
+  flex-wrap: wrap;
+}
+.work-badge {
+  font-size: 12px;
+  border-radius: 4px;
+  padding: 2px 5px;
+  background: var(--surface-1);
+  color: var(--color-text-secondary);
+}
+.work-track {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.work-track img {
+  border-radius: 9px;
+  object-fit: contain;
+}
+.work-rail {
+  height: 6px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex: 1;
+  background: var(--color-primary-border);
+}
+.work-rail i {
+  display: block;
+  height: 100%;
+  background: var(--color-primary-text);
+}
+.work-rail [data-mode='indeterminate'] {
+  width: 29%;
+  animation: work-slide 1.5s ease-in-out infinite alternate;
+}
+.work-track[data-motion='walk-right'] img {
+  animation: chick-step 0.65s ease-in-out infinite alternate;
+}
+@keyframes work-slide {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(245%);
+  }
+}
+@keyframes chick-step {
+  to {
+    transform: translate(3px, -2px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .work-track img,
+  .work-rail i {
+    animation: none !important;
+  }
+}
+@media (max-width: 600px) {
+  .work-row > * {
+    min-width: 0;
+  }
+  .schedule-work select {
+    width: 100%;
+  }
+  .work-candidates {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

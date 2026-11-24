@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { getAccessToken } from '@/api'
 import LoadError from '@/components/LoadError.jsx'
-import CreateShiftSwapForm from '@/components/schedule/CreateShiftSwapForm.jsx'
+import { useHomeSession } from '@/hooks/useHomeSession'
 import CreateSubstituteForm from '@/components/schedule/CreateSubstituteForm.jsx'
 import CreateTimetableCellForm from '@/components/schedule/CreateTimetableCellForm.jsx'
 import WeeklyTimetableGrid from '@/components/schedule/WeeklyTimetableGrid.jsx'
@@ -75,6 +75,7 @@ function periodRange(cell, period) {
 }
 
 export default function TimetableView({ navigate, userRole = 'worker' }) {
+  const { access } = useHomeSession()
   const isAdmin = userRole === 'admin'
   const now = useMemo(() => new Date(), [])
   const defaultTerm = useMemo(() => termFromStartDate(toISODate(now)), [now])
@@ -150,15 +151,6 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
   const actionLesson = selectedCrowded ? activeLesson : selectedCell
   const actionDateIso = selectedDate ? toISODate(selectedDate.date) : toISODate()
   const actionPeriodLabel = selected ? `${selected.period}교시` : ''
-  const actionLessonLabel = actionLesson
-    ? [
-        formatClassName(actionLesson.class),
-        actionLesson.subject,
-        actionLesson.teacher,
-        actionPeriodLabel,
-      ].filter(Boolean).join(' · ')
-    : ''
-
   const clearDetail = () => {
     setSelected(null)
     setRequestMode('')
@@ -626,15 +618,15 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
                             disabled={lesson.id == null}
                             onClick={() => startLessonRequest(lesson, 'substitute')}
                           >
-                            보결
+                            공개 보결 모집
                           </button>
                           <button
                             type="button"
                             className="is-secondary"
-                            disabled={lesson.id == null}
-                            onClick={() => startLessonRequest(lesson, 'swap')}
+                            disabled={!access.queries.datedLessons}
+                            onClick={() => navigate('lesson-changes', actionDateIso)}
                           >
-                            교환
+                            날짜 수업 변경
                           </button>
                         </div>
                       </div>
@@ -664,13 +656,6 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
                 defaultDate={actionDateIso}
                 periodLabel={actionPeriodLabel}
               />
-            ) : actionLesson && requestMode === 'swap' ? (
-              <CreateShiftSwapForm
-                key={`swap-${actionLesson.id}-${actionDateIso}`}
-                initialRequesterTimetableId={actionLesson.id}
-                initialRequesterDate={actionDateIso}
-                initialRequesterLabel={actionLessonLabel}
-              />
             ) : selectedCell && !selectedCrowded ? (
               <div className="tt-actions">
                 <button
@@ -678,14 +663,15 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
                   className="tt-secondary"
                   onClick={() => startLessonRequest(selectedCell, 'substitute')}
                 >
-                  대타 요청
+                  공개 보결 모집
                 </button>
                 <button
                   type="button"
                   className="tt-secondary"
-                  onClick={() => startLessonRequest(selectedCell, 'swap')}
+                  disabled={!access.queries.datedLessons}
+                  onClick={() => navigate('lesson-changes', actionDateIso)}
                 >
-                  교환 요청
+                  날짜 수업 변경
                 </button>
                 {isAdmin && editing ? (
                   <button

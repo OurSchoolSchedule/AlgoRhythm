@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import TopNav from '@/components/layout/TopNav'
 import NotificationSidebar from '@/components/layout/NotificationSidebar'
 import AIFloatingChat from '@/components/common/AIFloatingChat'
 import HomeView from '@/pages/home/HomeView'
-import ScheduleCreateView from '@/pages/schedule/ScheduleCreateView'
 import TimetableView from '@/pages/schedule/TimetableView'
 import ScheduleTodoTab from '@/pages/schedule/ScheduleTodoTab.jsx'
 import { toISODate } from '@/utils'
@@ -15,9 +14,13 @@ import { useLogout, useActiveStore } from '@/hooks'
 import { positionToUserRole } from '@/constants/domainLabels.js'
 import { applyTheme, getStoredTheme } from '@/theme'
 
+const ScheduleCreateView = lazy(() => import('@/pages/schedule/ScheduleCreateView'))
+const LessonChangesView = lazy(() => import('@/pages/schedule/LessonChangesView'))
+
 export default function App() {
   const [authed, setAuthed] = useState(() => Boolean(getAccessToken() || getPreviewUserRole()))
   const [alarmOpen, setAlarmOpen] = useState(false)
+  const [workDate, setWorkDate] = useState()
   const [currentView, setCurrentView] = useState('home')
   const [userRole, setUserRole] = useState(() => getPreviewUserRole() ?? 'admin')
   const logoutMutation = useLogout()
@@ -64,7 +67,8 @@ export default function App() {
     )
   }
 
-  const navigate = (view) => {
+  const navigate = (view, lessonDate) => {
+    setWorkDate(lessonDate)
     setAlarmOpen(false)
     setCurrentView(view)
   }
@@ -81,8 +85,10 @@ export default function App() {
         return (
           <ScheduleTodoTab date={toISODate()} userRole={userRole} />
         )
+      case 'lesson-changes':
+        return <LessonChangesView initialDate={workDate} />
       case 'schedule-create':
-        return <ScheduleCreateView navigate={navigate} />
+        return <ScheduleCreateView />
       case 'subject-manage':
         return <SubjectManageView />
       case 'history':
@@ -125,11 +131,14 @@ export default function App() {
       >
         <main className={`hide-scrollbar app-main`}>
           <div className="app-content">
-            {renderView()}
+            <Suspense fallback={<p role="status">업무 화면을 여는 중입니다.</p>}>
+              {renderView()}
+            </Suspense>
           </div>
         </main>
 
         <NotificationSidebar
+          onOpenChanges={() => navigate('lesson-changes')}
           open={alarmOpen}
           onClose={() => setAlarmOpen(false)}
           userRole={userRole}
