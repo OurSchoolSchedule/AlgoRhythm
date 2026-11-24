@@ -45,6 +45,7 @@ export function subscribeSession(notify) {
 export function setTokens({ accessToken, refreshToken, userId } = {}) {
   if (accessToken != null) localStorage.setItem(ACCESS_TOKEN_KEY, accessToken)
   if (refreshToken != null) localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken)
+  else if (accessToken != null) localStorage.removeItem(REFRESH_TOKEN_KEY)
   if (userId != null) localStorage.setItem(USER_ID_KEY, String(userId))
   else if (accessToken != null) localStorage.removeItem(USER_ID_KEY)
   sessionChanged()

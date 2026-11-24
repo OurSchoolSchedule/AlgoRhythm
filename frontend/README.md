@@ -46,9 +46,10 @@ npm run lint        # ESLint 검사
 
 | 변수 | 설명 |
 |---|---|
-| `VITE_API_BASE_URL` | 백엔드 API 베이스 URL. 로컬 개발 시 `https://edu.rssolplan.com` 등 직접 지정 |
+| `VITE_API_BASE_URL` | 기본값은 빈 문자열. 브라우저가 같은 origin의 `/api`를 사용합니다. |
+| `API_PROXY_TARGET` | Vite 개발 서버의 백엔드 origin. 로컬 백엔드 실행 시 `http://localhost:8080`으로 설정합니다. |
 
-- **로컬 개발**: 백엔드가 localhost CORS를 허용하므로 `VITE_API_BASE_URL`로 API 호스트를 직접 지정합니다.
+- 로컬에서는 Vite가 `/api`와 `/oauth2`의 경로·쿼리·요청 본문을 백엔드로 전달합니다.
 - **배포(Vercel)**: `VITE_API_BASE_URL`을 비우고, `vercel.json`의 rewrite 프록시를 통해 백엔드로 요청을 전달합니다. (Vercel 대시보드에 값이 남아 있으면 제거)
 
 ---

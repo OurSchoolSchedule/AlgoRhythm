@@ -2,16 +2,14 @@ import axios from 'axios'
 import {
   getAccessToken,
   getRefreshToken,
+  getSessionVersion,
   setAccessToken,
   clearTokens,
 } from './tokenStorage.js'
 import { shouldForceReLogin } from '@/utils/authToken.js'
 
-// 빈 문자열이면 상대 경로(같은 origin). 로컬 dev는 .env의 절대 URL, 배포는 .env.production의 빈 값.
-export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL !== undefined
-    ? import.meta.env.VITE_API_BASE_URL
-    : 'http://localhost:8080'
+// 개발은 Vite 프록시, 배포는 Vercel rewrite를 통해 같은 /api 경로를 사용한다.
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
 
 const client = axios.create({
   baseURL: API_BASE_URL,
@@ -21,6 +19,7 @@ const client = axios.create({
 })
 
 client.interceptors.request.use((config) => {
+  config._sessionVersion = getSessionVersion()
   const token = getAccessToken()
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
@@ -46,7 +45,7 @@ async function requestNewAccessToken() {
 }
 
 // 동시에 401이 여러 건 발생해도 재발급은 한 번만 수행하고 나머지는 대기시킨다.
-let refreshPromise = null
+let refreshFlight = null
 
 // 인증 만료로 더 이상 복구가 불가능할 때 호출되는 콜백 (라우터 연동 시 주입).
 let onAuthError = null
@@ -59,7 +58,7 @@ client.interceptors.response.use(
   async (error) => {
     const { response, config } = error
 
-    if (!response) {
+    if (!response || config?._sessionVersion !== getSessionVersion()) {
       return Promise.reject(error)
     }
 
@@ -68,6 +67,7 @@ client.interceptors.response.use(
     if (
       getAccessToken() &&
       shouldForceReLogin(response) &&
+      (response.status !== 401 || !getRefreshToken()) &&
       !config?.url?.includes('/api/auth/dev-token')
     ) {
       clearTokens()
@@ -89,19 +89,28 @@ client.interceptors.response.use(
     config._retried = true
 
     try {
-      if (!refreshPromise) {
-        refreshPromise = requestNewAccessToken().finally(() => {
-          refreshPromise = null
-        })
+      const generation = config._sessionVersion
+      if (config.headers.Authorization !== `Bearer ${getAccessToken()}`) {
+        // Another request has already refreshed the access token.
+        return client(config)
       }
-      const newAccessToken = await refreshPromise
+      if (refreshFlight?.generation !== generation) {
+        const promise = requestNewAccessToken().finally(() => {
+          if (refreshFlight?.generation === generation) refreshFlight = null
+        })
+        refreshFlight = { generation, promise }
+      }
+      const newAccessToken = await refreshFlight.promise
+      if (generation !== getSessionVersion()) return Promise.reject(error)
       setAccessToken(newAccessToken)
       config.headers = config.headers ?? {}
       config.headers.Authorization = `Bearer ${newAccessToken}`
       return client(config)
     } catch (refreshError) {
-      clearTokens()
-      onAuthError?.()
+      if (config._sessionVersion === getSessionVersion()) {
+        clearTokens()
+        onAuthError?.()
+      }
       return Promise.reject(refreshError)
     }
   },
