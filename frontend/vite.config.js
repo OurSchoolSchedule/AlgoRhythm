@@ -26,6 +26,8 @@ export default defineConfig(({ mode }) => ({
   test: {
     environment: 'node',
     globals: true,
-    include: ['src/**/*.{test,spec}.{js,jsx,ts,tsx}'],
+    include: mode === 'school42-local'
+      ? ['src/test/school42.local.ts']
+      : ['src/**/*.{test,spec}.{js,jsx,ts,tsx}'],
   },
 }))
