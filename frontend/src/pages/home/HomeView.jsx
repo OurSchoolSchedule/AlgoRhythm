@@ -1,301 +1,290 @@
-import { useTodos, useNotifications, useSchoolTimetable, useSubstituteRequests } from "@/hooks";
-import ScheduleTodoTab from "@/pages/schedule/ScheduleTodoTab.jsx";
-import DayTimetableList from "@/components/schedule/DayTimetableList.jsx";
-import LoadError from "@/components/LoadError.jsx";
-import SectionHeader from "@/components/ui/SectionHeader.jsx";
-import { toISODate } from "@/utils";
-import { DOMAIN, localizeNotificationMessage, categoryLabel } from "@/constants/domainLabels.js";
-import {
-  filterBriefingNotifications,
-  getNotificationAction,
-} from "@/utils/notificationActions.js";
-import { resolveHomeFocus } from "@/utils/homeFocus.js";
+import { useState } from 'react'
+import { useHomeSession } from '@/hooks/useHomeSession'
+import { useSchoolHome } from '@/hooks/useSchoolHome'
+import { schoolDate } from '@/utils/homeContract'
+import { termFromStartDate } from '@/utils/timetableGeneration'
+import { getStoredTheme, setThemePreference } from '@/theme'
+import { ThemeSwitch } from '@/components/layout/HeaderUserMenu'
+import AIFloatingChat from '@/components/common/AIFloatingChat'
+import NotificationSidebar from '@/components/layout/NotificationSidebar'
+import ProfileSchoolDialog from '@/components/layout/ProfileSchoolDialog'
+import UnavailabilityDialog from '@/components/schedule/UnavailabilityDialog'
+import { Actions, Dialog, Icon, Notices, Profile, TermForm } from './HomePanels'
+import HomeTimetable from './HomeTimetable'
+import './home.css'
 
-const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
-/** 홈 미리보기: 넘치면 더보기로 해당 탭 이동 */
-const HOME_PREVIEW = {
-  timetable: 5,
-  todos: 3,
-  changes: 4,
-};
-
-function formatBriefTime(iso) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
-
-function SkeletonBlock({ width = "100%", height = 16, radius = 8 }) {
-  return <div className="home-skeleton" style={{ width, height, borderRadius: radius }} aria-hidden="true" />;
-}
-
-function homeStatTone(value, tone) {
-  if (value == null || Number(value) === 0) return "is-zero";
-  return `is-${tone}`;
-}
-
-function HomeStats({ lessons, substitutes, alerts, loading, failed }) {
-  const items = [
-    { label: "오늘 수업", value: lessons, tone: "primary" },
-    { label: "이번 주 보결", value: substitutes, tone: "warning" },
-    { label: "알림", value: alerts, tone: "info" },
-  ];
-  return (
-    <div className="home-stats" aria-label="요약">
-      {items.map((item) => (
-        <div key={item.label} className="home-stat">
-          <p className="home-stat-label">{item.label}</p>
-          {loading ? (
-            <SkeletonBlock width={36} height={28} />
-          ) : (
-            <p className={`home-stat-value ${failed ? "is-zero" : homeStatTone(item.value, item.tone)}`}>
-              {failed ? "—" : item.value}
-            </p>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function HomeFocus({ focus, loading, failed }) {
-  if (loading) return <SkeletonBlock width={160} height={44} />;
-  if (failed || !focus) return <p className="home-focus-empty">—</p>;
-  if (focus.kind === "empty-day") {
-    return <p className="home-focus-empty">{focus.title}</p>;
+function calendarTerm(today) {
+  const { academicYear, semester } = termFromStartDate(today)
+  return {
+    academicYear: Number(today.slice(5, 7)) < 3 ? academicYear - 1 : academicYear,
+    semester,
+    termId: null,
   }
-  return (
-    <>
-      <p className="home-focus-label">{focus.label}</p>
-      <p className="home-focus-title">{focus.title}</p>
-      <p className="home-focus-detail">{focus.detail}</p>
-    </>
-  );
 }
 
-export default function HomeView({ user, navigate }) {
-  const position = user?.position || "TEACHER";
-  const userRole = position === "ADMIN" ? "ADMIN" : "TEACHER";
-  const now = new Date();
-  const todayDateStr = toISODate(now);
-  const weekdayLabel = WEEKDAY_LABELS[now.getDay()] || "";
+function readTerm(key, fallback) {
+  try {
+    const v = JSON.parse(sessionStorage.getItem(key))
+    if (
+      v &&
+      Number.isSafeInteger(v.academicYear) &&
+      v.academicYear >= 1900 &&
+      v.academicYear <= 9999 &&
+      [1, 2].includes(v.semester) &&
+      (v.termId === null || (Number.isSafeInteger(v.termId) && v.termId > 0))
+    )
+      return v
+  } catch {
+    /* A restricted browser can still use the current selection. */
+  }
+  return fallback
+}
 
-  const {
-    data: todoData,
-    isLoading: todosLoading,
-    error: todoError,
-    refetch: refetchTodos,
-  } = useTodos(todayDateStr);
-  const todos = [
-    ...(todoData?.schoolTodos ?? []),
-    ...(todoData?.handoverTodos ?? []),
-    ...(todoData?.personalTodos ?? []),
-  ];
-  const {
-    data: notifications = [],
-    isLoading: notificationsLoading,
-    error: notificationsError,
-    refetch: refetchNotifications,
-  } = useNotifications();
-  const {
-    timetable,
-    isLoading: timetableLoading,
-    error: timetableError,
-    refetch: refetchTimetable,
-  } = useSchoolTimetable(now);
-  const { data: substituteRequests = [] } = useSubstituteRequests("OPEN");
-
-  const openTodos = todos.filter((t) => !t.done && !t.completed);
-  const todayClassCount = (timetable?.periods || []).filter((p) => p.subject && p.subject !== "공강").length;
-  const hasClass = todayClassCount > 0;
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
-  const substituteCount = substituteRequests.filter((r) => {
-    const status = String(r.status || "").toUpperCase();
-    return status === "PENDING" || status === "REQUESTED" || status === "OPEN";
-  }).length;
-  // 보결·교환 등 확인 필요 건은 알림 사이드바로만 — 오늘 할 일에는 실제 할 일만
-  const taskCount = openTodos.length;
-  const summaryLoading = todosLoading || notificationsLoading || timetableLoading;
-  const summaryFailed = Boolean(todoError || notificationsError || timetableError);
-  const tasksLoading = todosLoading;
-  const tasksFailed = Boolean(todoError);
-  const pageError = todoError || notificationsError || timetableError;
-  const retryPage = () => {
-    if (todoError) refetchTodos();
-    if (notificationsError) refetchNotifications();
-    if (timetableError) refetchTimetable();
-  };
-  const focus = resolveHomeFocus(timetable, now);
-
-  const briefs = filterBriefingNotifications(notifications).map((n) => {
-    const action = getNotificationAction(n);
-    return {
-      key: `br-${n.id ?? n.createdAt}`,
-      time: formatBriefTime(n.createdAt),
-      type: action?.label || categoryLabel(n.category) || "변동",
-      text: localizeNotificationMessage(n.message),
-    };
-  });
-  const visibleBriefs = briefs.slice(0, HOME_PREVIEW.changes);
-  const hiddenBriefs = Math.max(0, briefs.length - visibleBriefs.length);
-
-  const typeBg = {
-    [DOMAIN.SUBSTITUTE]: "var(--color-warning-subtle)",
-    보결: "var(--color-warning-subtle)",
-    [DOMAIN.SWAP]: "var(--color-info-subtle)",
-    수업교환: "var(--color-info-subtle)",
-    안내: "var(--color-surface-hover)",
-  };
-  const typeColor = {
-    [DOMAIN.SUBSTITUTE]: "var(--color-warning-text)",
-    보결: "var(--color-warning-text)",
-    [DOMAIN.SWAP]: "var(--color-info-text)",
-    수업교환: "var(--color-info-text)",
-    안내: "var(--color-text-muted)",
-  };
-
+function Workspace({ session, navigate, onLogout }) {
+  const school = session.school
+  const defaultTerm = calendarTerm(schoolDate(new Date()))
+  const termKey = `school-home-term/${session.userId}/${school?.schoolId}/${defaultTerm.academicYear}/${defaultTerm.semester}`
+  const [choice, setChoice] = useState(() => readTerm(termKey, defaultTerm))
+  const [date, setDate] = useState()
+  const [classId, setClassId] = useState(null)
+  const [panel, setPanel] = useState(null)
+  const [theme, setTheme] = useState(getStoredTheme)
+  const weeklyTerm = school ? { schoolId: school.schoolId, ...choice } : null
+  const term = choice.termId ? weeklyTerm : null
+  const home = useSchoolHome({ term, weeklyTerm, classId, date })
+  const { menus } = home.access
+  const go = (view) => {
+    setPanel(null)
+    navigate(view)
+  }
+  const openCenter = () => setPanel('notices')
+  const nav = [
+    { icon: 'home', label: '업무 홈', current: true, run: () => setPanel(null) },
+    ...(menus.timetable
+      ? [
+          { icon: 'timetable', label: '시간표', run: () => go('timetable') },
+          { icon: 'todos', label: '할 일', run: () => go('todos') },
+          { icon: 'history', label: '요청 내역', run: () => go('history') },
+        ]
+      : []),
+    ...(menus.generate
+      ? [
+          { icon: 'create', label: '시간표 생성', run: () => go('schedule-create') },
+          { icon: 'settings', label: '과목·수업 관리', run: () => go('subject-manage') },
+          { icon: 'school', label: '관리자 도구', run: () => go('admin') },
+        ]
+      : []),
+  ]
+  const shortcuts = [
+    ...(menus.generate
+      ? [{ icon: 'create', label: '시간표 생성', run: () => go('schedule-create') }]
+      : []),
+    ...(menus.requestSwap
+      ? [{ icon: 'timetable', label: '수업 교환 신청', run: () => go('timetable') }]
+      : []),
+    ...(menus.respondToChange || menus.approve
+      ? [{ icon: 'bell', label: menus.approve ? '승인 알림' : '보결·교환 알림', run: openCenter }]
+      : []),
+    { icon: 'todos', label: '할 일 확인', run: () => go('todos') },
+  ]
+  const profile = (
+    <Profile
+      home={home}
+      onSettings={() => setPanel('settings')}
+      onPreferences={() => setPanel('preferences')}
+    />
+  )
+  const menu = (
+    <>
+      <p className="desk-group-label">업무 메뉴</p>
+      <nav aria-label="업무 메뉴">
+        <Actions items={nav} />
+      </nav>
+    </>
+  )
+  const role = home.access.queries.adminProfile ? 'admin' : 'worker'
+  const signout = (
+    <button className="desk-logout" onClick={onLogout}>
+      <Icon name="logout" />
+      로그아웃
+    </button>
+  )
+  const schoolName = school?.name
+  let accessMessage = '이 계정에서 사용할 수 있는 학교 시간표 조회 권한이 없습니다.'
+  if (home.activeSchool.state === 'loading') accessMessage = '활성 학교를 확인하고 있습니다.'
+  else if (home.activeSchool.state === 'error') accessMessage = '활성 학교 조회에 실패했습니다.'
+  else if (home.activeSchool.state === 'forbidden')
+    accessMessage = '활성 학교 조회 권한이 없습니다.'
+  else if (!session.userId) accessMessage = '학교 계정으로 로그인하면 시간표를 확인할 수 있습니다.'
   return (
-    <div className="home-page">
-      <div className="home-hero">
-        <div className="home-hero-main">
-          <h1 className="home-title">
-            {now.getMonth() + 1}월 {now.getDate()}일 ({weekdayLabel})
-          </h1>
-          {userRole === "ADMIN" && (
-            <button type="button" className="btn btn-secondary btn-sm home-create-btn" onClick={() => navigate("timetable-create")}>
-              시간표 생성
+    <div className="school-desk">
+      <a className="desk-skip" href="#desk-main">
+        시간표로 건너뛰기
+      </a>
+      <header className="desk-brand">
+        <span className="desk-mark">
+          <Icon name="brand" />
+        </span>
+        <strong>우리학교시간표</strong>
+      </header>
+      <header className="desk-top">
+        <button
+          className="desk-icon desk-menu-trigger"
+          onClick={() => setPanel('menu')}
+          aria-label="업무 메뉴 열기"
+        >
+          <Icon name="menu" />
+        </button>
+        <div className="desk-school">
+          <Icon name="school" />
+          <span>{schoolName || '우리학교시간표'}</span>
+        </div>
+        <div className="desk-tools">
+          <ThemeSwitch
+            value={theme}
+            onChange={(id) => {
+              setThemePreference(id)
+              setTheme(id)
+            }}
+          />
+          {menus.notifications && (
+            <button className="desk-icon desk-bell" onClick={openCenter} aria-label="알림센터 열기">
+              <Icon name="bell" />
+              {home.notifications.items.state === 'value' &&
+                home.notifications.items.value.some((n) => !n.read) && <i />}
+            </button>
+          )}
+          {menus.profile && (
+            <button
+              className="desk-icon desk-profile-trigger"
+              onClick={() => setPanel('profile')}
+              aria-label="프로필 열기"
+            >
+              <Icon name="person" />
             </button>
           )}
         </div>
-        <div className="home-hero-focus" aria-label="지금 수업">
-          <HomeFocus focus={focus} loading={timetableLoading} failed={Boolean(timetableError)} />
+      </header>
+      <aside className="desk-sidebar">
+        {menu}
+        {signout}
+      </aside>
+      <main className="desk-main" id="desk-main" tabIndex="-1">
+        <div className="desk-title">
+          <div>
+            <p>
+              {new Intl.DateTimeFormat('ko-KR', { dateStyle: 'full', timeZone: 'UTC' }).format(
+                new Date(home.today + 'T12:00:00Z'),
+              )}
+            </p>
+            <h1>업무 홈</h1>
+          </div>
+          {menus.timetable && (
+            <button
+              className="desk-term-button"
+              aria-label="조회 학기 설정"
+              onClick={() => setPanel('term')}
+            >
+              <Icon name="settings" />
+              {choice.academicYear}학년도 {choice.semester}학기
+            </button>
+          )}
         </div>
-      </div>
-
-      {pageError && <LoadError onRetry={retryPage} />}
-
-      <HomeStats
-        lessons={todayClassCount}
-        substitutes={substituteCount}
-        alerts={unreadCount}
-        loading={summaryLoading}
-        failed={summaryFailed}
-      />
-
-      <div className="home-columns">
-        <section className="home-timetable">
-          <SectionHeader
-            title="오늘 시간표"
-            meta={!timetableLoading && !timetableError ? (hasClass ? todayClassCount : 0) : "—"}
-            onAction={() => navigate("timetable")}
+        {menus.timetable ? (
+          <>
+            <HomeTimetable
+              key={choice.academicYear + '-' + choice.semester + '-' + choice.termId}
+              term={term}
+              home={home}
+              setDate={setDate}
+              setRoom={setClassId}
+              onSettings={() => setPanel('term')}
+            />
+            <div className="desk-lower">
+              <Notices home={home} onOpen={openCenter} />
+              <section className="desk-card desk-section">
+                <header>
+                  <h2>자주 쓰는 기능</h2>
+                </header>
+                <Actions compact items={shortcuts} />
+                <AIFloatingChat />
+              </section>
+            </div>
+          </>
+        ) : (
+          <section className="desk-card desk-section" role="status">
+            <h2>학교 시간표</h2>
+            <p>{accessMessage}</p>
+          </section>
+        )}
+      </main>
+      {menus.profile && (
+        <aside className="desk-profile">
+          <section className="desk-card desk-section">
+            <header>
+              <h2>내 프로필</h2>
+              <Icon name="person" />
+            </header>
+            {profile}
+          </section>
+        </aside>
+      )}
+      {panel === 'menu' && (
+        <Dialog title="메뉴" onClose={() => setPanel(null)}>
+          {menu}
+          {signout}
+        </Dialog>
+      )}
+      {panel === 'profile' && menus.profile && (
+        <Dialog title="내 프로필" onClose={() => setPanel(null)}>
+          {profile}
+        </Dialog>
+      )}
+      {panel === 'notices' && menus.notifications && (
+        <Dialog title="알림센터" onClose={() => setPanel(null)}>
+          <NotificationSidebar open userRole={role} onClose={() => setPanel(null)} />
+        </Dialog>
+      )}
+      {panel === 'settings' && menus.profile && (
+        <ProfileSchoolDialog isAdmin={role === 'admin'} onClose={() => setPanel(null)} />
+      )}
+      {panel === 'preferences' && home.access.queries.teacherProfile && (
+        <UnavailabilityDialog onClose={() => setPanel(null)} />
+      )}
+      {panel === 'term' && menus.timetable && (
+        <Dialog title="조회 학기 설정" onClose={() => setPanel(null)}>
+          <TermForm
+            current={choice}
+            onApply={(v) => {
+              setChoice(v)
+              setClassId(null)
+              setDate(undefined)
+              setPanel(null)
+              try {
+                sessionStorage.setItem(termKey, JSON.stringify(v))
+              } catch {
+                /* The choice remains available in memory. */
+              }
+            }}
           />
-          {timetableLoading && (
-            <div className="home-skeleton-list" aria-hidden="true">
-              <SkeletonBlock width="100%" height={64} />
-              <SkeletonBlock width="100%" height={64} />
-              <SkeletonBlock width="100%" height={64} />
-            </div>
-          )}
-          {!timetableLoading && timetableError && (
-            <div className="home-skeleton-list" aria-hidden="true">
-              <SkeletonBlock width="100%" height={64} />
-              <SkeletonBlock width="100%" height={64} />
-            </div>
-          )}
-          {!timetableLoading && !timetableError && !hasClass && (
-            <p className="home-empty">오늘({weekdayLabel})은 수업이 없는 날입니다</p>
-          )}
-          {!timetableLoading && !timetableError && hasClass && (
-            <DayTimetableList
-              timetable={timetable}
-              now={now}
-              limit={HOME_PREVIEW.timetable}
-              onMore={() => navigate("timetable")}
-            />
-          )}
-        </section>
-
-        <div className="home-side">
-          <section className="home-tasks">
-            <SectionHeader
-              title="오늘 할 일"
-              meta={!tasksLoading && !tasksFailed ? taskCount : "—"}
-              onAction={() => navigate("todos")}
-              actionLabel="전체 보기"
-            />
-            <div className="home-task-summary" aria-label="처리할 일">
-              <div className="home-stat">
-                <p className="home-stat-label">처리할 일</p>
-                {tasksLoading ? (
-                  <SkeletonBlock width={36} height={28} />
-                ) : (
-                  <p className={`home-stat-value ${tasksFailed ? "is-zero" : homeStatTone(taskCount, "warning")}`}>
-                    {tasksFailed ? "—" : taskCount}
-                  </p>
-                )}
-              </div>
-            </div>
-            {(tasksLoading || tasksFailed) && (
-              <div className="home-skeleton-list" aria-hidden="true">
-                <SkeletonBlock width="100%" height={64} />
-              </div>
-            )}
-            {!tasksLoading && !tasksFailed && (
-              <ScheduleTodoTab
-                embedded
-                date={todayDateStr}
-                userRole={userRole}
-                limit={HOME_PREVIEW.todos}
-                onMore={() => navigate("todos")}
-              />
-            )}
-          </section>
-
-          <section className="home-changes">
-            <SectionHeader
-              title="오늘 변동"
-              meta={!notificationsLoading && !notificationsError ? briefs.length : "—"}
-              onAction={() => navigate("history")}
-              actionLabel="전체 보기"
-            />
-            {notificationsLoading && (
-              <div className="home-skeleton-list" aria-hidden="true">
-                <SkeletonBlock width="100%" height={44} />
-              </div>
-            )}
-            {!notificationsLoading && notificationsError && (
-              <div className="home-skeleton-list" aria-hidden="true">
-                <SkeletonBlock width="100%" height={44} />
-              </div>
-            )}
-            {!notificationsLoading && !notificationsError && briefs.length === 0 && (
-              <p className="home-empty">오늘 변동이 없습니다</p>
-            )}
-            {!notificationsError &&
-              visibleBriefs.map((item) => (
-                <div key={item.key} className="home-row home-change list-row">
-                  <span className="home-change-time">{item.time}</span>
-                  <span
-                    className="day-badge"
-                    style={{
-                      background: typeBg[item.type] || "var(--color-surface-hover)",
-                      color: typeColor[item.type] || "var(--color-text-muted)",
-                    }}
-                  >
-                    {item.type}
-                  </span>
-                  <span className="home-change-text">{item.text}</span>
-                </div>
-              ))}
-            {hiddenBriefs > 0 && (
-              <button type="button" className="home-more" onClick={() => navigate("history")}>
-                더보기 {hiddenBriefs}건
-              </button>
-            )}
-          </section>
-        </div>
-      </div>
+        </Dialog>
+      )}
     </div>
-  );
+  )
+}
+
+export default function HomeView(props) {
+  const session = useHomeSession()
+  return (
+    <Workspace
+      key={[
+        session.userId,
+        session.identity.generation,
+        session.scope.schoolId,
+        session.scope.position,
+      ].join('/')}
+      session={session}
+      {...props}
+    />
+  )
 }

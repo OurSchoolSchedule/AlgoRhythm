@@ -47,7 +47,7 @@ function ThemeIcon({ name }) {
   )
 }
 
-function ThemeSwitch({ value, onChange }) {
+export function ThemeSwitch({ value, onChange }) {
   const onKeyDown = (event) => {
     const index = THEME_OPTIONS.findIndex((option) => option.id === value)
     const next = event.key === 'ArrowRight' || event.key === 'ArrowDown'

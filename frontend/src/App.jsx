@@ -65,13 +65,16 @@ export default function App() {
   }
 
   const navigate = (view) => {
+    setAlarmOpen(false)
     setCurrentView(view)
+  }
+
+  if (currentView === 'home') {
+    return <HomeView navigate={navigate} onLogout={handleLogout} />
   }
 
   const renderView = () => {
     switch (currentView) {
-      case 'home':
-        return <HomeView navigate={navigate} userRole={userRole} />
       case 'timetable':
         return <TimetableView navigate={navigate} userRole={userRole} />
       case 'todos':
@@ -87,7 +90,7 @@ export default function App() {
       case 'admin':
         return <AdminView navigate={navigate} />
       default:
-        return <HomeView navigate={navigate} userRole={userRole} />
+        return <HomeView navigate={navigate} onLogout={handleLogout} />
     }
   }
 

@@ -41,19 +41,21 @@ function assignment(
 
 export interface HomeSelection {
   term: HomeTerm | null
+  weeklyTerm?: Omit<HomeTerm, 'termId'> | null
   classId?: number | null
   date?: string
   timeZone?: string
 }
 
-export function useSchoolHome({ term, classId = null, date, timeZone }: HomeSelection) {
+export function useSchoolHome({ term, weeklyTerm, classId = null, date, timeZone }: HomeSelection) {
   const session = useHomeSession()
   const { access, school, userId } = session
   const today = useSyncExternalStore(subscribeClock, () => schoolDate(new Date(), timeZone))
   const day = date ?? today
   const currentTerm = term?.schoolId === school?.schoolId ? term : null
+  const calendar = currentTerm ?? (weeklyTerm?.schoolId === school?.schoolId ? weeklyTerm : null)
   const staff = access.queries.adminProfile || access.queries.teacherProfile
-  const inTerm = staff && currentTerm !== null
+  const inWeek = staff && calendar != null
   const admin = access.queries.adminProfile
   const profileQuery = useScopedRead(
     session,
@@ -64,30 +66,33 @@ export function useSchoolHome({ term, classId = null, date, timeZone }: HomeSele
   const directory = useHomeDirectory(session)
   const profile = toHomeProfile(
     userId,
-    currentTerm?.academicYear ?? null,
+    calendar?.academicYear ?? null,
     fieldRead(profileQuery, staff),
     fieldRead(directory, staff),
   )
   const week = homeWeekAccess(access, profile.homerooms, classId)
-  const view = inTerm ? week.selection.view : 'unavailable'
-  const selected = inTerm && week.selection.view === 'homeroom' ? week.selection.classId : undefined
+  const view = inWeek ? week.selection.view : 'unavailable'
+  const selected = inWeek && week.selection.view === 'homeroom' ? week.selection.classId : undefined
   const weekly = useWeekRead(
     session,
     view,
-    currentTerm?.academicYear,
-    currentTerm?.semester,
+    calendar?.academicYear,
+    calendar?.semester,
     currentTerm?.termId,
     selected,
   )
   const notifications = useHomeNotices(session)
   const subjects = useSubjects()
-  const classes = useSchoolClasses(currentTerm?.academicYear, { enabled: inTerm })
+  const classes = useSchoolClasses(calendar?.academicYear, { enabled: inWeek })
   const periods = usePeriodSettings()
 
   const teacherId =
     view === 'mine' && profile.schoolUserId.state === 'value' ? profile.schoolUserId.value : null
   const datedEnabled =
-    inTerm && access.queries.datedLessons && (view !== 'mine' || teacherId !== null)
+    staff &&
+    currentTerm !== null &&
+    access.queries.datedLessons &&
+    (view !== 'mine' || teacherId !== null)
   const dated = useScopedRead(
     session,
     queryKeys.home.dated(currentTerm?.termId, day, view, selected, teacherId),
@@ -129,11 +134,14 @@ export function useSchoolHome({ term, classId = null, date, timeZone }: HomeSele
     profileQuery: homeQueryState(profileQuery, staff),
     directory: homeQueryState(directory, staff),
     subjects: homeQueryState(subjects, staff),
-    classes: homeQueryState(classes, inTerm),
+    classes: homeQueryState(classes, inWeek),
     periods: homeQueryState(periods, staff),
-    selection: inTerm ? week.selection : { view: 'unavailable' as const },
-    canSwitchHomeroom: inTerm && week.canSwitchHomeroom,
-    weekly: homeQueryState(weekly, inTerm),
+    selection: inWeek ? week.selection : { view: 'unavailable' as const },
+    canSwitchHomeroom: inWeek && week.canSwitchHomeroom,
+    retryWeekly: inWeek ? weekly.refetch : undefined,
+    retryDated: datedEnabled ? dated.refetch : undefined,
+    retryNotices: staff ? notifications.refetch : undefined,
+    weekly: homeQueryState(weekly, inWeek),
     dated: homeQueryState(dated, datedEnabled),
     notifications: toHomeNotifications(fieldRead(notifications, staff)),
     notificationQuery: homeQueryState(notifications, staff),

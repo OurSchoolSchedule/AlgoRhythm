@@ -1,10 +1,19 @@
 // @vitest-environment jsdom
-import { act, cleanup, render, renderHook, waitFor } from '@testing-library/react'
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  renderHook,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '@/App.jsx'
+import HomeView from '@/pages/home/HomeView.jsx'
 import client from '@/api/client.js'
 import { clearTokens, setTokens } from '@/api/tokenStorage.js'
 import { useSchoolHome, type HomeSelection } from './useSchoolHome'
@@ -417,5 +426,84 @@ describe('FE3 홈 조회', () => {
     })
     expect(result.current.notifications.items.state).toBe('empty')
     expect(getCalls(active)).toHaveLength(2)
+  })
+})
+
+describe('FE9 업무 홈', () => {
+  const displayRow = {
+    ...weeklyRow,
+    dayOfWeek: 'MON',
+    periodNumber: 1,
+    subjectName: '미술',
+    teacherName: teacher.username,
+  }
+
+  beforeEach(() => {
+    // Fix the school date while leaving React Query's real timers running.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-11-23T00:00:00+09:00'))
+    sessionStorage.clear()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    sessionStorage.clear()
+  })
+
+  it('학기 ID를 모르는 교사는 기본표와 확인된 담임을 조회하고 알림 실패에도 선택한 수업을 읽는다', async () => {
+    routes.set(mine, () => [displayRow])
+    routes.set('/api/notifications', httpError(500))
+    const ui = render(<HomeView navigate={vi.fn()} onLogout={vi.fn()} />, { wrapper })
+    const cell = await ui.findByRole('button', { name: '월요일 1교시 · 미술' })
+    fireEvent.click(cell)
+    expect(cell.getAttribute('aria-pressed')).toBe('true')
+    expect(cell.closest('td')?.getAttribute('data-today')).toBe('true')
+    expect(ui.getByRole('radio', { name: '담임 1-6반' })).toBeTruthy()
+    await waitFor(() =>
+      expect(
+        within(ui.getByRole('region', { name: '최근 알림' })).getByText('조회 실패'),
+      ).toBeTruthy(),
+    )
+    routes.set('/api/notifications', () => [])
+    fireEvent.click(ui.getByRole('button', { name: '알림 다시 시도' }))
+    await ui.findByText('받은 알림이 없습니다.')
+    expect(cell.getAttribute('aria-pressed')).toBe('true')
+    expect(getCalls(lessonsUrl)).toHaveLength(0)
+    expect(ui.queryByRole('button', { name: '시간표 생성' })).toBeNull()
+  })
+
+  it('담임 미등록과 빈 기본표에서도 해당 날짜 실제 수업과 변경된 담당 교사를 표시한다', async () => {
+    sessionStorage.setItem('school-home-term/541004/540001/2026/2', JSON.stringify(term))
+    routes.set(mine, () => [])
+    routes.set('/api/school/teachers', () => [{ ...teacher, homeroomClasses: [] }, other])
+    routes.set('/api/school/subjects', () => [{ id: lesson.subjectId, name: '실제 수업 과목' }])
+    const ui = render(<HomeView navigate={vi.fn()} onLogout={vi.fn()} />, { wrapper })
+    expect(await ui.findByText('조회된 주간 기본표가 없습니다')).toBeTruthy()
+    const dated = within(ui.getByRole('region', { name: '날짜별 실제 수업' }))
+    await dated.findByText('실제 수업 과목')
+    expect(dated.getByText('담당 변경')).toBeTruthy()
+    expect(dated.getByText(/최도현/)).toBeTruthy()
+    expect(ui.queryByRole('radio', { name: /담임/ })).toBeNull()
+    expect(ui.container.querySelectorAll('img')).toHaveLength(1)
+  })
+
+  it('주간 조회 조건이 이전 학교의 것이면 기본표와 날짜 수업 모두 요청하지 않는다', async () => {
+    const { result } = renderHome({ term: null, weeklyTerm: { ...term, schoolId: 123 } })
+    await waitFor(() => expect(result.current.activeSchool.state).toBe('ready'))
+    expect(result.current.weekly.state).toBe('disabled')
+    expect(result.current.dated.state).toBe('disabled')
+    expect(getCalls(mine)).toHaveLength(0)
+    expect(getCalls(lessonsUrl)).toHaveLength(0)
+  })
+
+  it('재직 관리자의 생성 바로가기가 기존 생성 화면으로 이어진다', async () => {
+    routes.set(active, () => activeSchool('ADMIN'))
+    const navigate = vi.fn()
+    const ui = render(<HomeView navigate={navigate} onLogout={vi.fn()} />, { wrapper })
+    const section = await ui.findByText('자주 쓰는 기능')
+    fireEvent.click(
+      within(section.closest('section')!).getByRole('button', { name: '시간표 생성' }),
+    )
+    expect(navigate).toHaveBeenCalledWith('schedule-create')
+    expect(ui.queryByRole('radio', { name: /담임/ })).toBeNull()
   })
 })
