@@ -20,6 +20,7 @@ export function getHomeNotices(signal?: AbortSignal) {
   return readList<HomeNoticeDto>('/api/notifications', signal)
 }
 
-export function getDatedLessons(termId: number, date: string, signal: AbortSignal) {
-  return readList<DatedLessonDto>(`/api/v2/terms/${termId}/lessons`, signal, { date })
+export async function getDatedLessons(termId: number, date: string, signal: AbortSignal) {
+  const rows = await readList<DatedLessonDto>(`/api/v2/terms/${termId}/lessons`, signal, { date })
+  return rows.filter((row) => row.termId === termId && row.date === date)
 }

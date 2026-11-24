@@ -8,12 +8,12 @@ import { useHomeSession } from './useHomeSession'
 
 export type SchoolTerm = Pick<HomeTerm, 'schoolId' | 'termId'>
 
-export function useAdminTerm(term: SchoolTerm | null) {
+export function useAdminTerm(term: SchoolTerm | null, action: 'generate' | 'publish' = 'generate') {
   const session = useHomeSession()
   const cache = useQueryClient()
   const allowed =
     term !== null &&
-    session.access.actions.generate &&
+    session.access.actions[action] &&
     session.school?.schoolId === term.schoolId &&
     Number.isSafeInteger(term.termId) &&
     term.termId > 0
@@ -25,7 +25,7 @@ export function useAdminTerm(term: SchoolTerm | null) {
       !allowed ||
       active?.status !== 'success' ||
       active.data?.schoolId !== term.schoolId ||
-      !homeAccess(session.userId !== null, active.data ?? null).actions.generate ||
+      !homeAccess(session.userId !== null, active.data ?? null).actions[action] ||
       session.identity.generation !== getSessionVersion() ||
       cache.isMutating({
         mutationKey: queryKeys.home.switchSchool(session.identity),

@@ -9,6 +9,7 @@ import { stripVTControlCharacters } from 'node:util'
 import { afterAll, beforeAll, expect, it } from 'vitest'
 import client, { API_BASE_URL } from './client.js'
 import { getGenerationStatus, submitGeneration } from './generationJobs'
+import { publishCandidate } from './publications'
 import { validateTeachingLoad } from './loadValidation'
 import { clearTokens, setTokens } from './tokenStorage.js'
 
@@ -20,6 +21,12 @@ const validatedLoadId = '375d0754-c375-42c6-b1f0-f630a9693e37'
 const generationPath = '/api/v2/terms/547001/generations'
 const jobId = '7eb15cc6-193f-4519-9704-50035ae28371'
 const statusUrl = generationPath + '/' + jobId
+const publication = {
+  jobId,
+  candidateId: '0'.repeat(63) + 'a',
+  effectiveFrom: '2026-11-23',
+  expectedPublishRev: 0,
+}
 let vite: ChildProcess
 let upstream: Server
 let bytes: Uint8Array<ArrayBuffer>
@@ -34,6 +41,14 @@ beforeAll(async () => {
   upstream = createServer(async (req, res) => {
     res.setHeader('Content-Type', 'application/json')
     try {
+      if (req.method === 'POST' && req.url === '/api/v2/terms/547001/publications') {
+        expect(req.headers.authorization).toBe('Bearer publication-test')
+        const chunks: Buffer[] = []
+        for await (const chunk of req) chunks.push(chunk)
+        expect(JSON.parse(Buffer.concat(chunks).toString())).toEqual(publication)
+        res.writeHead(201)
+        return res.end(JSON.stringify({ versionId: 83, publishRev: 1, weeklyLessons: 672 }))
+      }
       if (req.method === 'POST' && req.url === generationPath) {
         expect(req.headers.authorization).toBe('Bearer generation-test')
         const chunks: Buffer[] = []
@@ -177,6 +192,19 @@ it('로컬 Vite를 통해 편성 작업을 접수하고 202의 상대 statusUrl�
     expect(receipt.statusUrl).toBe(statusUrl)
     const job = await getGenerationStatus(547001, receipt)
     expect(job).toEqual({ jobId, state: 'RUNNING', expectedPublishRev: 0, result: null })
+  } catch (error) {
+    throw receiverError ?? error
+  }
+})
+
+it('로컬 Vite가 게시 본문의 네 필드와 인증 헤더를 전달하고 201 영수증을 반환한다', async () => {
+  setTokens({ accessToken: 'publication-test', userId: 42 })
+  try {
+    expect(await publishCandidate(547001, publication)).toEqual({
+      versionId: 83,
+      publishRev: 1,
+      weeklyLessons: 672,
+    })
   } catch (error) {
     throw receiverError ?? error
   }

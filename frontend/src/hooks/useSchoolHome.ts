@@ -97,8 +97,6 @@ export function useSchoolHome({ term, classId = null, date, timeZone }: HomeSele
       const rows = await getDatedLessons(currentTerm.termId, day, signal)
       return rows.filter(
         (row) =>
-          row.date === day &&
-          row.termId === currentTerm.termId &&
           (view !== 'mine' || row.actual.teacherId === teacherId) &&
           (view !== 'homeroom' || row.classId === selected),
       )
