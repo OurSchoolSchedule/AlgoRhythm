@@ -1,30 +1,19 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   createTimetable,
   deleteTimetable,
-  getMyTimetable,
-  getMyTimetableByTerm,
-  getSchoolTimetable,
-  getSchoolTimetableByTerm,
   updateTimetable,
 } from '@/api'
-import { queryKeys } from './queryKeys.js'
+import { useWeekRead } from './homeReads'
+import { useHomeSession } from './useHomeSession'
 
 /**
  * @param {{ academicYear?: number, semester?: number } & import('@tanstack/react-query').UseQueryOptions} [options]
  */
 export function useMyTimetable(options = {}) {
   const { academicYear, semester, ...queryOptions } = options
-  const hasTerm = academicYear != null && semester != null
-  return useQuery({
-    queryKey: queryKeys.timetable.mine(academicYear, semester),
-    queryFn: () => (
-      hasTerm
-        ? getMyTimetableByTerm(academicYear, semester)
-        : getMyTimetable()
-    ),
-    ...queryOptions,
-  })
+  const session = useHomeSession()
+  return useWeekRead(session, 'mine', academicYear, semester, undefined, undefined, queryOptions)
 }
 
 /**
@@ -32,16 +21,8 @@ export function useMyTimetable(options = {}) {
  */
 export function useSchoolTimetableList(options = {}) {
   const { academicYear, semester, ...queryOptions } = options
-  const hasTerm = academicYear != null && semester != null
-  return useQuery({
-    queryKey: queryKeys.timetable.school(academicYear, semester),
-    queryFn: () => (
-      hasTerm
-        ? getSchoolTimetableByTerm(academicYear, semester)
-        : getSchoolTimetable()
-    ),
-    ...queryOptions,
-  })
+  const session = useHomeSession()
+  return useWeekRead(session, 'school', academicYear, semester, undefined, undefined, queryOptions)
 }
 
 export function useCreateTimetable() {

@@ -3,18 +3,20 @@ import client from './client.js'
 /**
  * 내 시간표 (GET /api/timetable/me).
  * @returns {Promise<import('@/types/timetable.js').TimetableDto[]>}
+ * @param {{ signal?: AbortSignal }} [options]
  */
-export async function getMyTimetable() {
-  const { data } = await client.get('/api/timetable/me')
+export async function getMyTimetable(options = {}) {
+  const { data } = await client.get('/api/timetable/me', { signal: options.signal })
   return Array.isArray(data) ? data : []
 }
 
 /**
  * 학교 시간표 (GET /api/timetable).
  * @returns {Promise<import('@/types/timetable.js').TimetableDto[]>}
+ * @param {{ signal?: AbortSignal }} [options]
  */
-export async function getSchoolTimetable() {
-  const { data } = await client.get('/api/timetable')
+export async function getSchoolTimetable(options = {}) {
+  const { data } = await client.get('/api/timetable', { signal: options.signal })
   return Array.isArray(data) ? data : []
 }
 
@@ -22,9 +24,11 @@ export async function getSchoolTimetable() {
  * 학년도·학기 학교 시간표 (GET /api/timetable/year/{year}/semester/{semester}).
  * @param {number} year
  * @param {number} semester
+ * @param {{ signal?: AbortSignal }} [options]
+ * @returns {Promise<import('@/types/timetable.js').TimetableDto[]>}
  */
-export async function getSchoolTimetableByTerm(year, semester) {
-  const { data } = await client.get(`/api/timetable/year/${year}/semester/${semester}`)
+export async function getSchoolTimetableByTerm(year, semester, options = {}) {
+  const { data } = await client.get(`/api/timetable/year/${year}/semester/${semester}`, { signal: options.signal })
   return Array.isArray(data) ? data : []
 }
 
@@ -32,9 +36,11 @@ export async function getSchoolTimetableByTerm(year, semester) {
  * 학년도·학기 내 시간표 (GET /api/timetable/me/year/{year}/semester/{semester}).
  * @param {number} year
  * @param {number} semester
+ * @param {{ signal?: AbortSignal }} [options]
+ * @returns {Promise<import('@/types/timetable.js').TimetableDto[]>}
  */
-export async function getMyTimetableByTerm(year, semester) {
-  const { data } = await client.get(`/api/timetable/me/year/${year}/semester/${semester}`)
+export async function getMyTimetableByTerm(year, semester, options = {}) {
+  const { data } = await client.get(`/api/timetable/me/year/${year}/semester/${semester}`, { signal: options.signal })
   return Array.isArray(data) ? data : []
 }
 

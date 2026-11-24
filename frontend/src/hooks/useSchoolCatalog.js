@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   createSchoolClass,
   createSubject,
@@ -9,14 +9,13 @@ import {
   updateSchoolClass,
   updateSubject,
 } from '@/api'
+import { useHomeSession, useScopedRead } from './useHomeSession'
 import { queryKeys } from './queryKeys.js'
 
 export function useSubjects(options = {}) {
-  return useQuery({
-    queryKey: queryKeys.schoolCatalog.subjects(),
-    queryFn: getSubjects,
-    ...options,
-  })
+  const session = useHomeSession()
+  return useScopedRead(session, queryKeys.schoolCatalog.subjects(), session.access.queries.catalog,
+    signal => getSubjects({ signal }), options)
 }
 
 function useInvalidateSubjects() {
@@ -50,11 +49,9 @@ export function useDeleteSubject() {
 
 /** @param {number} [academicYear] */
 export function useSchoolClasses(academicYear, options = {}) {
-  return useQuery({
-    queryKey: queryKeys.schoolCatalog.classes(academicYear),
-    queryFn: () => getSchoolClasses(academicYear),
-    ...options,
-  })
+  const session = useHomeSession()
+  return useScopedRead(session, queryKeys.schoolCatalog.classes(academicYear), session.access.queries.catalog,
+    signal => getSchoolClasses(academicYear, { signal }), options)
 }
 
 export function useCreateSchoolClass() {

@@ -1,0 +1,421 @@
+// @vitest-environment jsdom
+import { act, cleanup, render, renderHook, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { AxiosError, type InternalAxiosRequestConfig } from 'axios'
+import type { ReactNode } from 'react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import App from '@/App.jsx'
+import client from '@/api/client.js'
+import { clearTokens, setTokens } from '@/api/tokenStorage.js'
+import { useSchoolHome, type HomeSelection } from './useSchoolHome'
+import { useUpdateActiveStore, useStaffProfile } from './useMypage.js'
+import { useNotifications } from './useNotification.js'
+import { useSchoolTimetable } from './useSchoolTimetable.js'
+import { useTodos } from './useTodo.js'
+import { useSubstituteRequests } from './useExtraShift.js'
+
+const term = { schoolId: 540001, termId: 547001, academicYear: 2026, semester: 2 }
+const day = '2026-11-23'
+const mine = '/api/timetable/me/year/2026/semester/2'
+const schoolWeek = '/api/timetable/year/2026/semester/2'
+const active = '/api/mypage/active-school'
+const lessonsUrl = '/api/v2/terms/547001/lessons'
+const room = { academicYear: 2026, grade: 1, classNumber: 6, classId: 544006 }
+const teacher = {
+  userId: 541004,
+  schoolUserId: 542004,
+  username: '최도현',
+  subjects: [],
+  homeroomClasses: [room],
+}
+const other = {
+  ...teacher,
+  userId: 541005,
+  schoolUserId: 542005,
+  username: '다른 교사',
+  homeroomClasses: [],
+}
+const weeklyRow = {
+  id: 12,
+  schoolId: term.schoolId,
+  schoolClassId: room.classId,
+  teacherId: teacher.schoolUserId,
+}
+const lesson = {
+  id: 51,
+  rev: 3,
+  termId: term.termId,
+  originId: 95,
+  originDate: '2026-11-22',
+  date: day,
+  subjectId: 20,
+  classId: room.classId,
+  versionId: 83,
+  planned: { teacherId: other.schoolUserId, periodId: 31 },
+  actual: { teacherId: teacher.schoolUserId, periodId: 32 },
+}
+const originalAdapter = client.defaults.adapter
+type Route = (config: InternalAxiosRequestConfig) => unknown
+let routes: Map<string, Route>
+let requests: InternalAxiosRequestConfig[]
+let cache: QueryClient
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((done) => {
+    resolve = done
+  })
+  return { promise, resolve }
+}
+function wrapper({ children }: { children: ReactNode }) {
+  return <QueryClientProvider client={cache}>{children}</QueryClientProvider>
+}
+function getCalls(url: string) {
+  return requests.filter((request) => request.url === url)
+}
+function httpError(status: number): Route {
+  return (config) => {
+    throw new AxiosError('조회 실패', undefined, config, undefined, {
+      status,
+      statusText: '',
+      config,
+      headers: {},
+      data: { success: false, error: 'FORBIDDEN' },
+    })
+  }
+}
+function activeSchool(position = 'TEACHER', schoolId = term.schoolId) {
+  return { schoolId, position, employmentStatus: 'HIRED' }
+}
+function renderHome(initialProps: HomeSelection = { term, date: day }) {
+  return renderHook((input: HomeSelection) => useSchoolHome(input), { wrapper, initialProps })
+}
+
+beforeEach(() => {
+  cache = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: 60_000 }, mutations: { retry: false } },
+  })
+  requests = []
+  routes = new Map<string, Route>([
+    [active, () => activeSchool()],
+    ['/api/mypage/teacher/profile', () => teacher],
+    ['/api/mypage/admin/profile', () => teacher],
+    ['/api/school/teachers', () => [teacher, other]],
+    ['/api/school/members', () => [teacher, other]],
+    ['/api/school/subjects', () => []],
+    ['/api/school/classes', () => []],
+    [
+      '/api/school-setting/periods',
+      () => [
+        { id: 31, periodNumber: 1 },
+        { id: 32, periodNumber: 2 },
+      ],
+    ],
+    ['/api/notifications', () => []],
+    [mine, () => [weeklyRow]],
+    [schoolWeek, () => [weeklyRow]],
+    [lessonsUrl, () => [lesson]],
+  ])
+  client.defaults.adapter = async (config) => {
+    requests.push(config)
+    const route = routes.get(config.url ?? '')
+    if (!route) throw new Error('예상 밖의 호출 ' + config.url)
+    return { status: 200, statusText: 'OK', headers: {}, config, data: await route(config) }
+  }
+  setTokens({ accessToken: 'test-token', userId: teacher.userId })
+})
+afterEach(() => {
+  cleanup()
+  cache.clear()
+  clearTokens()
+  client.defaults.adapter = originalAdapter
+})
+
+describe('FE3 홈 조회', () => {
+  it('기본 주간표와 날짜 수업을 각각 조회하고 승인 후 실제 교사·교시를 표시한다', async () => {
+    routes.set(lessonsUrl, () => [
+      lesson,
+      { ...lesson, id: 52, planned: lesson.actual, actual: lesson.planned },
+    ])
+    const { result, rerender } = renderHome()
+    await waitFor(() => expect(result.current.dated.state).toBe('ready'))
+    expect(result.current.dated.data).toEqual([
+      expect.objectContaining({
+        lessonId: 51,
+        rev: 3,
+        originId: 95,
+        date: day,
+        originDate: '2026-11-22',
+        planned: { ...lesson.planned, teacherName: other.username, periodNumber: 1 },
+        actual: { ...lesson.actual, teacherName: teacher.username, periodNumber: 2 },
+      }),
+    ])
+    expect(result.current.weekly.data?.[0].id).toBe(12)
+    expect(getCalls(lessonsUrl)[0].params).toEqual({ date: day })
+    expect(getCalls('/api/school/classes')[0].params).toEqual({ academicYear: 2026 })
+    expect(getCalls(lessonsUrl)[0].headers.Authorization).toBe('Bearer test-token')
+    expect(getCalls('/api/school/members')).toHaveLength(0)
+    expect(result.current.profile.name).toEqual({ state: 'value', value: teacher.username })
+    expect(result.current.canSwitchHomeroom).toBe(true)
+    routes.set(schoolWeek, () => [weeklyRow, { ...weeklyRow, id: 13, schoolClassId: 999 }])
+    rerender({ term, date: day, classId: room.classId })
+    await waitFor(() => expect(result.current.selection.view).toBe('homeroom'))
+    await waitFor(() => expect(result.current.weekly.state).toBe('ready'))
+    expect(result.current.weekly.data?.map((row) => row.id)).toEqual([12])
+    await waitFor(() => expect(result.current.dated.data).toHaveLength(2))
+    expect(getCalls(schoolWeek)).toHaveLength(1)
+    rerender({ term, date: '2026-11-24', classId: room.classId })
+    await waitFor(() => expect(result.current.dated.state).toBe('empty'))
+    expect(getCalls(lessonsUrl).at(-1)?.params.date).toBe('2026-11-24')
+  })
+
+  it.each(['pending', 'empty', 'missing', 'failed', 'forbidden'])(
+    '담임 명부 %s이면 학급 주간표 호출이 0건이다',
+    async (state) => {
+      const pending = deferred<unknown>()
+      const reads: Record<string, Route> = {
+        pending: () => pending.promise,
+        empty: () => [{ ...teacher, homeroomClasses: [] }],
+        missing: () => [other],
+        failed: httpError(500),
+        forbidden: httpError(403),
+      }
+      routes.set('/api/school/teachers', reads[state])
+      const { result } = renderHome({ term, date: day, classId: room.classId })
+      await waitFor(() => expect(result.current.weekly.state).toBe('ready'))
+      const expected: Record<string, string> = {
+        pending: 'pending',
+        empty: 'empty',
+        missing: 'unconfirmed',
+        failed: 'error',
+        forbidden: 'forbidden',
+      }
+      expect(result.current.profile.homerooms.state).toBe(expected[state])
+      expect(result.current.canSwitchHomeroom).toBe(false)
+      expect(result.current.selection.view).toBe('mine')
+      expect(getCalls(schoolWeek)).toHaveLength(0)
+      pending.resolve([])
+    },
+  )
+
+  it.each(['STUDENT', 'FUTURE_ROLE'])(
+    '%s는 활성 학교만 조회한다. 기존 홈의 훅도 교사 API를 보내지 않는다',
+    async (position) => {
+      routes.set(active, () => activeSchool(position))
+      const { result } = renderHook(
+        () => {
+          const home = useSchoolHome({ term, date: day, classId: room.classId })
+          useSchoolTimetable()
+          useNotifications()
+          useStaffProfile()
+          useTodos(day)
+          useSubstituteRequests()
+          return home
+        },
+        { wrapper },
+      )
+      await waitFor(() => expect(result.current.activeSchool.state).toBe('ready'))
+      expect(result.current.weekly.state).toBe('disabled')
+      expect(result.current.dated.state).toBe('disabled')
+      expect(requests.map((r) => r.url)).toEqual([active])
+    },
+  )
+
+  it('학생 계정으로 기존 홈과 헤더를 함께 열어도 활성 학교 외 요청은 없다', async () => {
+    routes.set(active, () => activeSchool('STUDENT'))
+    vi.stubGlobal('matchMedia', () => ({
+      matches: false,
+      addEventListener() {},
+      removeEventListener() {},
+    }))
+    try {
+      render(<App />, { wrapper })
+      await waitFor(() =>
+        expect(
+          cache.getQueryCache().find({ queryKey: ['mypage', 'active-store'], exact: false })?.state
+            .status,
+        ).toBe('success'),
+      )
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10))
+      })
+      expect(requests.map((r) => r.url)).toEqual([active])
+    } finally {
+      cleanup()
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('알림센터와 홈이 하나의 GET을 공유하고 홈 모델은 nullable 학교 이름을 보존한다', async () => {
+    routes.set('/api/notifications', () => [
+      {
+        id: 42,
+        schoolName: null,
+        type: 'SUBSTITUTE_REQUEST_INVITE',
+        category: 'SUBSTITUTE',
+        read: true,
+        message: '보결 요청',
+        createdAt: '2026-11-23T08:00:00',
+        timetableSwapRequestId: null,
+        substituteRequestId: 5,
+        substituteResponseId: null,
+      },
+    ])
+    const { result } = renderHook(
+      () => ({ home: useSchoolHome({ term, date: day }), legacy: useNotifications() }),
+      { wrapper },
+    )
+    await waitFor(() => expect(result.current.home.notifications.items.state).toBe('value'))
+    expect(result.current.home.notifications.items).toMatchObject({
+      value: [{ id: 42, group: 'substitute', schoolName: null, read: true }],
+    })
+    expect(result.current.legacy.data).toMatchObject([{ id: 42, isRead: true, storeName: '' }])
+    expect(getCalls('/api/notifications')).toHaveLength(1)
+  })
+
+  it('활성 학교 403이면 하위 조회를 시작하지 않는다', async () => {
+    routes.set(active, httpError(403))
+    const { result } = renderHome()
+    await waitFor(() => expect(result.current.activeSchool.state).toBe('forbidden'))
+    expect(result.current.weekly.state).toBe('disabled')
+    expect(requests.map((r) => r.url)).toEqual([active])
+  })
+
+  it('관리자는 전체 명부와 학교 주간표를 쓰고 알림 500에도 시간표를 유지한다', async () => {
+    routes.set(active, () => activeSchool('ADMIN'))
+    routes.set('/api/notifications', httpError(500))
+    const { result } = renderHome()
+    await waitFor(() => expect(result.current.notifications.items.state).toBe('error'))
+    await waitFor(() => expect(result.current.dated.state).toBe('ready'))
+    expect(result.current.weekly.state).toBe('ready')
+    expect(result.current.canSwitchHomeroom).toBe(false)
+    expect(getCalls(mine)).toHaveLength(0)
+    expect(getCalls('/api/school/teachers')).toHaveLength(0)
+    expect(getCalls('/api/school/members')).toHaveLength(1)
+  })
+
+  it('최초 로딩·빈 목록·배경 갱신을 구분하고 403을 받으면 캐시된 수업도 숨긴다', async () => {
+    const first = deferred<unknown>()
+    routes.set(mine, () => first.promise)
+    const { result } = renderHome()
+    await waitFor(() => expect(result.current.weekly.state).toBe('loading'))
+    first.resolve([])
+    await waitFor(() => expect(result.current.weekly.state).toBe('empty'))
+    const next = deferred<unknown>()
+    routes.set(mine, () => next.promise)
+    act(() => {
+      void cache.invalidateQueries({ queryKey: ['timetable'] })
+    })
+    await waitFor(() =>
+      expect(result.current.weekly).toMatchObject({ state: 'empty', refreshing: true, data: [] }),
+    )
+    next.resolve([weeklyRow])
+    await waitFor(() => expect(result.current.weekly.state).toBe('ready'))
+    routes.set(mine, httpError(403))
+    await act(() => cache.invalidateQueries({ queryKey: ['timetable'] }))
+    await waitFor(() => expect(result.current.weekly.state).toBe('forbidden'))
+    expect(result.current.weekly.data).toBeUndefined()
+    expect(result.current.dated.state).toBe('ready')
+  })
+
+  it('학교 전환 중 이전 표를 숨기고 이전 학기 입력·지연 응답을 새 학교에 노출하지 않는다', async () => {
+    const schoolB = term.schoolId + 1
+    const termB = { ...term, schoolId: schoolB, termId: term.termId + 1 }
+    const patch = deferred<unknown>()
+    const late = deferred<unknown>()
+    routes.set(active + '/' + schoolB, () => patch.promise)
+    const observed: (number | undefined)[] = []
+    const { result, rerender } = renderHook(
+      (input: HomeSelection) => {
+        const home = useSchoolHome(input)
+        const change = useUpdateActiveStore()
+        if (home.activeSchool.data?.schoolId === schoolB)
+          observed.push(home.weekly.data?.[0]?.schoolId)
+        return { home, change }
+      },
+      { wrapper, initialProps: { term, date: day } },
+    )
+    await waitFor(() => expect(result.current.home.weekly.state).toBe('ready'))
+    routes.set(mine, () => late.promise)
+    act(() => {
+      void cache.invalidateQueries({ queryKey: ['timetable'] })
+    })
+    await waitFor(() => expect(getCalls(mine)).toHaveLength(2))
+    const previous = getCalls(mine)[1]
+    act(() => result.current.change.mutate(schoolB))
+    await waitFor(() => expect(result.current.home.weekly.state).toBe('disabled'))
+    expect(result.current.home.weekly.data).toBeUndefined()
+    expect(previous.signal?.aborted).toBe(true)
+    routes.set(active, () => activeSchool('TEACHER', schoolB))
+    routes.set(mine, () => [{ ...weeklyRow, id: 22, schoolId: schoolB }])
+    routes.set('/api/v2/terms/' + termB.termId + '/lessons', () => [])
+    patch.resolve(activeSchool('TEACHER', schoolB))
+    await waitFor(() => expect(result.current.home.activeSchool.data?.schoolId).toBe(schoolB))
+    expect(result.current.home.weekly.state).toBe('disabled')
+    rerender({ term: termB, date: day })
+    await waitFor(() => expect(result.current.home.weekly.data?.[0]?.id).toBe(22))
+    await act(async () => {
+      late.resolve([weeklyRow])
+      await late.promise
+    })
+    expect(result.current.home.weekly.data?.[0]?.schoolId).toBe(schoolB)
+    expect(observed).not.toContain(term.schoolId)
+  })
+
+  it('학교 변경 응답이 유실되면 활성 학교를 다시 확인한 뒤 학기 조회를 재개한다', async () => {
+    const schoolB = term.schoolId + 1
+    routes.set(active + '/' + schoolB, (config) => {
+      routes.set(active, () => activeSchool('TEACHER', schoolB))
+      return httpError(503)(config)
+    })
+    const { result } = renderHook(
+      () => ({
+        home: useSchoolHome({ term, date: day }),
+        change: useUpdateActiveStore(),
+      }),
+      { wrapper },
+    )
+    await waitFor(() => expect(result.current.home.weekly.state).toBe('ready'))
+    act(() => result.current.change.mutate(schoolB))
+    await waitFor(() => expect(result.current.home.activeSchool.data?.schoolId).toBe(schoolB))
+    expect(getCalls(active)).toHaveLength(2)
+    expect(result.current.home.weekly.data).toBeUndefined()
+  })
+
+  it('다른 탭의 학교 전환 알림을 받으면 현재 학기와 이전 학교 캐시를 분리한다', async () => {
+    const { result } = renderHome()
+    await waitFor(() => expect(result.current.weekly.state).toBe('ready'))
+    const schoolB = term.schoolId + 1
+    routes.set(active, () => activeSchool('TEACHER', schoolB))
+    act(() => {
+      window.dispatchEvent(
+        new StorageEvent('storage', { key: 'activeSchoolChanged', storageArea: localStorage }),
+      )
+    })
+    await waitFor(() => expect(result.current.activeSchool.data?.schoolId).toBe(schoolB))
+    expect(result.current.weekly.state).toBe('disabled')
+    expect(result.current.weekly.data).toBeUndefined()
+  })
+
+  it('로그아웃과 재로그인 후 새 계정이 이전 계정의 표나 지연 알림을 받지 않는다', async () => {
+    const late = deferred<unknown>()
+    routes.set('/api/notifications', () => late.promise)
+    const { result } = renderHome()
+    await waitFor(() => expect(result.current.weekly.state).toBe('ready'))
+    const oldRequest = getCalls('/api/notifications')[0]
+    act(clearTokens)
+    await waitFor(() => expect(result.current.weekly.state).toBe('disabled'))
+    expect(result.current.weekly.data).toBeUndefined()
+    expect(oldRequest.signal?.aborted).toBe(true)
+    routes.set(mine, () => [])
+    routes.set('/api/notifications', () => [])
+    act(() => setTokens({ accessToken: 'next-user-token', userId: other.userId }))
+    await waitFor(() => expect(result.current.weekly.state).toBe('empty'))
+    await act(async () => {
+      late.resolve([{ id: 99 }])
+      await late.promise
+    })
+    expect(result.current.notifications.items.state).toBe('empty')
+    expect(getCalls(active)).toHaveLength(2)
+  })
+})

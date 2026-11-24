@@ -3,6 +3,13 @@
  * 무효화(invalidate) 범위를 일관되게 관리하기 위해 한곳에서 정의한다.
  */
 export const queryKeys = {
+  home: {
+    active: (identity) => ['mypage', 'active-store', identity],
+    switchSchool: (identity) => ['switch-school', identity],
+    directory: () => ['store', 'directory'],
+    dated: (termId, date, view, classId, teacherId) =>
+      ['dated-lessons', termId, date, view, classId, teacherId],
+  },
   mypage: {
     activeStore: () => ['mypage', 'active-store'],
     ownerProfile: () => ['mypage', 'owner', 'profile'],

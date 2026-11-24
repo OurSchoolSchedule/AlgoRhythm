@@ -3,9 +3,10 @@ import client from './client.js'
 
 /**
  * @returns {Promise<import('@/types/schoolCatalog.js').SubjectResponse[]>}
+ * @param {{ signal?: AbortSignal }} [options]
  */
-export async function getSubjects() {
-  const { data } = await client.get('/api/school/subjects')
+export async function getSubjects(options = {}) {
+  const { data } = await client.get('/api/school/subjects', { signal: options.signal })
   return Array.isArray(data) ? data : []
 }
 
@@ -34,9 +35,11 @@ export async function deleteSubject(subjectId) {
 /**
  * @param {number} [academicYear]
  * @returns {Promise<import('@/types/schoolCatalog.js').SchoolClassResponse[]>}
+ * @param {{ signal?: AbortSignal }} [options]
  */
-export async function getSchoolClasses(academicYear) {
+export async function getSchoolClasses(academicYear, options = {}) {
   const { data } = await client.get('/api/school/classes', {
+    signal: options.signal,
     params: academicYear != null ? { academicYear } : undefined,
   })
   return Array.isArray(data) ? data : []

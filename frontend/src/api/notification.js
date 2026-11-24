@@ -1,5 +1,5 @@
 // 알림(Notification) API
-import client from './client.js'
+import { getHomeNotices } from './home'
 import { normalizeNotification } from '@/utils/normalizeNotification.js'
 
 /**
@@ -7,6 +7,5 @@ import { normalizeNotification } from '@/utils/normalizeNotification.js'
  * @returns {Promise<import('@/types/notification.js').NotificationResponseDto[]>}
  */
 export async function getNotifications() {
-  const { data } = await client.get('/api/notifications')
-  return (data ?? []).map(normalizeNotification)
+  return (await getHomeNotices()).map(normalizeNotification)
 }

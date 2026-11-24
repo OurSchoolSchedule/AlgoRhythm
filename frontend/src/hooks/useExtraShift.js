@@ -5,6 +5,7 @@ import {
   respondExtraShift,
   approveExtraShift,
 } from '@/api'
+import { useHomeSession, useScopedRead } from './useHomeSession'
 import { queryKeys } from './queryKeys.js'
 
 function useInvalidateAfterExtraShift() {
@@ -17,11 +18,9 @@ function useInvalidateAfterExtraShift() {
 
 /** @param {'OPEN'|'FILLED'|'CANCELLED'|'EXPIRED'} [status] */
 export function useSubstituteRequests(status = 'OPEN', options = {}) {
-  return useQuery({
-    queryKey: queryKeys.substitute.requests(status),
-    queryFn: () => getSubstituteRequests(status),
-    ...options,
-  })
+  const session = useHomeSession()
+  return useScopedRead(session, queryKeys.substitute.requests(status), session.access.queries.adminProfile || session.access.queries.teacherProfile,
+    signal => getSubstituteRequests(status, { signal }), options)
 }
 
 const SUBSTITUTE_STATUSES = ['OPEN', 'FILLED', 'CANCELLED', 'EXPIRED']

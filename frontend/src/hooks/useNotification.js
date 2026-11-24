@@ -1,11 +1,12 @@
-import { useQuery } from '@tanstack/react-query'
-import { getNotifications } from '@/api'
+import { getHomeNotices } from '@/api/home'
+import { normalizeNotification } from '@/utils/normalizeNotification.js'
 import { queryKeys } from './queryKeys.js'
+import { useHomeSession, useScopedRead } from './useHomeSession'
+
+const normalizeList = rows => rows.map(normalizeNotification)
 
 export function useNotifications(options = {}) {
-  return useQuery({
-    queryKey: queryKeys.notification.list(),
-    queryFn: getNotifications,
-    ...options,
-  })
+  const session = useHomeSession()
+  return useScopedRead(session, queryKeys.notification.list(), session.access.queries.notifications,
+    getHomeNotices, { select: normalizeList, ...options })
 }

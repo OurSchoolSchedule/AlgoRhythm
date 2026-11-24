@@ -3,9 +3,12 @@ import client from './client.js'
 
 // ===== 활성 학교 =====
 
-/** @returns {Promise<import('@/types/mypage.js').ActiveSchoolResponse>} */
-export async function getActiveStore() {
-  const { data } = await client.get('/api/mypage/active-school')
+/**
+ * @param {{ signal?: AbortSignal }} [options]
+ * @returns {Promise<import('@/types/mypage.js').ActiveSchoolResponse>}
+ */
+export async function getActiveStore(options = {}) {
+  const { data } = await client.get('/api/mypage/active-school', { signal: options.signal })
   return data
 }
 
@@ -21,9 +24,12 @@ export async function updateActiveStore(schoolId) {
 
 // ===== 관리자 =====
 
-/** @returns {Promise<import('@/types/mypage.js').OwnerProfileResponse>} */
-export async function getOwnerProfile() {
-  const { data } = await client.get('/api/mypage/admin/profile')
+/**
+ * @param {{ signal?: AbortSignal }} [options]
+ * @returns {Promise<import('@/types/mypage.js').OwnerProfileResponse>}
+ */
+export async function getOwnerProfile(options = {}) {
+  const { data } = await client.get('/api/mypage/admin/profile', { signal: options.signal })
   return data
 }
 
@@ -73,9 +79,12 @@ export async function deleteOwnerStore(schoolId) {
 
 // ===== 교사 =====
 
-/** @returns {Promise<import('@/types/mypage.js').StaffProfileResponse>} */
-export async function getStaffProfile() {
-  const { data } = await client.get('/api/mypage/teacher/profile')
+/**
+ * @param {{ signal?: AbortSignal }} [options]
+ * @returns {Promise<import('@/types/mypage.js').StaffProfileResponse>}
+ */
+export async function getStaffProfile(options = {}) {
+  const { data } = await client.get('/api/mypage/teacher/profile', { signal: options.signal })
   return data
 }
 

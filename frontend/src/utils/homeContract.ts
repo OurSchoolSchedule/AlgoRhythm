@@ -28,8 +28,8 @@ function readField<T, V>(
 }
 
 export function toHomeProfile(
-  userId: number,
-  academicYear: number,
+  userId: number | null,
+  academicYear: number | null,
   profile: HomeRead<HomeProfileDto>,
   directory: HomeRead<readonly HomeMemberDto[]>,
 ): HomeProfile {
@@ -44,7 +44,9 @@ export function toHomeProfile(
     schoolUserId: readField(directory, () => member?.schoolUserId),
     subjects: readField(directory, () => member?.subjects),
     homerooms: readField(directory, () =>
-      member?.homeroomClasses?.filter((room) => room.academicYear === academicYear),
+      academicYear === null
+        ? undefined
+        : member?.homeroomClasses?.filter((room) => room.academicYear === academicYear),
     ),
     deputyHomeroom: { state: 'unsupported' },
     positionTitle: { state: 'unsupported' },

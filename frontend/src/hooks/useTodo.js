@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   getTodos,
   createTodo,
@@ -6,18 +6,16 @@ import {
   deleteTodo,
   toggleTodo,
 } from '@/api'
+import { useHomeSession, useScopedRead } from './useHomeSession'
 import { queryKeys } from './queryKeys.js'
 
 /**
  * @param {string} date "YYYY-MM-DD"
  */
 export function useTodos(date, options = {}) {
-  return useQuery({
-    queryKey: queryKeys.todo.byDate(date),
-    queryFn: () => getTodos(date),
-    enabled: Boolean(date),
-    ...options,
-  })
+  const session = useHomeSession()
+  return useScopedRead(session, queryKeys.todo.byDate(date), Boolean(date) && (session.access.queries.adminProfile || session.access.queries.teacherProfile),
+    signal => getTodos(date, { signal }), options)
 }
 
 function useInvalidateTodos() {
