@@ -116,19 +116,10 @@ export default function DevLoginView({ onSuccess }) {
   }
 
   return (
-    <div
-      style={{
-        height: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'var(--color-bg)',
-        fontFamily: "'Pretendard', 'Apple SD Gothic Neo', sans-serif",
-      }}
-    >
+    <main className="auth-layout-main">
       <div
         style={{
-          width: 360,
+          width: 'min(360px, 100%)',
           background: 'var(--color-surface)',
           borderRadius: 16,
           border: '1px solid var(--color-border)',
@@ -248,7 +239,7 @@ export default function DevLoginView({ onSuccess }) {
           </form>
         )}
       </div>
-    </div>
+    </main>
   )
 }
 

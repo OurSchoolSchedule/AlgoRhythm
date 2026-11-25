@@ -16,6 +16,7 @@ import AIFloatingChat from '@/components/common/AIFloatingChat'
 import { ThemeSwitch } from './HeaderUserMenu'
 import NotificationSidebar from './NotificationSidebar'
 import ProfileSchoolDialog from './ProfileSchoolDialog'
+import ServiceFooter from './ServiceFooter'
 import { MobileNavigation, WorkspaceNavigation } from './WorkspaceNavigation'
 
 const ScheduleCreateView = lazy(() => import('@/pages/schedule/ScheduleCreateView'))
@@ -186,6 +187,7 @@ function Workspace({ session, navigate: onNavigate, onLogout }) {
           <AIFloatingChat />
         </main>
       )}
+      <ServiceFooter />
       {panel === 'profile' && menus.profile && !home && (
         <DetailProfile session={session} openPanel={openPanel} />
       )}

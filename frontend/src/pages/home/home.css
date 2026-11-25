@@ -2,14 +2,23 @@
   --desk-canvas: color-mix(in srgb, var(--surface-1) 75%, var(--color-primary-subtle));
   display: grid;
   grid-template-columns: 204px minmax(0, 1fr) 256px;
-  grid-template-rows: 64px 1fr;
-  grid-template-areas: 'brand top top' 'menu main profile';
+  grid-template-rows: 64px 1fr auto;
+  grid-template-areas: 'brand top top' 'menu main profile' 'menu footer footer';
   min-height: 100dvh;
   background: var(--desk-canvas);
   color: var(--color-text);
   font-family: 'Pretendard Variable', Pretendard, sans-serif;
   font-size: 14px;
   line-height: 1.5;
+}
+.school-desk > .service-footer {
+  grid-area: footer;
+}
+@media (min-width: 720px) {
+  /* Leave the fixed AI button its own space beside the footer. */
+  .school-desk > .service-footer {
+    margin-inline-end: calc(var(--space-6) + 10em);
+  }
 }
 .school-desk *,
 .school-desk *::before {
@@ -686,7 +695,7 @@
 @media (max-width: 1199px) {
   .school-desk {
     grid-template-columns: 180px minmax(0, 1fr);
-    grid-template-areas: 'brand top' 'menu main';
+    grid-template-areas: 'brand top' 'menu main' 'menu footer';
   }
   .desk-profile {
     display: none;
@@ -701,8 +710,8 @@
 @media (max-width: 719px) {
   .school-desk {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 54px 1fr;
-    grid-template-areas: 'top' 'main';
+    grid-template-rows: 54px 1fr auto;
+    grid-template-areas: 'top' 'main' 'footer';
   }
   .desk-brand,
   .desk-sidebar {
@@ -815,7 +824,7 @@
 @media (min-width: 1200px) {
   .desk-detail {
     grid-template-columns: 204px minmax(0, 1fr);
-    grid-template-areas: 'brand top' 'menu main';
+    grid-template-areas: 'brand top' 'menu main' 'menu footer';
   }
 }
 .desk-drawer {
