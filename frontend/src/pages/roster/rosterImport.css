@@ -1,0 +1,191 @@
+.ri-panel {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  color: var(--color-text);
+}
+.ri-panel h2,
+.ri-panel h3,
+.ri-panel h4,
+.ri-panel p {
+  margin: 0;
+}
+.ri-panel h2 {
+  font-size: 1.25rem;
+}
+.ri-panel h3 {
+  font-size: 1.05rem;
+}
+.ri-panel p {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+.ri-panel header p {
+  margin-top: 6px;
+}
+.ri-panel .ri-scope,
+.ri-panel .ri-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 18px;
+}
+.ri-scope,
+.ri-heading,
+.ri-confirm {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.ri-heading,
+.ri-confirm {
+  justify-content: space-between;
+}
+.ri-scope > *,
+.ri-file {
+  display: grid;
+  gap: 5px;
+  font-weight: 600;
+}
+.ri-scope select,
+.ri-file input {
+  color: inherit;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-input);
+  border-radius: 7px;
+  padding: 9px;
+  font: inherit;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.ri-card {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.ri-card > button {
+  justify-self: start;
+}
+.ri-counts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 0;
+}
+.ri-counts div {
+  background: var(--color-surface-hover);
+  border-radius: 8px;
+  padding: 10px;
+}
+.ri-counts dt,
+.ri-panel small,
+.ri-old {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+.ri-counts dd {
+  font-weight: 700;
+  font-size: 1.25rem;
+  margin: 4px 0 0;
+}
+.ri-panel table {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+}
+.ri-panel th,
+.ri-panel td {
+  padding: 10px;
+  text-align: left;
+  font-size: 0.88rem;
+  border-bottom: 1px solid var(--color-border);
+}
+.ri-panel td small,
+.ri-old {
+  display: block;
+}
+.ri-directory summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.ri-directory[open] summary {
+  margin-bottom: 12px;
+}
+.ri-panel .ri-errors,
+.ri-panel .ri-success {
+  padding: 12px;
+  border-radius: 8px;
+}
+.ri-panel .ri-errors {
+  background: var(--color-danger-subtle);
+  color: var(--color-danger-text);
+}
+.ri-panel .ri-success {
+  background: var(--color-success-subtle);
+  color: var(--color-success-text);
+}
+.ri-errors ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+.ri-action {
+  white-space: nowrap;
+  font-weight: 600;
+}
+.ri-ADD {
+  color: var(--color-success-text);
+}
+.ri-UPDATE {
+  color: var(--color-info-text);
+}
+@media (max-width: 600px) {
+  .ri-counts {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .ri-panel .ri-card,
+  .ri-panel .ri-scope {
+    padding: 12px;
+  }
+}
+.ri-panel .btn {
+  min-height: 42px;
+  padding: 9px 15px;
+  border: 1px solid var(--color-border-input);
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-text);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+.ri-panel .btn-primary {
+  color: var(--color-on-primary);
+  background: var(--color-primary-button);
+  border-color: var(--color-primary-button);
+}
+.ri-panel .btn:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.ri-panel :is(button, select, input, summary):focus-visible {
+  outline: 2px solid var(--keyboard-focus-ring);
+  outline-offset: 2px;
+}
+.ri-panel .detail-table-scroll {
+  max-height: 29rem;
+  overflow: auto;
+}
+.ri-panel th {
+  position: sticky;
+  top: 0;
+  background: var(--color-surface);
+}
+.ri-file input::file-selector-button {
+  margin-inline-end: 10px;
+  border: 0;
+  padding: 6px 10px;
+  border-radius: 5px;
+  color: var(--color-text);
+  background: var(--color-surface-hover);
+}
