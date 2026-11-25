@@ -51,6 +51,7 @@ export function passkeyErrorCode(error: unknown): ErrorCode | undefined {
   if (error.name === 'NotSupportedError') return 'PASSKEY_UNSUPPORTED'
   const response = error.response
   if (!record(response)) return undefined
+  if (response.status === 403 && response.data === 'Invalid CORS request') return 'PASSKEY_ORIGIN'
   if (
     record(response.data) &&
     nonempty(response.data.code) &&
