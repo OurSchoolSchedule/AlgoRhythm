@@ -507,3 +507,84 @@ describe('FE9 업무 홈', () => {
     expect(ui.queryByRole('radio', { name: /담임/ })).toBeNull()
   })
 })
+
+describe('FE11 공통 업무 메뉴', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-11-23T00:00:00+09:00'))
+    sessionStorage.setItem('school-home-term/541004/540001/2026/2', JSON.stringify(term))
+    routes.set(mine, () => [])
+    routes.set(schoolWeek, () => [])
+    vi.stubGlobal('matchMedia', () => ({
+      matches: false,
+      addEventListener() {},
+      removeEventListener() {},
+    }))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+    sessionStorage.clear()
+  })
+
+  it.each(['ADMIN', 'TEACHER'])(
+    '%s의 권한이 확인된 뒤 한 메뉴에서 상세와 홈을 오간다',
+    async (role) => {
+      const response = deferred<ReturnType<typeof activeSchool>>()
+      routes.set(active, () => response.promise)
+      routes.set('/api/todos', () => ({ personalTodos: [] }))
+      const ui = render(<App />, { wrapper })
+      const initialMenu = ui.getByRole('navigation', { name: '업무 메뉴' })
+      expect(within(initialMenu).getAllByRole('button')).toHaveLength(1)
+      await waitFor(() => expect(requests.map((r) => r.url)).toEqual([active]))
+      await act(async () => response.resolve(activeSchool(role)))
+
+      await ui.findByRole('button', { name: '요청 내역' })
+      const menu = ui.getByRole('navigation', { name: '업무 메뉴' })
+      expect(
+        within(menu)
+          .getAllByRole('button')
+          .map((button) => button.textContent),
+      ).toEqual([
+        '업무 홈',
+        '시간표',
+        '할 일',
+        '보결·교환 업무',
+        '요청 내역',
+        ...(role === 'ADMIN' ? ['시간표 생성', '과목·수업 관리', '관리자 도구'] : []),
+      ])
+      await waitFor(() => expect(getCalls(lessonsUrl)).toHaveLength(1))
+      expect(getCalls(role === 'ADMIN' ? schoolWeek : mine)).toHaveLength(1)
+      fireEvent.click(within(menu).getByRole('button', { name: '할 일' }))
+      await waitFor(() => expect(getCalls('/api/todos').length).toBeGreaterThan(0))
+      expect(ui.getByRole('navigation', { name: '업무 메뉴' })).toBe(menu)
+      expect(within(menu).getByRole('button', { current: 'page' }).textContent).toBe('할 일')
+      expect(ui.queryByRole('region', { name: '날짜별 실제 수업' })).toBeNull()
+
+      requests.length = 0
+      await act(async () => {
+        await cache.invalidateQueries({ queryKey: ['timetable'] })
+        await cache.invalidateQueries({ queryKey: ['dated-lessons'] })
+      })
+      expect(requests).toHaveLength(0)
+      fireEvent.click(within(menu).getByRole('button', { name: '업무 홈' }))
+      await ui.findByRole('heading', { name: '업무 홈' })
+      expect(within(menu).getByRole('button', { current: 'page' }).textContent).toBe('업무 홈')
+    },
+  )
+
+  it('관리 화면에서 학교 권한을 잃으면 이전 화면과 관리자 메뉴를 즉시 해제한다', async () => {
+    routes.set(active, () => activeSchool('ADMIN'))
+    const ui = render(<App />, { wrapper })
+    const menu = () => within(ui.getByRole('navigation', { name: '업무 메뉴' }))
+    fireEvent.click(await ui.findByRole('button', { name: '관리자 도구' }))
+    await ui.findByRole('heading', { name: '관리자 도구' })
+    routes.set(active, httpError(403))
+    await act(async () => {
+      await cache.invalidateQueries({ queryKey: ['mypage', 'active-store'] })
+    })
+    expect(menu().getAllByRole('button')).toHaveLength(1)
+    expect(ui.queryByRole('heading', { name: '관리자 도구' })).toBeNull()
+    expect(ui.getByText('활성 학교 조회 권한이 없습니다.')).toBeTruthy()
+  })
+})

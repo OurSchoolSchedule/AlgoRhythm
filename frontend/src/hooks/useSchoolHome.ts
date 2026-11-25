@@ -3,13 +3,12 @@ import type { DirectoryMember } from '@/api/home'
 import { getDatedLessons } from '@/api/home'
 import { useSchoolClasses, useSubjects } from './useSchoolCatalog.js'
 import { usePeriodSettings } from './useSchoolSetting.js'
-import { getOwnerProfile, getStaffProfile } from '@/api/mypage.js'
 import type { HomeTerm, LessonAssignmentDto } from '@/types/datedLesson'
 import type { PeriodSettingResponse } from '@/types/schoolSetting.js'
 import { homeWeekAccess } from '@/utils/homeAccess'
-import { schoolDate, toHomeNotifications, toHomeProfile } from '@/utils/homeContract'
+import { schoolDate, toHomeNotifications } from '@/utils/homeContract'
 import { fieldRead, homeQueryState } from '@/utils/homeQueryState'
-import { useHomeDirectory, useHomeNotices, useWeekRead } from './homeReads'
+import { useHomeProfile, useHomeNotices, useWeekRead } from './homeReads'
 import { queryKeys } from './queryKeys.js'
 import { useScopedRead, useHomeSession } from './useHomeSession'
 
@@ -56,19 +55,9 @@ export function useSchoolHome({ term, weeklyTerm, classId = null, date, timeZone
   const calendar = currentTerm ?? (weeklyTerm?.schoolId === school?.schoolId ? weeklyTerm : null)
   const staff = access.queries.adminProfile || access.queries.teacherProfile
   const inWeek = staff && calendar != null
-  const admin = access.queries.adminProfile
-  const profileQuery = useScopedRead(
+  const { profileQuery, directory, profile } = useHomeProfile(
     session,
-    admin ? queryKeys.mypage.ownerProfile() : queryKeys.mypage.staffProfile(),
-    staff,
-    (signal) => (admin ? getOwnerProfile({ signal }) : getStaffProfile({ signal })),
-  )
-  const directory = useHomeDirectory(session)
-  const profile = toHomeProfile(
-    userId,
     calendar?.academicYear ?? null,
-    fieldRead(profileQuery, staff),
-    fieldRead(directory, staff),
   )
   const week = homeWeekAccess(access, profile.homerooms, classId)
   const view = inWeek ? week.selection.view : 'unavailable'

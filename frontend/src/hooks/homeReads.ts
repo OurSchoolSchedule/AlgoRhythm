@@ -1,3 +1,6 @@
+import { getOwnerProfile, getStaffProfile } from '@/api/mypage.js'
+import { toHomeProfile } from '@/utils/homeContract'
+import { fieldRead } from '@/utils/homeQueryState'
 import { getHomeDirectory, getHomeNotices } from '@/api/home'
 import {
   getMyTimetable,
@@ -17,6 +20,25 @@ export function useHomeDirectory(session: HomeSession, enabled = true) {
     enabled && (members || teachers),
     (signal) => getHomeDirectory(members, signal),
   )
+}
+
+export function useHomeProfile(session: HomeSession, academicYear: number | null) {
+  const staff = session.access.menus.profile
+  const admin = session.access.queries.adminProfile
+  const profileQuery = useScopedRead(
+    session,
+    admin ? queryKeys.mypage.ownerProfile() : queryKeys.mypage.staffProfile(),
+    staff,
+    (signal) => (admin ? getOwnerProfile({ signal }) : getStaffProfile({ signal })),
+  )
+  const directory = useHomeDirectory(session)
+  const profile = toHomeProfile(
+    session.userId,
+    academicYear,
+    fieldRead(profileQuery, staff),
+    fieldRead(directory, staff),
+  )
+  return { profileQuery, directory, profile }
 }
 
 export function useHomeNotices(session: HomeSession) {

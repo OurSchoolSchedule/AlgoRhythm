@@ -54,7 +54,7 @@ export function Actions({ items, compact = false }) {
   )
 }
 
-export function Dialog({ title, onClose, children }) {
+export function Dialog({ title, onClose, children, drawer = false }) {
   const ref = useRef(null)
   useLayoutEffect(() => {
     const el = ref.current
@@ -69,7 +69,7 @@ export function Dialog({ title, onClose, children }) {
   return (
     <dialog
       ref={ref}
-      className="desk-dialog"
+      className={drawer ? 'desk-dialog desk-drawer' : 'desk-dialog'}
       aria-label={title}
       onCancel={(event) => {
         event.preventDefault()
