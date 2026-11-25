@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import mochi from '@/assets/home-mochi.webp'
+import mochi from '@/assets/home-mochi.webp?no-inline'
 import { toISODate } from '@/utils'
 import { startOfSchoolWeek, shiftSchoolWeek } from '@/utils/schoolWeek'
 import { resolveSubjectColor } from '@/utils/subjectColor'

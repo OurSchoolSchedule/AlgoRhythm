@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import chick from '@/assets/upload-chick.webp'
+import chick from '@/assets/upload-chick.webp?no-inline'
 import { loadingPresentation, type ScheduleProgress as Progress } from '@/utils/scheduleProgress'
 
 const query = '(prefers-reduced-motion: reduce)'
