@@ -1,0 +1,10 @@
+{
+  "validatedLoadId": "검증 응답의 validatedLoadId로 교체",
+  "teachingSlots": [
+    {
+      "day": "MON",
+      "period": 2
+    }
+  ],
+  "preferences": []
+}
