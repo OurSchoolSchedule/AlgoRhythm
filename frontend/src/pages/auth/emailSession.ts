@@ -10,10 +10,11 @@ export type VerifiedEmail = {
   schoolMembership: SchoolMembership | null
 }
 
-// FE17 owns the WebAuthn ceremony. Only its completed work session may enter onboarding or home.
+// Limited email grants cannot enter the workspace. Only a completed ceremony returns a work session.
 export type PasskeyContinuation = ComponentType<{
   verification: VerifiedEmail
   onAuthenticated: (session: WorkSession) => void
+  onRecoveryIssued?: (userId: number) => void
   onRestart: () => void
 }>
 

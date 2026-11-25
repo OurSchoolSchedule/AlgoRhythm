@@ -8,8 +8,11 @@ const PREVIEW_ROLE_KEY = 'previewUserRole'
 const PENDING_SCHOOL_KEY = 'onboardingUserId'
 
 export function hasPendingSchool() {
-  const id = getUserId()
-  return Boolean(getAccessToken() && id && localStorage.getItem(PENDING_SCHOOL_KEY) === id)
+  return Boolean(getAccessToken() && hasPendingSchoolFor(getUserId()))
+}
+
+export function hasPendingSchoolFor(userId) {
+  return userId != null && localStorage.getItem(PENDING_SCHOOL_KEY) === String(userId)
 }
 
 export function markPendingSchool(userId) {

@@ -21,6 +21,7 @@ import { MobileNavigation, WorkspaceNavigation } from './WorkspaceNavigation'
 
 const ScheduleCreateView = lazy(() => import('@/pages/schedule/ScheduleCreateView'))
 const LessonChangesView = lazy(() => import('@/pages/schedule/LessonChangesView'))
+const PasskeySettings = lazy(() => import('@/pages/auth/PasskeySettings'))
 const phoneQuery = '(max-width: 719px)'
 
 function workspaceMenu(menus) {
@@ -105,7 +106,7 @@ function DetailProfile({ session, openPanel }) {
   )
 }
 
-function Workspace({ session, navigate: onNavigate, onLogout }) {
+function Workspace({ session, navigate: onNavigate, onLogout, onOpenPasskeys }) {
   const [page, setPage] = useState({ view: 'home' })
   const [panel, openPanel] = useState(null)
   const [theme, setTheme] = useState(getStoredTheme)
@@ -150,6 +151,17 @@ function Workspace({ session, navigate: onNavigate, onLogout }) {
               setTheme(value)
             }}
           />
+          {session.userId != null && (
+            <button
+              type="button"
+              className="desk-icon"
+              aria-label="패스키 관리"
+              title="패스키 관리"
+              onClick={onOpenPasskeys}
+            >
+              <Icon name="settings" />
+            </button>
+          )}
           {menus.notifications && (
             <button
               className="desk-icon desk-bell"
@@ -211,16 +223,35 @@ function Workspace({ session, navigate: onNavigate, onLogout }) {
   )
 }
 
-export default function SchoolWorkspace(props) {
-  const session = useHomeSession()
+function AccountWorkspace({ session, ...props }) {
+  const [passkeysOpen, setPasskeysOpen] = useState(false)
   const scope = session.scope
   return (
-    <Workspace
-      key={[scope.userId, scope.generation, scope.schoolId, scope.position, scope.employment].join(
-        '/',
+    <>
+      <Workspace
+        key={[
+          scope.userId,
+          scope.generation,
+          scope.schoolId,
+          scope.position,
+          scope.employment,
+        ].join('/')}
+        session={session}
+        onOpenPasskeys={() => setPasskeysOpen(true)}
+        {...props}
+      />
+      {passkeysOpen && session.userId != null && (
+        <Dialog title="패스키 관리" onClose={() => setPasskeysOpen(false)}>
+          <Suspense fallback={<p role="status">등록 기기를 불러오는 중입니다.</p>}>
+            <PasskeySettings />
+          </Suspense>
+        </Dialog>
       )}
-      session={session}
-      {...props}
-    />
+    </>
   )
+}
+
+export default function SchoolWorkspace(props) {
+  const session = useHomeSession()
+  return <AccountWorkspace key={session.userId} session={session} {...props} />
 }
