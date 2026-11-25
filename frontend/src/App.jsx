@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import SchoolWorkspace from '@/components/layout/SchoolWorkspace'
 import ServiceFooter from '@/components/layout/ServiceFooter'
-import { DevLoginView } from '@/pages/auth'
+import { EmailEntryView } from '@/pages/auth'
 import {
   getAccessToken,
+  hasPendingSchool,
   clearTokens,
   clearPreviewUserRole,
   getPreviewUserRole,
@@ -13,11 +14,15 @@ import { useLogout } from '@/hooks'
 import { applyTheme, getStoredTheme } from '@/theme'
 
 export default function App() {
-  const [authed, setAuthed] = useState(() => Boolean(getAccessToken() || getPreviewUserRole()))
+  const [authed, setAuthed] = useState(() => Boolean((getAccessToken() && !hasPendingSchool()) || getPreviewUserRole()))
+  const [entryVersion, setEntryVersion] = useState(0)
   const logoutMutation = useLogout()
 
   useEffect(() => {
-    setOnAuthError(() => setAuthed(false))
+    setOnAuthError(() => {
+      setAuthed(false)
+      setEntryVersion((version) => version + 1)
+    })
     return () => setOnAuthError(null)
   }, [])
 
@@ -43,7 +48,7 @@ export default function App() {
   if (!authed) {
     return (
       <div className="auth-layout">
-        <DevLoginView onSuccess={() => setAuthed(true)} />
+        <EmailEntryView key={entryVersion} onSuccess={() => setAuthed(true)} />
         <ServiceFooter />
       </div>
     )
