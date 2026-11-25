@@ -17,8 +17,9 @@ export async function submitGeneration(
   termId: number,
   request: GenerationRequest,
   signal?: AbortSignal,
+  http = client,
 ): Promise<AcceptedGeneration> {
-  const { data, status } = await client.post<AcceptedGeneration>(generationsUrl(termId), request, {
+  const { data, status } = await http.post<AcceptedGeneration>(generationsUrl(termId), request, {
     signal,
   })
   if (
@@ -37,9 +38,10 @@ export async function getGenerationStatus(
   termId: number,
   accepted: AcceptedGeneration,
   signal?: AbortSignal,
+  http = client,
 ): Promise<GenerationJob> {
   checkStatusUrl(termId, accepted)
-  const { data, status } = await client.get<GenerationJob>(accepted.statusUrl, {
+  const { data, status } = await http.get<GenerationJob>(accepted.statusUrl, {
     signal,
   })
   if (

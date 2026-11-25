@@ -1,0 +1,138 @@
+.s42 {
+  max-width: 900px;
+  margin: auto;
+  padding: 30px 20px 80px;
+  font-family: system-ui, sans-serif;
+  color: #182e32;
+  line-height: 1.6;
+  color-scheme: light;
+}
+body:has(.s42) {
+  background: #f1f5f2;
+}
+.s42 header {
+  padding: 12px 0 24px;
+  border-bottom: 2px solid #18604f;
+}
+.s42 header p {
+  color: #455e5b;
+  margin: 4px 0;
+}
+.s42 h1 {
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  margin: 6px 0;
+  line-height: 1.2;
+}
+.s42 h2 {
+  font-size: 1.2rem;
+  color: #173f37;
+  margin: 0 0 10px;
+}
+.s42 section {
+  margin-top: 16px;
+  background: white;
+  border: 1px solid #cedcd4;
+  border-radius: 12px;
+  padding: 20px;
+}
+.s42 fieldset {
+  border: 0;
+  padding: 0;
+  margin: 14px 0;
+}
+.s42 legend {
+  font-weight: 650;
+  margin-bottom: 6px;
+}
+.s42 fieldset:disabled {
+  opacity: 0.7;
+}
+.s42-actions,
+.s42-row,
+.s42 form {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.s42-row {
+  justify-content: space-between;
+}
+.s42 label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.s42 a {
+  color: #13644e;
+  text-decoration: underline;
+}
+.s42 button,
+.s42 select,
+.s42 input {
+  font: inherit;
+}
+.s42 button {
+  color: white;
+  background: #17634f;
+  border: 1px solid #17634f;
+  padding: 7px 13px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.s42 button.quiet {
+  color: #174f42;
+  background: #eff7f2;
+  border-color: #b9d0c2;
+}
+.s42 button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.s42 input,
+.s42 select {
+  max-width: 100%;
+  border: 1px solid #a8bcb1;
+  padding: 6px;
+  border-radius: 5px;
+}
+.s42 .s42-scroll {
+  overflow: auto;
+}
+.s42 table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 520px;
+  margin-top: 10px;
+}
+.s42 caption {
+  text-align: left;
+  padding: 6px;
+}
+.s42 td,
+.s42 th {
+  border: 1px solid #d6e1da;
+  padding: 7px;
+  text-align: center;
+}
+.s42 th {
+  background: #eef4ef;
+}
+.s42 small {
+  display: block;
+  color: #476154;
+}
+.s42-feedback {
+  position: sticky;
+  bottom: 8px;
+}
+.s42-feedback p {
+  background: #173f37;
+  color: white;
+  padding: 12px 18px;
+  border-radius: 8px;
+}
+.s42-feedback p[role="alert"] {
+  background: #773525;
+}
