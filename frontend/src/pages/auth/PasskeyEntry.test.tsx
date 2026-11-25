@@ -66,6 +66,19 @@ it('holds registration tokens and the single recovery code until the user acknow
   expect(screen.queryByText(issued.recoveryCode)).toBeNull()
 })
 
+it('explains a rejected registration origin without sending the user through email again', async () => {
+  vi.mocked(api.registerPasskey).mockRejectedValueOnce({
+    response: { status: 403, data: 'Invalid CORS request' },
+  })
+  render(
+    <VerifiedPasskeyStep verification={verified} onAuthenticated={vi.fn()} onRestart={vi.fn()} />,
+  )
+  click('패스키 등록')
+  expect((await screen.findByRole('alert')).textContent).toContain('공식 주소')
+  expect(screen.queryByText(/이메일 인증 코드를 새로/)).toBeNull()
+  expect(screen.queryByText(/세션이 만료/)).toBeNull()
+})
+
 it('requires fresh email verification after a bad recovery code instead of reusing the grant', async () => {
   vi.mocked(api.recoverPasskey).mockRejectedValueOnce({
     response: { data: { code: 'PASSKEY_INVALID' } },

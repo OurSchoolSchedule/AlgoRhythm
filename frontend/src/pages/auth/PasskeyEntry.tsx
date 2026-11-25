@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import {
   loginWithPasskey,
+  passkeyErrorCode,
   passkeyErrorMessage,
   recoverPasskey,
   registerPasskey,
@@ -15,7 +16,13 @@ const unsupported =
 function usePasskeyAction(onBusy?: (busy: boolean) => void) {
   const current = useRef<AbortController | null>(null)
   const [pending, setPending] = useState(false)
-  const [error, setError] = useState('')
+  const [failure, setFailure] = useState({
+    message: '',
+    originRejected: false,
+  })
+  function setError(message: string) {
+    setFailure({ message, originRejected: false })
+  }
   useEffect(
     () => () => {
       current.current?.abort()
@@ -38,7 +45,11 @@ function usePasskeyAction(onBusy?: (busy: boolean) => void) {
       const result = await perform(request.signal)
       if (!request.signal.aborted) complete(result)
     } catch (reason) {
-      if (!request.signal.aborted) setError(passkeyErrorMessage(reason))
+      if (!request.signal.aborted)
+        setFailure({
+          message: passkeyErrorMessage(reason),
+          originRejected: passkeyErrorCode(reason) === 'PASSKEY_ORIGIN',
+        })
     } finally {
       if (current.current === request) {
         current.current = null
@@ -54,7 +65,14 @@ function usePasskeyAction(onBusy?: (busy: boolean) => void) {
     onBusy?.(false)
     setError('패스키 인증을 취소했습니다.')
   }
-  return { run, cancel, error, setError, pending }
+  return {
+    run,
+    cancel,
+    error: failure.message,
+    setError,
+    originRejected: failure.originRejected,
+    pending,
+  }
 }
 
 function ActionStatus({
@@ -209,10 +227,12 @@ export function VerifiedPasskeyStep({
         ) : (
           <>
             {usedGrant && !action.pending ? (
-              <p>
-                다시 진행하려면 이메일 인증 코드를 새로 받아 주세요. 이미 등록을 마쳤다면 첫
-                화면에서 패스키로 로그인할 수 있습니다.
-              </p>
+              !action.originRejected && (
+                <p>
+                  다시 진행하려면 이메일 인증 코드를 새로 받아 주세요. 이미 등록을 마쳤다면 첫
+                  화면에서 패스키로 로그인할 수 있습니다.
+                </p>
+              )
             ) : recovering ? (
               <>
                 <p>
