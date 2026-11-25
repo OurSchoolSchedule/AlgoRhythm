@@ -5,6 +5,7 @@ import {
   clearTokens,
   getUserId,
   hasPendingSchool,
+  hasPendingSchoolFor,
   localLoginEnabled,
   markPendingSchool,
   setTokens,
@@ -13,29 +14,13 @@ import { getApiErrorMessage } from '@/utils/timetableGeneration'
 import { isWorkSession, readVerifiedEmail } from './emailSession'
 import EntryLayout from './EntryLayout'
 import SchoolOnboarding from './SchoolOnboarding'
+import { DirectPasskeyLogin, VerifiedPasskeyStep } from './PasskeyEntry'
 
 const LocalLogin = import.meta.env.DEV ? lazy(() => import('./LocalLogin')) : null
 
-function PendingPasskey({ verification, onRestart }) {
-  return (
-    <>
-      <h2 className="entry-auth-title">
-        {verification.nextStep === 'REGISTER' ? '패스키 등록 필요' : '패스키 인증 필요'}
-      </h2>
-      <p role="status">
-        이메일이 확인되었습니다. 이 계정은 패스키를 사용해야 합니다. 현재 버전에서는 패스키 단계를
-        진행할 수 없습니다.
-      </p>
-      <button type="button" className="entry-secondary" onClick={onRestart}>
-        이메일 입력으로 돌아가기
-      </button>
-    </>
-  )
-}
-
 /** @param {{onSuccess: () => void, PasskeyStep?: import('./emailSession').PasskeyContinuation}} props */
 export default function EmailEntryView({ onSuccess, PasskeyStep }) {
-  const Continuation = PasskeyStep ?? PendingPasskey
+  const Continuation = PasskeyStep ?? VerifiedPasskeyStep
   const [phase, setPhase] = useState(() => (hasPendingSchool() ? 'school' : 'email'))
   const [intent, setIntent] = useState('login')
   const [email, setEmail] = useState('')
@@ -45,7 +30,9 @@ export default function EmailEntryView({ onSuccess, PasskeyStep }) {
   const [verification, setVerification] = useState(null)
   const send = useSendEmailVerification()
   const verify = useVerifyEmailVerification()
-  const busy = send.isPending || verify.isPending
+  const [passkeyBusy, setPasskeyBusy] = useState(false)
+  const emailBusy = send.isPending || verify.isPending
+  const busy = emailBusy || passkeyBusy
 
   const reset = () => {
     setPhase('email')
@@ -143,6 +130,10 @@ export default function EmailEntryView({ onSuccess, PasskeyStep }) {
           <Continuation
             verification={verification}
             onRestart={reset}
+            onRecoveryIssued={(userId) => {
+              if (verification.nextStep === 'REGISTER' && !verification.schoolMembership)
+                markPendingSchool(userId)
+            }}
             onAuthenticated={(session) => {
               if (!isWorkSession(session) || session.userId !== verification.userId) {
                 setError('인증한 계정의 업무 세션을 확인할 수 없습니다.')
@@ -150,7 +141,8 @@ export default function EmailEntryView({ onSuccess, PasskeyStep }) {
               }
               enter(
                 session,
-                verification.nextStep === 'REGISTER' && !verification.schoolMembership,
+                !verification.schoolMembership &&
+                  (verification.nextStep === 'REGISTER' || hasPendingSchoolFor(session.userId)),
                 verification.schoolMembership?.employmentStatus === 'PENDING',
               )
             }}
@@ -188,7 +180,7 @@ export default function EmailEntryView({ onSuccess, PasskeyStep }) {
             {phase === 'code'
               ? '인증 코드 확인'
               : intent === 'login'
-                ? '이메일로 로그인'
+                ? '업무 로그인'
                 : '이메일로 회원가입'}
           </h2>
           <p>
@@ -198,11 +190,18 @@ export default function EmailEntryView({ onSuccess, PasskeyStep }) {
                 입력하세요.
               </>
             ) : intent === 'login' ? (
-              '학교 업무에 사용하는 이메일로 인증 코드를 받으세요.'
+              '등록한 패스키로 로그인하거나 학교 업무용 이메일로 인증을 시작하세요.'
             ) : (
               '이메일 인증 후 학교를 연결해 계정을 시작하세요.'
             )}
           </p>
+          {phase === 'email' && intent === 'login' && (
+            <DirectPasskeyLogin
+              disabled={emailBusy}
+              onBusyChange={setPasskeyBusy}
+              onAuthenticated={(session) => enter(session, hasPendingSchoolFor(session.userId))}
+            />
+          )}
           <form className="entry-form" onSubmit={phase === 'code' ? verifyCode : requestCode}>
             {phase === 'email' ? (
               <label>
@@ -252,7 +251,7 @@ export default function EmailEntryView({ onSuccess, PasskeyStep }) {
               className="entry-primary"
               disabled={busy || (phase === 'code' ? !/^\d{6}$/.test(code) : !email.trim())}
             >
-              {busy
+              {emailBusy
                 ? verify.isPending
                   ? '확인 중…'
                   : '보내는 중…'
@@ -271,7 +270,7 @@ export default function EmailEntryView({ onSuccess, PasskeyStep }) {
               </button>
             </div>
           )}
-          {phase === 'email' && localLoginEnabled() && LocalLogin && (
+          {phase === 'email' && !busy && localLoginEnabled() && LocalLogin && (
             <Suspense fallback={null}>
               <LocalLogin email={email} onSuccess={onSuccess} />
             </Suspense>

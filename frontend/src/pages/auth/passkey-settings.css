@@ -1,0 +1,72 @@
+.passkey-settings {
+  display: grid;
+  gap: 10px;
+  color: var(--color-text);
+  font-size: var(--font-body);
+}
+.passkey-settings :is(h3, p, ul) {
+  margin: 0;
+}
+.passkey-settings h3 {
+  font-size: var(--font-heading);
+}
+.passkey-settings p,
+.passkey-settings small {
+  color: var(--color-text-secondary);
+}
+.passkey-settings [role='alert'] {
+  color: var(--color-danger-text);
+}
+.passkey-settings ul {
+  list-style: none;
+  padding: 0;
+}
+.passkey-settings li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-bottom: 1px solid var(--color-border-light);
+  padding: 8px 0;
+}
+.passkey-settings small {
+  display: block;
+  font-size: var(--font-caption);
+}
+.passkey-settings__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.passkey-settings button {
+  width: fit-content;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+.passkey-settings button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.passkey-settings button:focus-visible {
+  outline: 2px solid var(--keyboard-focus-ring);
+  outline-offset: 2px;
+}
+.passkey-settings__confirm,
+.passkey-settings__code {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  background: var(--color-surface-hover);
+}
+.passkey-settings__code code {
+  overflow-wrap: anywhere;
+  user-select: all;
+}

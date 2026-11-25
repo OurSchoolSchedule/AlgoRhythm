@@ -248,3 +248,16 @@
   .entry-intro p { margin-top: 9px; font-size: 14px; }
   .entry-guides { margin-top: 16px; }
 }
+
+.passkey-direct { padding-bottom: 18px; border-bottom: 1px solid var(--border-subtle); gap: 6px; }
+.passkey-direct p { margin: 0; font-size: 14px; }
+.passkey-recovery-code {
+  display: block;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--color-text);
+  background: var(--surface-1);
+  overflow-wrap: anywhere;
+  user-select: all;
+}
