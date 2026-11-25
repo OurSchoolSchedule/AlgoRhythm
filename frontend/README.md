@@ -46,9 +46,10 @@ npm run lint        # ESLint 검사
 
 | 변수 | 설명 |
 |---|---|
-| `VITE_API_BASE_URL` | 백엔드 API 베이스 URL. 로컬 개발 시 `https://edu.rssolplan.com` 등 직접 지정 |
+| `VITE_API_BASE_URL` | 기본값은 빈 문자열. 브라우저가 같은 origin의 `/api`를 사용합니다. |
+| `API_PROXY_TARGET` | Vite 개발 서버의 백엔드 origin. 로컬 백엔드 실행 시 `http://localhost:8080`으로 설정합니다. |
 
-- **로컬 개발**: 백엔드가 localhost CORS를 허용하므로 `VITE_API_BASE_URL`로 API 호스트를 직접 지정합니다.
+- 로컬에서는 Vite가 `/api`와 `/oauth2`의 경로·쿼리·요청 본문을 백엔드로 전달합니다.
 - **배포(Vercel)**: `VITE_API_BASE_URL`을 비우고, `vercel.json`의 rewrite 프록시를 통해 백엔드로 요청을 전달합니다. (Vercel 대시보드에 값이 남아 있으면 제거)
 
 ---
@@ -75,3 +76,15 @@ frontend/
 - **Vercel**로 배포됩니다 (`https://ourschoolschedule.vercel.app/`).
 - `vercel.json`이 `/api/*`, `/oauth2/*` 요청을 백엔드(`https://edu.rssolplan.com`)로 rewrite(프록시)합니다.
 - 백엔드는 현재 Railway 무료 요금제에 한시 배포되어 있으며, 무료 정책상 SMTP(이메일 인증) 발송이 제한될 수 있습니다. 2025년 7~8월 이후 AWS 환경으로 이전 예정입니다.
+
+## School42 데모 검증
+
+`frontend/`에서 `npm test`를 실행하면 합성 명부와 원본 엑셀을 읽어 교사 42명·21학급·35과목의 배정 252건, 주 672차시를 검산합니다. `example_week.csv`는 가능한 배치 한 가지입니다. 후보의 합격 기준은 교사·과목·학급별 시수 일치, 허용 교시 준수, 동일 요일·교시의 교사·학급 중복 0건입니다.
+
+실제 HTTP 검증에는 백엔드 커밋 `17811f4`의 [로컬 데모 실행 방법](https://github.com/OurSchoolSchedule/AlgoRhythm-BE/blob/17811f4d007e9ba1d356bea13fb7f082d0b9a4ae/demo/README.md)을 따릅니다. 백엔드 초기화 후 별도의 로컬 `algorhythm_demo` DB에 [School42 seed](src/test/fixtures/school42/school_seed.sql)를 적용하고 다음을 실행합니다.
+
+```bash
+npm run test:school42:local
+```
+
+기본 주소는 `http://127.0.0.1:8080`이며 `SCHOOL42_LOCAL_URL`로 다른 로컬 포트를 지정할 수 있습니다. 테스트는 학교 540001·학기 547001에서 검증 결과의 ID로 편성 작업을 생성하고 반환된 모든 후보를 검사합니다. 담임 조회 테스트는 1학년 6반의 연결을 임시로 등록한 뒤 원래의 미지정 상태로 복원합니다.

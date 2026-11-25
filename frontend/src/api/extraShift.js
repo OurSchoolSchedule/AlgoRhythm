@@ -14,10 +14,12 @@ export async function createExtraShiftRequest(payload) {
 /**
  * 보결 요청 목록 (GET /api/substitutes/requests?status=).
  * @param {'OPEN'|'FILLED'|'CANCELLED'|'EXPIRED'} [status]
+ * @param {{ signal?: AbortSignal }} [options]
  * @returns {Promise<import('@/types/extraShift.js').SubstituteRequestDetail[]>}
  */
-export async function getSubstituteRequests(status) {
+export async function getSubstituteRequests(status, options = {}) {
   const { data } = await client.get('/api/substitutes/requests', {
+    signal: options.signal,
     params: status ? { status } : undefined,
   })
   return Array.isArray(data) ? data : []

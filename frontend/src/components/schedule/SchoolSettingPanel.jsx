@@ -120,14 +120,14 @@ export default function SchoolSettingPanel() {
   }
 
   return (
-    <div style={{ background: 'var(--color-surface)', borderRadius: 12, border: '1px solid var(--color-border)', padding: '20px 24px' }}>
-      <p style={{ margin: '0 0 16px', fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>교시 설정</p>
+    <div className="admin-panel">
+      <h2>교시 설정</h2>
 
       {settingQuery.isLoading && (
         <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-muted)' }}>불러오는 중...</p>
       )}
       {settingFailed && (
-        <p style={{ margin: 0, fontSize: 13, color: 'var(--color-danger)' }}>설정을 불러오지 못했습니다. 새로고침 후 다시 확인하세요.</p>
+        <p className="detail-error" role="alert">설정을 불러오지 못했습니다. 새로고침 후 다시 확인하세요.</p>
       )}
 
       {!settingQuery.isLoading && !settingFailed && form && (
@@ -168,10 +168,10 @@ export default function SchoolSettingPanel() {
           </Field>
 
           {saveSetting.isError && (
-            <p style={{ margin: 0, fontSize: 12, color: 'var(--color-danger)' }}>설정 저장에 실패했습니다. 값을 확인한 뒤 다시 저장하세요.</p>
+            <p className="detail-error" role="alert">설정 저장에 실패했습니다. 값을 확인한 뒤 다시 저장하세요.</p>
           )}
           {saveSetting.isSuccess && (
-            <p style={{ margin: 0, fontSize: 12, color: 'var(--color-success)' }}>설정을 저장했습니다.</p>
+            <p className="detail-success" role="status">설정을 저장했습니다.</p>
           )}
 
           <button
@@ -190,12 +190,12 @@ export default function SchoolSettingPanel() {
         </div>
       )}
 
-      <p style={{ margin: '24px 0 12px', fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>교시 목록</p>
+      <h2 className="detail-subsection">교시 목록</h2>
       {periodsQuery.isLoading && (
         <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-muted)' }}>교시를 불러오는 중...</p>
       )}
       {periodsQuery.isError && (
-        <p style={{ margin: 0, fontSize: 13, color: 'var(--color-danger)' }}>교시 목록을 불러오지 못했습니다. 새로고침 후 다시 확인하세요.</p>
+        <p className="detail-error" role="alert">교시 목록을 불러오지 못했습니다. 새로고침 후 다시 확인하세요.</p>
       )}
       {!periodsQuery.isLoading && !periodsQuery.isError && rows.length === 0 && (
         <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--color-text-muted)' }}>등록된 교시가 없습니다. 아래에서 교시를 추가하세요.</p>
@@ -288,7 +288,7 @@ export default function SchoolSettingPanel() {
         </button>
       </div>
       {(addPeriod.isError || updatePeriod.isError || deletePeriod.isError) && (
-        <p style={{ margin: '10px 0 0', fontSize: 12, color: 'var(--color-danger)' }}>교시 저장에 실패했습니다. 시간을 확인한 뒤 다시 저장하세요.</p>
+        <p className="detail-error" role="alert">교시 저장에 실패했습니다. 시간을 확인한 뒤 다시 저장하세요.</p>
       )}
     </div>
   )
@@ -296,9 +296,9 @@ export default function SchoolSettingPanel() {
 
 function Field({ label, children }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-      <label style={{ fontSize: 13, color: 'var(--color-text-muted)', width: 120 }}>{label}</label>
+    <label className="detail-setting-field">
+      <span>{label}</span>
       {children}
-    </div>
+    </label>
   )
 }

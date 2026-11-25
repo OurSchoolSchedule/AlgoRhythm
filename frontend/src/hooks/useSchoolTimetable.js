@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
-import { useActiveStore } from './useMypage.js'
-import { useMyTimetable, useSchoolTimetableList } from './useTimetable.js'
+import { useHomeSession } from './useHomeSession'
+import { useWeekRead } from './homeReads'
 import { buildSchoolTimetable } from '@/utils/schoolTimetable.js'
 
 /**
@@ -18,32 +18,22 @@ export function useSchoolTimetable(input = new Date()) {
     return input?.referenceDate ?? new Date()
   }, [isDate, input])
 
-  const { data: activeSchool, isLoading: activeSchoolLoading } = useActiveStore()
-  const isAdmin = activeSchool?.position === 'ADMIN'
-
-  const myQuery = useMyTimetable({
-    academicYear,
-    semester,
-    enabled: !activeSchoolLoading && !isAdmin,
-  })
-  const schoolQuery = useSchoolTimetableList({
-    academicYear,
-    semester,
-    enabled: !activeSchoolLoading && isAdmin,
-  })
-  const query = isAdmin ? schoolQuery : myQuery
-
+  const session = useHomeSession()
+  const isAdmin = session.access.queries.adminProfile
+  const view = isAdmin ? 'school' : session.access.queries.teacherProfile ? 'mine' : 'unavailable'
+  const query = useWeekRead(session, view, academicYear, semester)
+  const error = session.active.error || query.error
   const timetable = useMemo(
-    () => buildSchoolTimetable(query.data ?? [], referenceDate),
-    [query.data, referenceDate],
+    () => buildSchoolTimetable(query.isError ? [] : query.data ?? [], referenceDate),
+    [query.data, query.isError, referenceDate],
   )
 
   return {
     timetable,
     isAdminView: isAdmin,
-    isLoading: activeSchoolLoading || query.isLoading,
-    isError: query.isError,
-    error: query.error,
-    refetch: query.refetch,
+    isLoading: session.switching || session.active.isLoading || query.isLoading,
+    isError: Boolean(error),
+    error,
+    refetch: view === 'unavailable' ? session.active.refetch : query.refetch,
   }
 }

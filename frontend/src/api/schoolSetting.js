@@ -23,9 +23,10 @@ export async function saveSchoolSetting(payload) {
 /**
  * 교시 목록 (GET /api/school-setting/periods).
  * @returns {Promise<import('@/types/schoolSetting.js').PeriodSettingResponse[]>}
+ * @param {{ signal?: AbortSignal }} [options]
  */
-export async function getPeriodSettings() {
-  const { data } = await client.get('/api/school-setting/periods')
+export async function getPeriodSettings(options = {}) {
+  const { data } = await client.get('/api/school-setting/periods', { signal: options.signal })
   return Array.isArray(data) ? data : []
 }
 

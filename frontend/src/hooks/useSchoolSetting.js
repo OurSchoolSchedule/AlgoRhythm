@@ -7,6 +7,7 @@ import {
   saveSchoolSetting,
   updatePeriodSetting,
 } from '@/api'
+import { useHomeSession, useScopedRead } from './useHomeSession'
 import { queryKeys } from './queryKeys.js'
 
 function isMissingSetting(error) {
@@ -23,11 +24,9 @@ export function useSchoolSetting(options = {}) {
 }
 
 export function usePeriodSettings(options = {}) {
-  return useQuery({
-    queryKey: queryKeys.schoolSetting.periods(),
-    queryFn: getPeriodSettings,
-    ...options,
-  })
+  const session = useHomeSession()
+  return useScopedRead(session, queryKeys.schoolSetting.periods(), session.access.queries.catalog,
+    signal => getPeriodSettings({ signal }), options)
 }
 
 function useInvalidateSchoolSetting() {

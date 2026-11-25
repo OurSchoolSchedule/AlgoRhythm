@@ -76,7 +76,7 @@ function NotificationItem({ notification, position }) {
  * @param {boolean} props.open
  * @param {() => void} props.onClose
  */
-export default function NotificationSidebar({ open, onClose, userRole }) {
+export default function NotificationSidebar({ open, onClose, userRole, onOpenChanges }) {
   const { data: activeStore } = useActiveStore({ enabled: open })
   const previewPosition = userRole === 'admin' ? 'ADMIN' : userRole === 'worker' ? 'TEACHER' : undefined
   const position = resolvePosition(activeStore?.position) ?? previewPosition
@@ -158,6 +158,12 @@ export default function NotificationSidebar({ open, onClose, userRole }) {
           className="hide-scrollbar"
           style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 24px' }}
         >
+          {onOpenChanges && activeStore?.employmentStatus === 'HIRED' &&
+            resolvePosition(activeStore.position) && (
+              <button type="button" className="btn btn-secondary" onClick={onOpenChanges}>
+                날짜 수업 변경 신청·응답·승인
+              </button>
+            )}
           {isLoading && (
             <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-muted)' }}>불러오는 중...</p>
           )}

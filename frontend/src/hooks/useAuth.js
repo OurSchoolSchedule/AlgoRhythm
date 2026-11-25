@@ -38,5 +38,8 @@ export function useSendEmailVerification() {
 export function useVerifyEmailVerification() {
   return useMutation({
     mutationFn: (payload) => verifyEmailVerification(payload),
+    // Discard the one-time code and limited flow token when the form resets this mutation.
+    gcTime: 0,
+    retry: false,
   })
 }

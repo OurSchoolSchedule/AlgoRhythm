@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { useNotifications, useOwnerProfile, useStaffProfile, useStoreStaffSummary } from '@/hooks'
+import { useNotifications, useOwnerProfile, useStaffProfile } from '@/hooks'
+import { useHomeSession } from '@/hooks/useHomeSession'
+import { useHomeDirectory } from '@/hooks/homeReads'
 import UnavailabilityDialog from '@/components/schedule/UnavailabilityDialog.jsx'
 import ProfileSchoolDialog from '@/components/layout/ProfileSchoolDialog.jsx'
 import { getStoredTheme, setThemePreference } from '@/theme'
@@ -45,7 +47,7 @@ function ThemeIcon({ name }) {
   )
 }
 
-function ThemeSwitch({ value, onChange }) {
+export function ThemeSwitch({ value, onChange }) {
   const onKeyDown = (event) => {
     const index = THEME_OPTIONS.findIndex((option) => option.id === value)
     const next = event.key === 'ArrowRight' || event.key === 'ArrowDown'
@@ -144,12 +146,13 @@ export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onL
   const menuId = useId()
   const profile = PROFILE[userRole] ?? PROFILE.worker
   const isAdmin = userRole === 'admin'
-  const ownerProfile = useOwnerProfile({ enabled: isAdmin })
-  const staffProfile = useStaffProfile({ enabled: !isAdmin })
-  const teachers = useStoreStaffSummary()
-  const me = isAdmin ? ownerProfile.data : staffProfile.data
-  const assignment = teachers.data?.staffList?.find((teacher) => teacher.userId != null && teacher.userId === me?.userId)
-  const profileQuery = isAdmin ? ownerProfile : staffProfile
+  const session = useHomeSession()
+  const ownerProfile = useOwnerProfile({ enabled: session.access.queries.adminProfile })
+  const staffProfile = useStaffProfile({ enabled: session.access.queries.teacherProfile })
+  const teachers = useHomeDirectory(session)
+  const me = session.access.queries.adminProfile ? ownerProfile.data : staffProfile.data
+  const assignment = teachers.data?.find((teacher) => teacher.userId != null && teacher.userId === me?.userId)
+  const profileQuery = session.access.queries.adminProfile ? ownerProfile : staffProfile
   const profileLoading = teachers.isLoading || profileQuery.isLoading
   const profileFailed = teachers.isError || profileQuery.isError
   const subjectLabel = profileLoading || profileFailed

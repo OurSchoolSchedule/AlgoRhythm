@@ -4,10 +4,11 @@ import client from './client.js'
 /**
  * 특정 날짜 할일 목록 조회 (GET /api/todos?date=YYYY-MM-DD).
  * @param {string} date "YYYY-MM-DD"
+ * @param {{ signal?: AbortSignal }} [options]
  * @returns {Promise<import('@/types/todo.js').TodoListResponseDto>}
  */
-export async function getTodos(date) {
-  const { data } = await client.get('/api/todos', { params: { date } })
+export async function getTodos(date, options = {}) {
+  const { data } = await client.get('/api/todos', { params: { date }, signal: options.signal })
   return {
     ...data,
     schoolTodos: data?.schoolTodos ?? data?.storeTodos ?? [],

@@ -4,6 +4,7 @@ import {
   setTokens,
   clearTokens,
   getRefreshToken,
+  localLoginEnabled,
 } from './tokenStorage.js'
 import { normalizeAccessToken, parseUserIdFromToken } from '@/utils/authToken.js'
 
@@ -74,6 +75,7 @@ export async function logout() {
  * @returns {Promise<string>} accessToken
  */
 export async function issueDevToken(email) {
+  if (!localLoginEnabled()) throw new Error('Local login is unavailable')
   const { data } = await client.post('/api/auth/dev-token', { email })
   const accessToken = normalizeAccessToken(data)
   if (!accessToken) {

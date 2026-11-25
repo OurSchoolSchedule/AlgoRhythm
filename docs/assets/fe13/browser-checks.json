@@ -1,0 +1,164 @@
+{
+  "browser": "Chromium 149.0.7827.0",
+  "environment": "Local production build, synthetic School42 HTTP responses and throttled multipart upload",
+  "normalMascotAnimation": "chick-step",
+  "reducedMascotAnimation": "none",
+  "runs": [
+    {
+      "viewportWidth": 1440,
+      "colorScheme": "light",
+      "home": "조회된 주간 기본표가 없습니다",
+      "upload": {
+        "normal": "시수표 업로드 중 · 2%",
+        "reduced": "시수표 업로드 중 · 2%"
+      },
+      "validation": {
+        "normal": "시수표 검증 중",
+        "reduced": "시수표 검증 중"
+      },
+      "imageRequestsOnHome": [
+        [
+          "/assets/home-mochi-DdEYyZkg.webp",
+          200
+        ]
+      ],
+      "imageRequestsAfterStartingUpload": [
+        [
+          "/assets/upload-chick-CHy99gk9.webp",
+          200
+        ]
+      ],
+      "pageErrors": []
+    },
+    {
+      "viewportWidth": 1440,
+      "colorScheme": "dark",
+      "home": "조회된 주간 기본표가 없습니다",
+      "upload": {
+        "normal": "시수표 업로드 중 · 2%",
+        "reduced": "시수표 업로드 중 · 2%"
+      },
+      "validation": {
+        "normal": "시수표 검증 중",
+        "reduced": "시수표 검증 중"
+      },
+      "imageRequestsOnHome": [
+        [
+          "/assets/home-mochi-DdEYyZkg.webp",
+          200
+        ]
+      ],
+      "imageRequestsAfterStartingUpload": [
+        [
+          "/assets/upload-chick-CHy99gk9.webp",
+          200
+        ]
+      ],
+      "pageErrors": []
+    },
+    {
+      "viewportWidth": 768,
+      "colorScheme": "light",
+      "home": "조회된 주간 기본표가 없습니다",
+      "upload": {
+        "normal": "시수표 업로드 중 · 2%",
+        "reduced": "시수표 업로드 중 · 2%"
+      },
+      "validation": {
+        "normal": "시수표 검증 중",
+        "reduced": "시수표 검증 중"
+      },
+      "imageRequestsOnHome": [
+        [
+          "/assets/home-mochi-DdEYyZkg.webp",
+          200
+        ]
+      ],
+      "imageRequestsAfterStartingUpload": [
+        [
+          "/assets/upload-chick-CHy99gk9.webp",
+          200
+        ]
+      ],
+      "pageErrors": []
+    },
+    {
+      "viewportWidth": 768,
+      "colorScheme": "dark",
+      "home": "조회된 주간 기본표가 없습니다",
+      "upload": {
+        "normal": "시수표 업로드 중 · 2%",
+        "reduced": "시수표 업로드 중 · 2%"
+      },
+      "validation": {
+        "normal": "시수표 검증 중",
+        "reduced": "시수표 검증 중"
+      },
+      "imageRequestsOnHome": [
+        [
+          "/assets/home-mochi-DdEYyZkg.webp",
+          200
+        ]
+      ],
+      "imageRequestsAfterStartingUpload": [
+        [
+          "/assets/upload-chick-CHy99gk9.webp",
+          200
+        ]
+      ],
+      "pageErrors": []
+    },
+    {
+      "viewportWidth": 390,
+      "colorScheme": "light",
+      "home": "조회된 주간 기본표가 없습니다",
+      "upload": {
+        "normal": "시수표 업로드 중 · 2%",
+        "reduced": "시수표 업로드 중 · 2%"
+      },
+      "validation": {
+        "normal": "시수표 검증 중",
+        "reduced": "시수표 검증 중"
+      },
+      "imageRequestsOnHome": [
+        [
+          "/assets/home-mochi-DdEYyZkg.webp",
+          200
+        ]
+      ],
+      "imageRequestsAfterStartingUpload": [
+        [
+          "/assets/upload-chick-CHy99gk9.webp",
+          200
+        ]
+      ],
+      "pageErrors": []
+    },
+    {
+      "viewportWidth": 390,
+      "colorScheme": "dark",
+      "home": "조회된 주간 기본표가 없습니다",
+      "upload": {
+        "normal": "시수표 업로드 중 · 2%",
+        "reduced": "시수표 업로드 중 · 2%"
+      },
+      "validation": {
+        "normal": "시수표 검증 중",
+        "reduced": "시수표 검증 중"
+      },
+      "imageRequestsOnHome": [
+        [
+          "/assets/home-mochi-DdEYyZkg.webp",
+          200
+        ]
+      ],
+      "imageRequestsAfterStartingUpload": [
+        [
+          "/assets/upload-chick-CHy99gk9.webp",
+          200
+        ]
+      ],
+      "pageErrors": []
+    }
+  ]
+}
