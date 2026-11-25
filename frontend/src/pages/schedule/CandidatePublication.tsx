@@ -1,3 +1,4 @@
+import { TableScroll } from '@/components/ui/DetailPage'
 import { useState } from 'react'
 import type { HomeTerm } from '@/types/datedLesson'
 import type { ScheduleCandidate } from '@/types/generationJob'
@@ -96,33 +97,35 @@ export default function CandidatePublication({ term, publication, candidates, on
               ))}
             </select>
           </label>
-          <table>
-            <caption className="desk-sr">선택한 학급의 주간 배치</caption>
-            <thead>
-              <tr>
-                <th>요일</th>
-                <th>교시</th>
-                <th>과목</th>
-                <th>담당 교사</th>
-              </tr>
-            </thead>
-            <tbody>
-              {placements?.map((p) => (
-                <tr key={p.slot.day + '/' + p.slot.period}>
-                  <td>{'월화수목금토일'[days.indexOf(p.slot.day)]}</td>
-                  <td>{p.slot.period}</td>
-                  <td>
-                    {subjects.data?.find((s) => String(s.id) === p.subjectId)?.name ??
-                      '과목 #' + p.subjectId}
-                  </td>
-                  <td>
-                    {members.data?.find((m) => String(m.schoolUserId) === p.teacherId)?.username ??
-                      '교사 #' + p.teacherId}
-                  </td>
+          <TableScroll label="학급별 배치">
+            <table>
+              <caption className="desk-sr">선택한 학급의 주간 배치</caption>
+              <thead>
+                <tr>
+                  <th>요일</th>
+                  <th>교시</th>
+                  <th>과목</th>
+                  <th>담당 교사</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {placements?.map((p) => (
+                  <tr key={p.slot.day + '/' + p.slot.period}>
+                    <td>{'월화수목금토일'[days.indexOf(p.slot.day)]}</td>
+                    <td>{p.slot.period}</td>
+                    <td>
+                      {subjects.data?.find((s) => String(s.id) === p.subjectId)?.name ??
+                        '과목 #' + p.subjectId}
+                    </td>
+                    <td>
+                      {members.data?.find((m) => String(m.schoolUserId) === p.teacherId)
+                        ?.username ?? '교사 #' + p.teacherId}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableScroll>
         </details>
       )}
       <form
@@ -163,7 +166,11 @@ export default function CandidatePublication({ term, publication, candidates, on
         </button>
       </form>
       {publication.isPublishing && <p role="status">게시 결과 확인 중</p>}
-      {error && <p role="alert">{error}</p>}
+      {error && (
+        <p className="work-error" role="alert">
+          {error}
+        </p>
+      )}
       {state.phase === 'published' && (
         <p className="work-success" role="status">
           {state.request.effectiveFrom}부터 게시했습니다. 주 {state.receipt.weeklyLessons}차시 ·

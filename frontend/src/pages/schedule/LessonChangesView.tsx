@@ -41,8 +41,8 @@ function LessonDesk({ term, initialDate }: { term: HomeTerm; initialDate?: strin
   const [firstKey, setFirst] = useState(''),
     [secondKey, setSecond] = useState(''),
     [teacher, setTeacher] = useState('')
-  const [message, setMessage] = useState(''),
-    [retry, setRetry] = useState<RetryApproval | null>(null)
+  const [message, setMessage] = useState<{ text: string; error: boolean } | null>(null)
+  const [retry, setRetry] = useState<RetryApproval | null>(null)
   const [result, setResult] = useState<ChangeResult | null>(null)
   const [sending, setSending] = useState(false)
   const members = changes.directory.data ?? []
@@ -83,7 +83,7 @@ function LessonDesk({ term, initialDate }: { term: HomeTerm; initialDate?: strin
     return row ? row.date + ' · ' + lessonName(row) : '날짜 수업 #' + id
   }
   async function run(send: () => Promise<ChangeResult>, approval?: RetryApproval) {
-    setMessage('')
+    setMessage(null)
     setResult(null)
     setSending(true)
     try {
@@ -96,7 +96,7 @@ function LessonDesk({ term, initialDate }: { term: HomeTerm; initialDate?: strin
         setTeacher('')
       }
     } catch (err) {
-      setMessage(operationError(err))
+      setMessage({ text: operationError(err), error: true })
       if (approval && isAxiosError(err) && (!err.response || err.response.status >= 500))
         setRetry(approval)
       else setRetry(null)
@@ -109,18 +109,18 @@ function LessonDesk({ term, initialDate }: { term: HomeTerm; initialDate?: strin
       const attempt = { id: row.id, send: changes.prepareApproval(row) }
       void run(attempt.send, attempt)
     } catch (err) {
-      setMessage(operationError(err))
+      setMessage({ text: operationError(err), error: true })
     }
   }
   const locked = sending || changes.pending
   async function refresh() {
     setSending(true)
-    setMessage('')
+    setMessage(null)
     try {
       await changes.refresh()
-      setMessage('신청 목록과 선택한 날짜 수업을 다시 조회했습니다.')
+      setMessage({ text: '신청 목록과 선택한 날짜 수업을 다시 조회했습니다.', error: false })
     } catch (err) {
-      setMessage(operationError(err))
+      setMessage({ text: operationError(err), error: true })
     } finally {
       setSending(false)
     }
@@ -301,7 +301,7 @@ function LessonDesk({ term, initialDate }: { term: HomeTerm; initialDate?: strin
         </ul>
       </section>
       <div aria-live="polite">
-        {message && <p>{message}</p>}
+        {message && <p className={message.error ? 'work-error' : 'work-success'}>{message.text}</p>}
         {result?.phase === 'created' && (
           <p className="work-success">신청 #{result.change.id}을 접수했습니다.</p>
         )}

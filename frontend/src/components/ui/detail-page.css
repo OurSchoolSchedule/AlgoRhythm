@@ -1,0 +1,302 @@
+/* Detail pages live inside the FE11 desk. A table may scroll without moving the page. */
+.detail-page {
+  --detail-inset: clamp(14px, 2vw, 22px);
+  min-width: 0;
+  width: 100%;
+}
+.detail-page:is(.subject-page, .admin-page, .history-page, .schedule-work, .tt-page) {
+  margin: 0;
+  max-width: none;
+  background: transparent;
+}
+.detail-page .detail-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin: 0 0 18px;
+}
+.detail-page .detail-heading h1 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(26px, 2.3vw, 36px);
+  line-height: 1.25;
+  letter-spacing: -0.055em;
+}
+.detail-page .detail-heading p {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+.detail-page:is(.subject-page, .admin-page) {
+  gap: 0;
+}
+.detail-page :is(.detail-card, .admin-panel, .todo-col, .work-card, .admin-create-strip) {
+  min-width: 0;
+  background: var(--surface-0);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: var(--detail-inset);
+}
+.detail-page :is(.detail-card, .work-card, .admin-create-strip) {
+  margin: 0 0 16px;
+}
+.detail-page :is(.detail-card, .admin-panel, .work-card) > h2 {
+  color: var(--color-text);
+  font-size: 18px;
+  letter-spacing: -0.035em;
+  line-height: 1.4;
+  margin: 0 0 14px;
+}
+.detail-page .detail-count {
+  margin-inline-start: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+.detail-page .admin-panel .detail-subsection {
+  margin-top: 22px;
+}
+.detail-setting-field {
+  display: grid;
+  grid-template-columns: minmax(6rem, 9rem) minmax(0, 12rem);
+  align-items: center;
+  gap: 12px;
+  color: var(--color-text-secondary);
+}
+.detail-page .work-card > p[role='status']:not(.work-success) {
+  padding: 10px 12px;
+  background: var(--surface-1);
+  color: var(--color-text-secondary);
+  border-radius: 8px;
+}
+.detail-page .subject-help {
+  margin: 0 0 12px;
+}
+.detail-page .subject-compose {
+  margin: 0;
+}
+.detail-page .subject-compose-input {
+  min-width: 0;
+  flex: 1 1 14rem;
+}
+.detail-page :is(.subject-row, .work-row) {
+  gap: 8px;
+}
+.detail-page .subject-row:last-child {
+  border-bottom: 0;
+}
+.detail-page
+  :is(
+    .detail-button,
+    .detail-primary,
+    .subject-csv-button,
+    .tt-secondary,
+    .work-heading button,
+    .desk-term-button
+  ) {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-0);
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+.detail-page :is(.detail-primary, .work-primary, .tt-create, .btn-primary) {
+  background: var(--color-primary-button);
+  color: var(--color-on-primary);
+  border-color: var(--color-primary-button);
+}
+.detail-page .detail-danger {
+  color: var(--color-danger-text);
+}
+.detail-page button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.detail-page :is(input:not([type='checkbox'], [type='radio'], [type='file']), select, textarea) {
+  max-width: 100%;
+  color: var(--color-text);
+  accent-color: var(--color-primary-text);
+}
+.detail-page :where(button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--keyboard-focus-ring);
+  outline-offset: 2px;
+}
+.detail-page :is(.detail-error, .load-error, .todo-row-error, .work-error) {
+  background: var(--color-danger-subtle);
+  color: var(--color-danger-text);
+  border-inline-start: 3px solid var(--color-danger-border);
+  border-radius: 8px;
+  margin-block: 12px;
+  padding: 10px 14px;
+}
+.detail-page :is(.detail-success, .work-success) {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary-text);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-block: 12px;
+}
+.detail-page .detail-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px;
+  margin: 0 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-1);
+}
+.detail-tabs button {
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 11px;
+  color: var(--color-text-secondary);
+  background: transparent;
+}
+.detail-tabs button[aria-selected='true'],
+.detail-page .todo-scope button[aria-pressed='true'] {
+  color: var(--color-primary-text);
+  background: var(--surface-0);
+  box-shadow: 0 0 0 1px var(--border);
+  font-weight: 650;
+}
+.detail-tabs button span {
+  margin-inline-start: 5px;
+  font-variant-numeric: tabular-nums;
+}
+.detail-page .todo-scope {
+  padding: 3px;
+  gap: 3px;
+  border-radius: 8px;
+  background: var(--surface-1);
+}
+.detail-page .todo-scope button {
+  border: 0;
+  border-radius: 5px;
+}
+.detail-page .todo-stats {
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-0);
+}
+.detail-page .todo-col-head {
+  border-bottom: 1px solid var(--border-subtle);
+}
+.detail-page .todo-split {
+  gap: 16px;
+}
+.detail-page .history-head {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.detail-page .history-search {
+  max-width: 100%;
+}
+.detail-page .history-summary {
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.detail-page .history-empty,
+.detail-page .todo-empty {
+  border-radius: 8px;
+  padding: 14px;
+  color: var(--color-text-muted);
+  background: var(--surface-1);
+}
+.detail-page .tt-head {
+  margin-bottom: 16px;
+}
+.detail-page .tt-board {
+  border-radius: 9px;
+  max-width: 100%;
+}
+.detail-page .tt-corner,
+.detail-page .tt-headcell:not(.is-today):not(.is-off),
+.detail-page .tt-time {
+  background: var(--surface-1);
+}
+.detail-page .tt-slot.is-selected::after {
+  border-radius: 5px;
+}
+.detail-page .detail-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-block: 12px;
+}
+.detail-table-scroll table {
+  min-width: 34rem;
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  text-align: start;
+}
+.detail-table-scroll thead {
+  background: var(--surface-1);
+  color: var(--color-text-secondary);
+}
+.detail-table-scroll :is(td, th) {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  text-align: start;
+}
+.detail-table-scroll tbody tr:last-child td {
+  border-bottom: 0;
+}
+.detail-page .detail-record dl > div,
+.detail-page .detail-lesson .tt-detail-list > div {
+  display: grid;
+  grid-template-columns: 4rem 1fr;
+  gap: 8px;
+  padding-block: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.detail-record dt,
+.detail-lesson .tt-detail-kicker {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+.detail-record .history-detail-change,
+.detail-page .detail-lesson h3 {
+  margin-block: 10px;
+}
+.detail-page .detail-lesson h3 {
+  font-size: 18px;
+}
+.detail-page .detail-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+.detail-page .detail-actions .tt-create {
+  display: inline-flex;
+}
+@media (max-width: 719px) {
+  .detail-page .detail-heading {
+    margin-bottom: 12px;
+  }
+  .detail-page .detail-heading h1 {
+    font-size: 25px;
+  }
+  .detail-page :is(.detail-card, .admin-panel, .todo-col, .work-card, .admin-create-strip) {
+    border-radius: 10px;
+  }
+  .detail-page .subject-compose-input {
+    flex-basis: 100%;
+  }
+  .detail-page .tt-actions .tt-secondary {
+    display: inline-flex;
+  }
+}

@@ -1,3 +1,4 @@
+import { TableScroll } from '@/components/ui/DetailPage'
 import { useState } from 'react'
 import {
   useCreateSchoolClass,
@@ -136,9 +137,8 @@ export default function SchoolClassPanel() {
   )
 
   return (
-    <div style={{ background: 'var(--color-surface)', borderRadius: 12, border: '1px solid var(--color-border)', padding: '20px 24px' }}>
-      <p style={{ margin: '0 0 14px', fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>학급</p>
-
+    <div className="admin-panel">
+      <h2>학급</h2>
       {classesQuery.isLoading && (
         <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-muted)' }}>불러오는 중...</p>
       )}
@@ -155,7 +155,8 @@ export default function SchoolClassPanel() {
       )}
 
       {classes.length > 0 && (
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 16 }}>
+        <TableScroll label="학급 목록">
+        <table>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
               {['학년도', '학급', '담임', ''].map((label) => (
@@ -256,6 +257,7 @@ export default function SchoolClassPanel() {
             })}
           </tbody>
         </table>
+        </TableScroll>
       )}
 
       <form onSubmit={handleCreate} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>

@@ -1,3 +1,4 @@
+import { DetailHeading } from '@/components/ui/DetailPage'
 import { useState, type ReactNode } from 'react'
 import { useHomeSession, type HomeSession } from '@/hooks/useHomeSession'
 import { useTermChoice } from '@/hooks/useTermChoice'
@@ -21,18 +22,14 @@ function ScopedWorkspace({
   const [editing, setEditing] = useState(false)
   const allowed = adminOnly ? session.access.actions.generate : session.access.queries.datedLessons
   return (
-    <section className="schedule-work">
-      <header className="work-heading">
-        <div>
-          <small>{session.school?.name ?? '학교 업무'}</small>
-          <h1>{title}</h1>
-        </div>
+    <section className="detail-page schedule-work">
+      <DetailHeading title={title} context={session.school?.name}>
         {allowed && (
-          <button onClick={() => setEditing(true)}>
+          <button className="desk-term-button" onClick={() => setEditing(true)}>
             {choice.academicYear}학년도 {choice.semester}학기 · 학기 설정
           </button>
         )}
-      </header>
+      </DetailHeading>
       {!allowed ? (
         <p role="status">
           {session.active.isLoading || session.switching

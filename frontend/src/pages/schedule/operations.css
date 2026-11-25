@@ -1,6 +1,5 @@
 .schedule-work {
-  max-width: 1040px;
-  margin: 0 auto;
+  min-width: 0;
   color: var(--color-text);
 }
 .work-heading,
@@ -14,27 +13,8 @@
   justify-content: space-between;
   margin: 0 0 20px;
 }
-.schedule-work h1,
-.schedule-work h2,
-.schedule-work p {
-  margin: 0 0 10px;
-}
-.schedule-work h1 {
-  font-size: clamp(25px, 3vw, 34px);
-  letter-spacing: -0.045em;
-}
-.schedule-work h2 {
-  font-size: 20px;
-}
 .schedule-work small {
   color: var(--color-text-muted);
-}
-.work-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  margin-bottom: 16px;
-  padding: clamp(16px, 3vw, 28px);
 }
 .schedule-work fieldset {
   border: 0;
@@ -107,31 +87,12 @@
 .work-candidates input {
   accent-color: var(--color-primary-text);
 }
-.work-success,
-.work-error,
 .work-progress {
   padding: 12px 14px;
-  margin-block: 12px !important;
+  margin-block: 12px;
   border-radius: 8px;
-}
-.work-success,
-.work-progress {
   background: var(--color-primary-subtle);
   color: var(--color-primary-text);
-}
-.work-error {
-  background: var(--color-warning-subtle);
-  color: var(--color-warning-text);
-}
-.work-detail table {
-  width: 100%;
-  border-collapse: collapse;
-}
-.work-detail td,
-.work-detail th {
-  padding: 6px;
-  border-bottom: 1px solid var(--border);
-  text-align: left;
 }
 .work-requests {
   list-style: none;

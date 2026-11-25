@@ -1,4 +1,6 @@
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { Dialog } from "@/pages/home/HomePanels";
+import { DetailHeading, DetailTabs, TableScroll } from "@/components/ui/DetailPage";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   useMySwapRequests,
   useSchoolUnavailabilities,
@@ -56,27 +58,10 @@ function SearchIcon() {
 }
 
 function HistoryDetail({ record, onClose }) {
-  const titleId = useId();
-  const closeRef = useRef(null);
-
-  useEffect(() => {
-    closeRef.current?.focus();
-    const onKey = (event) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
   return (
-    <>
-      <button type="button" className="history-scrim" aria-label="상세 닫기" onClick={onClose} />
-      <aside className="history-detail" role="dialog" aria-modal="true" aria-labelledby={titleId}>
-        <div className="history-detail-head">
-          <span className="day-badge" style={{ background: typeBg[record.type], color: typeColor[record.type] }}>{record.type}</span>
-          <button ref={closeRef} type="button" className="panel-close" onClick={onClose}>닫기</button>
-        </div>
-        <h2 id={titleId}>{record.title}</h2>
+    <Dialog title={record.title} onClose={onClose}>
+      <div className="detail-record">
+        <span className="day-badge" style={{ background: typeBg[record.type], color: typeColor[record.type] }}>{record.type}</span>
         {(record.before || record.after) ? (
           <p className="history-detail-change">
             {record.before ? <s>{record.before}</s> : null}
@@ -104,8 +89,8 @@ function HistoryDetail({ record, onClose }) {
             </div>
           ) : null}
         </dl>
-      </aside>
-    </>
+      </div>
+    </Dialog>
   );
 }
 
@@ -230,141 +215,129 @@ export function HistoryView({ userRole = "worker" }) {
   };
 
   return (
-    <div className="history-page">
-      <h1 className="sr-only">내역</h1>
-      <div className="history-head">
-        <div className="history-month" ref={monthRef}>
-          <button
-            type="button"
-            className="history-month-label"
-            aria-expanded={monthOpen}
-            aria-haspopup="listbox"
-            onClick={() => setMonthOpen((open) => !open)}
-          >
-            {month ? formatMonthTitle(month) : "월 선택"} ▾
-          </button>
-          {monthOpen && (
-            <div className="dropdown-panel dropdown-panel-top" role="listbox" aria-label="월 선택">
-              {months.map((item) => (
+    <div className="detail-page history-page">
+      <DetailHeading title="요청 내역" />
+      <section className="detail-card" aria-label="요청 조회">
+        <div className="history-head">
+          <div className="history-month" ref={monthRef}>
+            <button
+              type="button"
+              className="history-month-label"
+              aria-expanded={monthOpen}
+              aria-haspopup="listbox"
+              onClick={() => setMonthOpen((open) => !open)}
+            >
+              {month ? formatMonthTitle(month) : "월 선택"} ▾
+            </button>
+            {monthOpen && (
+              <div className="dropdown-panel dropdown-panel-top" role="listbox" aria-label="월 선택">
+                {months.map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    role="option"
+                    aria-selected={item === month}
+                    className="menu-item"
+                    onClick={() => changeMonth(item)}
+                  >
+                    {formatMonthTitle(item)}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <label className="history-search">
+            <SearchIcon />
+            <input
+              type="search"
+              value={query}
+              placeholder="교시·사유 검색"
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setVisibleCount(HISTORY_PAGE_SIZE);
+              }}
+            />
+          </label>
+        </div>
+
+        <div className="history-summary">
+          <p>
+            변동 <strong>{listLoading || listError ? "—" : monthItems.length}</strong>
+            {!(listLoading || listError) ? "건" : ""}
+            <span aria-hidden="true"> · </span>
+            {listLoading || listError ? (
+              <span className="is-muted">미처리 —</span>
+            ) : pending > 0 ? (
+              <>미처리 <strong className="is-danger">{pending}</strong>건</>
+            ) : (
+              <span className="is-muted">미처리 없음</span>
+            )}
+          </p>
+          {monthItems.length > 0 && (
+            <div className="history-status" role="group" aria-label="상태">
+              {HISTORY_STATUSES.map((item) => (
                 <button
                   key={item}
                   type="button"
-                  role="option"
-                  aria-selected={item === month}
-                  className="menu-item"
-                  onClick={() => changeMonth(item)}
+                  aria-pressed={status === item}
+                  onClick={() => {
+                    setStatus((current) => (current === item ? "" : item));
+                    setVisibleCount(HISTORY_PAGE_SIZE);
+                  }}
                 >
-                  {formatMonthTitle(item)}
+                  {item}
                 </button>
               ))}
             </div>
           )}
         </div>
-        <label className="history-search">
-          <SearchIcon />
-          <input
-            type="search"
-            value={query}
-            placeholder="교시·사유 검색"
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setVisibleCount(HISTORY_PAGE_SIZE);
-            }}
-          />
-        </label>
-      </div>
 
-      <div className="history-summary">
-        <p>
-          변동 <strong>{listLoading || listError ? "—" : monthItems.length}</strong>
-          {!(listLoading || listError) ? "건" : ""}
-          <span aria-hidden="true"> · </span>
-          {listLoading || listError ? (
-            <span className="is-muted">미처리 —</span>
-          ) : pending > 0 ? (
-            <>미처리 <strong className="is-danger">{pending}</strong>건</>
-          ) : (
-            <span className="is-muted">미처리 없음</span>
-          )}
-        </p>
-        {monthItems.length > 0 && (
-          <div className="history-status" role="group" aria-label="상태">
-            {HISTORY_STATUSES.map((item) => (
-              <button
-                key={item}
-                type="button"
-                aria-pressed={status === item}
-                onClick={() => {
-                  setStatus((current) => (current === item ? "" : item));
-                  setVisibleCount(HISTORY_PAGE_SIZE);
-                }}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
+        {listLoading && <p className="history-empty">불러오는 중...</p>}
+        {(listError || listPartialError) && (
+          <LoadError onRetry={refetchList} />
         )}
-      </div>
+        {!listLoading && !listError && historyData.length === 0 && (
+          <p className="history-empty">변동 내역이 없습니다</p>
+        )}
 
-      {listLoading && <p className="history-empty">불러오는 중...</p>}
-      {(listError || listPartialError) && (
-        <LoadError onRetry={refetchList} />
-      )}
-      {!listLoading && !listError && historyData.length === 0 && (
-        <p className="history-empty">변동 내역이 없습니다</p>
-      )}
-
-      {!listLoading && !listError && historyData.length > 0 && (monthItems.length === 0 ? (
-        <p className="history-empty">{month ? emptyMonthMessage(month) : "변동 내역이 없습니다"}</p>
-      ) : (
-        <>
-          <div className="history-tabs" role="tablist" aria-label="내역 종류">
-            {HISTORY_TYPES.map((item) => (
-              <button
-                key={item}
-                type="button"
-                role="tab"
-                aria-selected={type === item}
-                className={counts[item] === 0 ? "is-zero" : undefined}
-                onClick={() => {
-                  setType(item);
-                  setVisibleCount(HISTORY_PAGE_SIZE);
-                }}
-              >
-                {item}
-                <span>{counts[item]}</span>
-              </button>
-            ))}
-          </div>
-
-          {filtered.length === 0 ? (
-            <p className="history-empty">
-              조건에 맞는 내역이 없습니다
-              {narrowed && (
-                <button type="button" className="history-link" onClick={resetFilters}>필터 초기화</button>
+        {!listLoading && !listError && historyData.length > 0 && (monthItems.length === 0 ? (
+          <p className="history-empty">{month ? emptyMonthMessage(month) : "변동 내역이 없습니다"}</p>
+        ) : (
+          <>
+            <DetailTabs label="내역 종류" items={HISTORY_TYPES} value={type} counts={counts}
+              panelId="history-records"
+              onChange={(next) => { setType(next); setVisibleCount(HISTORY_PAGE_SIZE); }} />
+            <div id="history-records" role="tabpanel" aria-labelledby={`history-records-${HISTORY_TYPES.indexOf(type)}`}>
+              {filtered.length === 0 ? (
+                <p className="history-empty">
+                  조건에 맞는 내역이 없습니다
+                  {narrowed && (
+                    <button type="button" className="history-link" onClick={resetFilters}>필터 초기화</button>
+                  )}
+                </p>
+              ) : (
+                <div className="history-list">
+                  {groups.flatMap((group) => [
+                    <h2 key={`${group.date}-day`} className="history-day">{formatGroupDate(group.date)}</h2>,
+                    ...group.items.map((record) => renderRow(record)),
+                  ])}
+                </div>
               )}
-            </p>
-          ) : (
-            <div className="history-list">
-              {groups.flatMap((group) => [
-                <h2 key={`${group.date}-day`} className="history-day">{formatGroupDate(group.date)}</h2>,
-                ...group.items.map((record) => renderRow(record)),
-              ])}
+
+              {filtered.length > visibleCount && (
+                <button
+                  type="button"
+                  className="history-more"
+                  onClick={() => setVisibleCount((count) => count + HISTORY_PAGE_SIZE)}
+                >
+                  더 보기
+                </button>
+              )}
             </div>
-          )}
+          </>
+        ))}
 
-          {filtered.length > visibleCount && (
-            <button
-              type="button"
-              className="history-more"
-              onClick={() => setVisibleCount((count) => count + HISTORY_PAGE_SIZE)}
-            >
-              더 보기
-            </button>
-          )}
-        </>
-      ))}
-
+      </section>
       {selected && <HistoryDetail record={selected} onClose={() => setSelectedId(null)} />}
     </div>
   );
@@ -396,10 +369,8 @@ export function AdminView({ navigate }) {
   );
 
   return (
-    <div className="admin-page">
-      <div style={{ marginBottom: "var(--space-8)" }}>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--color-text)" }}>관리자 도구</h1>
-      </div>
+    <div className="detail-page admin-page">
+      <DetailHeading title="관리자 도구" />
 
       <div className="admin-create-strip">
         <div>
@@ -416,119 +387,116 @@ export function AdminView({ navigate }) {
         </button>
       </div>
 
-      <div style={{ display: "flex", gap: 0, marginBottom: "var(--space-4)", borderBottom: "1px solid var(--border-subtle)" }}>
-        {tabs.map(t => (
-          <button key={t} type="button" onClick={() => setTab(t)} style={{
-            padding: "10px 20px", border: "none", background: "none", cursor: "pointer", fontSize: 14,
-            color: tab === t ? "var(--color-primary-text)" : "var(--color-text-muted)", fontWeight: tab === t ? 600 : 400,
-            borderBottom: tab === t ? "2px solid var(--color-primary-solid)" : "2px solid transparent",
-          }}>{t}</button>
-        ))}
-      </div>
+      <DetailTabs label="관리 항목" items={tabs} value={tab} onChange={setTab} panelId="admin-tools" />
+      <div id="admin-tools" role="tabpanel" aria-labelledby={`admin-tools-${tabs.indexOf(tab)}`}>
+        {tab === "교사" && (
+          <div className="admin-panel">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-4)" }}>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>
+                구성원 목록{staffSummary ? ` · 총 ${staffSummary.totalStaffCount}명` : ""}
+              </p>
+              {staffSummary?.schoolName && (
+                <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{staffSummary.schoolName}</span>
+              )}
+            </div>
 
-      {tab === "교사" && (
-        <div className="admin-panel">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-4)" }}>
-            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>
-              구성원 목록{staffSummary ? ` · 총 ${staffSummary.totalStaffCount}명` : ""}
-            </p>
-            {staffSummary?.schoolName && (
-              <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{staffSummary.schoolName}</span>
+            {staffLoading && (
+              <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>불러오는 중...</p>
+            )}
+            {staffError && (
+              <LoadError />
+            )}
+            {!staffLoading && !staffError && staffList.length === 0 && (
+              <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>등록된 구성원이 없습니다.</p>
+            )}
+
+            {!staffLoading && !staffError && staffList.length > 0 && (
+              <TableScroll label="교사 명부">
+                <table>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
+                      {["이름", "역할", "재직상태", "담당 과목", "담임", "주간 시수"].map(h => (
+                        <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "var(--color-text-muted)" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {staffList.map(s => {
+                      const st = STATUS_STYLE[s.employmentStatus] ?? { bg: "var(--color-border-light)", color: "var(--color-text-muted)" };
+                      return (
+                        <tr key={s.schoolUserId} style={{ borderBottom: "1px solid var(--color-border-light)" }}>
+                          <td style={{ padding: "10px 12px", fontWeight: 600, color: "var(--color-text)" }}>{s.username}</td>
+                          <td style={{ padding: "10px 12px", color: "var(--color-text-secondary)" }}>{ROLE_LABEL[s.role] ?? s.role}</td>
+                          <td style={{ padding: "10px 12px" }}>
+                            <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 12, background: st.bg, color: st.color }}>
+                              {STATUS_LABEL[s.employmentStatus] ?? s.employmentStatus}
+                            </span>
+                          </td>
+                          <td style={{ padding: "10px 12px", color: "var(--color-text-secondary)" }}>
+                            {s.subjects?.length ? s.subjects.map((item) => item.subjectName).join(", ") : "—"}
+                          </td>
+                          <td style={{ padding: "10px 12px", color: "var(--color-text-secondary)" }}>
+                            {s.homeroomClasses?.length
+                              ? s.homeroomClasses.map((item) => `${item.grade}-${item.classNumber}`).join(", ")
+                              : "—"}
+                          </td>
+                          <td style={{ padding: "10px 12px", color: "var(--color-text-secondary)", fontVariantNumeric: "tabular-nums" }}>
+                            {s.weeklyLessonCount ?? "—"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </TableScroll>
             )}
           </div>
+        )}
 
-          {staffLoading && (
-            <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>불러오는 중...</p>
-          )}
-          {staffError && (
-            <LoadError />
-          )}
-          {!staffLoading && !staffError && staffList.length === 0 && (
-            <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>등록된 구성원이 없습니다.</p>
-          )}
+        {tab === "학급" && <SchoolClassPanel />}
 
-          {!staffLoading && !staffError && staffList.length > 0 && (
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
-                  {["이름", "역할", "재직상태", "담당 과목", "담임", "주간 시수"].map(h => (
-                    <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "var(--color-text-muted)" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {staffList.map(s => {
-                  const st = STATUS_STYLE[s.employmentStatus] ?? { bg: "var(--color-border-light)", color: "var(--color-text-muted)" };
-                  return (
-                    <tr key={s.schoolUserId} style={{ borderBottom: "1px solid var(--color-border-light)" }}>
-                      <td style={{ padding: "10px 12px", fontWeight: 600, color: "var(--color-text)" }}>{s.username}</td>
-                      <td style={{ padding: "10px 12px", color: "var(--color-text-secondary)" }}>{ROLE_LABEL[s.role] ?? s.role}</td>
-                      <td style={{ padding: "10px 12px" }}>
-                        <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 12, background: st.bg, color: st.color }}>
-                          {STATUS_LABEL[s.employmentStatus] ?? s.employmentStatus}
-                        </span>
-                      </td>
-                      <td style={{ padding: "10px 12px", color: "var(--color-text-secondary)" }}>
-                        {s.subjects?.length ? s.subjects.map((item) => item.subjectName).join(", ") : "—"}
-                      </td>
-                      <td style={{ padding: "10px 12px", color: "var(--color-text-secondary)" }}>
-                        {s.homeroomClasses?.length
-                          ? s.homeroomClasses.map((item) => `${item.grade}-${item.classNumber}`).join(", ")
-                          : "—"}
-                      </td>
-                      <td style={{ padding: "10px 12px", color: "var(--color-text-secondary)", fontVariantNumeric: "tabular-nums" }}>
-                        {s.weeklyLessonCount ?? "—"}
-                      </td>
+        {tab === "불가" && (
+          <div className="admin-panel">
+            <p style={{ margin: "0 0 var(--space-4)", fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>
+              학교 전체 근무 불가
+            </p>
+            {schoolUnavail.isLoading && (
+              <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>불러오는 중...</p>
+            )}
+            {schoolUnavail.isError && (
+              <LoadError onRetry={() => schoolUnavail.refetch()} />
+            )}
+            {!schoolUnavail.isLoading && !schoolUnavail.isError && (schoolUnavail.data?.length ?? 0) === 0 && (
+              <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>등록된 근무 불가가 없습니다.</p>
+            )}
+            {!schoolUnavail.isLoading && !schoolUnavail.isError && (schoolUnavail.data?.length ?? 0) > 0 && (
+              <TableScroll label="학교 전체 근무 불가">
+                <table>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
+                      {["교사", "요일", "교시", "사유"].map((h) => (
+                        <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "var(--color-text-muted)" }}>{h}</th>
+                      ))}
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
+                  </thead>
+                  <tbody>
+                    {schoolUnavail.data.map((item) => (
+                      <tr key={item.id ?? `${item.schoolUserId}-${item.dayOfWeek}-${item.periodNumber}`} style={{ borderBottom: "1px solid var(--color-border-light)" }}>
+                        <td style={{ padding: "10px 12px", fontWeight: 600 }}>{memberName(item.schoolUserId)}</td>
+                        <td style={{ padding: "10px 12px" }}>{DAY_LABEL[item.dayOfWeek] || item.dayOfWeek}</td>
+                        <td style={{ padding: "10px 12px" }}>{item.periodNumber}교시</td>
+                        <td style={{ padding: "10px 12px", color: "var(--color-text-secondary)" }}>{item.reason || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </TableScroll>
+            )}
+          </div>
+        )}
 
-      {tab === "학급" && <SchoolClassPanel />}
-
-      {tab === "불가" && (
-        <div className="admin-panel">
-          <p style={{ margin: "0 0 var(--space-4)", fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>
-            학교 전체 근무 불가
-          </p>
-          {schoolUnavail.isLoading && (
-            <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>불러오는 중...</p>
-          )}
-          {schoolUnavail.isError && (
-            <LoadError onRetry={() => schoolUnavail.refetch()} />
-          )}
-          {!schoolUnavail.isLoading && !schoolUnavail.isError && (schoolUnavail.data?.length ?? 0) === 0 && (
-            <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>등록된 근무 불가가 없습니다.</p>
-          )}
-          {!schoolUnavail.isLoading && !schoolUnavail.isError && (schoolUnavail.data?.length ?? 0) > 0 && (
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
-                  {["교사", "요일", "교시", "사유"].map((h) => (
-                    <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "var(--color-text-muted)" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {schoolUnavail.data.map((item) => (
-                  <tr key={item.id ?? `${item.schoolUserId}-${item.dayOfWeek}-${item.periodNumber}`} style={{ borderBottom: "1px solid var(--color-border-light)" }}>
-                    <td style={{ padding: "10px 12px", fontWeight: 600 }}>{memberName(item.schoolUserId)}</td>
-                    <td style={{ padding: "10px 12px" }}>{DAY_LABEL[item.dayOfWeek] || item.dayOfWeek}</td>
-                    <td style={{ padding: "10px 12px" }}>{item.periodNumber}교시</td>
-                    <td style={{ padding: "10px 12px", color: "var(--color-text-secondary)" }}>{item.reason || "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
-
-      {tab === "설정" && <SchoolSettingPanel />}
+        {tab === "설정" && <SchoolSettingPanel />}
+      </div>
     </div>
   );
 }

@@ -1,3 +1,5 @@
+import { DetailHeading } from '@/components/ui/DetailPage'
+import { Dialog } from '@/pages/home/HomePanels'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { getAccessToken } from '@/api'
 import LoadError from '@/components/LoadError.jsx'
@@ -273,329 +275,328 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
     : ''
 
   return (
-    <div className={`tt-page${editing ? ' is-editing' : ''}`}>
-      <h1 className="sr-only">시간표</h1>
+    <div className={`detail-page tt-page${editing ? ' is-editing' : ''}`}>
+      <DetailHeading title="시간표" />
+      <section className="detail-card timetable-card" aria-label="주간 시간표">
 
-      <div className="tt-head">
-        <div className="tt-head-main">
-          <div className="tt-week-heading">
-            <div className="tt-term-title" ref={termRef}>
-              <button
-                type="button"
-                className="tt-term-trigger"
-                aria-expanded={termOpen}
-                aria-haspopup="dialog"
-                onClick={() => setTermOpen((open) => !open)}
-              >
-                <span>{academicYear}년 {semester}학기</span>
-                <span aria-hidden="true">▾</span>
-              </button>
-              {termOpen && (
-                <div className="dropdown-panel dropdown-panel-top tt-term-panel" role="dialog" aria-label="학년도 학기">
-                  <label className="tt-term-field">
-                    <span>학년도</span>
-                    <input
-                      type="number"
-                      min={2000}
-                      max={2100}
-                      value={academicYear}
-                      onChange={(event) => {
-                        setAcademicYear(Number(event.target.value) || academicYear)
-                        setUseTermFilter(true)
-                      }}
-                    />
-                  </label>
-                  <label className="tt-term-field">
-                    <span>학기</span>
-                    <select
-                      value={semester}
-                      onChange={(event) => {
-                        setSemester(Number(event.target.value))
-                        setUseTermFilter(true)
-                      }}
-                    >
-                      <option value={1}>1학기</option>
-                      <option value={2}>2학기</option>
-                    </select>
-                  </label>
-                  <button
-                    type="button"
-                    className="tt-term-apply"
-                    onClick={() => {
-                      setUseTermFilter(true)
-                      setTermOpen(false)
-                    }}
-                  >
-                    적용
-                  </button>
-                </div>
-              )}
-            </div>
-            <div className="tt-week-row">
-              <div className="tt-week-title">
-                <span className="tt-week-month tt-week-long">{formatWeekMonthLabel(weekStart)}</span>
-                <span className="tt-week-short">{formatWeekShort(weekStart)}</span>
-              </div>
-              <div className="tt-nav" role="group" aria-label="주 이동">
-                <button type="button" className="tt-nav-arrow" aria-label="이전 주" onClick={() => goWeek(-1)}>‹</button>
+        <div className="tt-head">
+          <div className="tt-head-main">
+            <div className="tt-week-heading">
+              <div className="tt-term-title" ref={termRef}>
                 <button
                   type="button"
-                  className="tt-nav-today"
-                  disabled={thisWeek}
-                  onClick={() => {
-                    requestLeave(() => {
-                      setWeekStart(startOfSchoolWeek(now))
-                    })
-                  }}
+                  className="tt-term-trigger"
+                  aria-expanded={termOpen}
+                  aria-haspopup="dialog"
+                  onClick={() => setTermOpen((open) => !open)}
                 >
-                  오늘
+                  <span>{academicYear}년 {semester}학기</span>
+                  <span aria-hidden="true">▾</span>
                 </button>
-                <button type="button" className="tt-nav-arrow" aria-label="다음 주" onClick={() => goWeek(1)}>›</button>
+                {termOpen && (
+                  <div className="dropdown-panel dropdown-panel-top tt-term-panel" role="dialog" aria-label="학년도 학기">
+                    <label className="tt-term-field">
+                      <span>학년도</span>
+                      <input
+                        type="number"
+                        min={2000}
+                        max={2100}
+                        value={academicYear}
+                        onChange={(event) => {
+                          setAcademicYear(Number(event.target.value) || academicYear)
+                          setUseTermFilter(true)
+                        }}
+                      />
+                    </label>
+                    <label className="tt-term-field">
+                      <span>학기</span>
+                      <select
+                        value={semester}
+                        onChange={(event) => {
+                          setSemester(Number(event.target.value))
+                          setUseTermFilter(true)
+                        }}
+                      >
+                        <option value={1}>1학기</option>
+                        <option value={2}>2학기</option>
+                      </select>
+                    </label>
+                    <button
+                      type="button"
+                      className="tt-term-apply"
+                      onClick={() => {
+                        setUseTermFilter(true)
+                        setTermOpen(false)
+                      }}
+                    >
+                      적용
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="tt-week-row">
+                <div className="tt-week-title">
+                  <span className="tt-week-month tt-week-long">{formatWeekMonthLabel(weekStart)}</span>
+                  <span className="tt-week-short">{formatWeekShort(weekStart)}</span>
+                </div>
+                <div className="tt-nav" role="group" aria-label="주 이동">
+                  <button type="button" className="tt-nav-arrow" aria-label="이전 주" onClick={() => goWeek(-1)}>‹</button>
+                  <button
+                    type="button"
+                    className="tt-nav-today"
+                    disabled={thisWeek}
+                    onClick={() => {
+                      requestLeave(() => {
+                        setWeekStart(startOfSchoolWeek(now))
+                      })
+                    }}
+                  >
+                    오늘
+                  </button>
+                  <button type="button" className="tt-nav-arrow" aria-label="다음 주" onClick={() => goWeek(1)}>›</button>
+                </div>
+              </div>
+              <p className="tt-week-caption">{formatWeekCaption(weekStart)}</p>
+            </div>
+          </div>
+
+          {isAdmin && !editing && (
+            <div className="tt-head-tools">
+              {SHOW_EDIT && (
+                <button type="button" className="tt-secondary" onClick={toggleEditing}>
+                  시간표 수정
+                </button>
+              )}
+              <button type="button" className="tt-create" onClick={openCreate}>시간표 생성</button>
+              <div className="tt-more" ref={moreRef}>
+                <button type="button" className="tt-text tt-more-button" aria-label="시간표 메뉴" aria-expanded={moreOpen} onClick={() => setMoreOpen((open) => !open)}>⋯</button>
+                {moreOpen && (
+                  <div className="dropdown-panel dropdown-panel-top">
+                    <button type="button" className="menu-item" onClick={() => { setMoreOpen(false); openCreate() }}>시간표 생성</button>
+                    {SHOW_EDIT && (
+                      <button type="button" className="menu-item" onClick={() => { setMoreOpen(false); toggleEditing() }}>시간표 수정</button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
-            <p className="tt-week-caption">{formatWeekCaption(weekStart)}</p>
-          </div>
+          )}
         </div>
 
-        {isAdmin && !editing && (
-          <div className="tt-head-tools">
-            {SHOW_EDIT && (
-              <button type="button" className="tt-secondary" onClick={toggleEditing}>
-                시간표 수정
-              </button>
-            )}
-            <button type="button" className="tt-create" onClick={openCreate}>시간표 생성</button>
-            <div className="tt-more" ref={moreRef}>
-              <button type="button" className="tt-text tt-more-button" aria-label="시간표 메뉴" aria-expanded={moreOpen} onClick={() => setMoreOpen((open) => !open)}>⋯</button>
-              {moreOpen && (
-                <div className="dropdown-panel dropdown-panel-top">
-                  <button type="button" className="menu-item" onClick={() => { setMoreOpen(false); openCreate() }}>시간표 생성</button>
-                  {SHOW_EDIT && (
-                    <button type="button" className="menu-item" onClick={() => { setMoreOpen(false); toggleEditing() }}>시간표 수정</button>
+        {isAdmin && (
+          <div className="tt-scope-bar">
+            <div className="tt-scope-search" ref={scopeSearchRef}>
+              <div className="tt-scope-search-field">
+                <div className="tt-scope-kind">
+                  <button
+                    type="button"
+                    className="tt-scope-kind-trigger"
+                    aria-expanded={kindOpen}
+                    aria-haspopup="listbox"
+                    aria-label="검색 조건"
+                    onClick={() => {
+                      setKindOpen((open) => !open)
+                      setScopeSearchOpen(false)
+                    }}
+                  >
+                    <span>{searchKindLabel}</span>
+                    <span aria-hidden="true">▾</span>
+                  </button>
+                  {kindOpen && (
+                    <div className="dropdown-panel dropdown-panel-top tt-scope-kind-panel" role="listbox" aria-label="검색 조건">
+                      {[
+                        { id: 'class', label: '학급별' },
+                        { id: 'teacher', label: '교사별' },
+                      ].map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          role="option"
+                          className="menu-item"
+                          aria-selected={scope === item.id}
+                          onClick={() => {
+                            setScope(item.id)
+                            setTarget('')
+                            setScopeQuery('')
+                            setKindOpen(false)
+                            setScopeSearchOpen(false)
+                          }}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
                   )}
+                </div>
+                <span className="tt-scope-kind-rule" aria-hidden="true" />
+                <input
+                  value={scopeQuery}
+                  placeholder={scope === 'teacher' ? '교사 검색' : '학급 검색'}
+                  aria-label={scope === 'teacher' ? '교사 검색' : '학급 검색'}
+                  onChange={(event) => setScopeQuery(event.target.value)}
+                  onFocus={() => setKindOpen(false)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault()
+                      setKindOpen(false)
+                      setScopeSearchOpen(true)
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  className="tt-scope-search-submit"
+                  aria-label="검색"
+                  onClick={() => {
+                    setKindOpen(false)
+                    setScopeSearchOpen(true)
+                  }}
+                >
+                  <SearchIcon />
+                </button>
+              </div>
+              {target ? (
+                <button
+                  type="button"
+                  className="tt-scope-chip"
+                  onClick={() => {
+                    setTarget('')
+                    setScopeQuery('')
+                  }}
+                >
+                  {targetChipLabel}
+                  <span aria-hidden="true"> ×</span>
+                </button>
+              ) : null}
+              {scopeSearchOpen && (
+                <div className="dropdown-panel dropdown-panel-top tt-scope-panel" role="listbox" aria-label="검색 결과">
+                  {searchHits.length === 0 ? (
+                    <p className="tt-picker-empty">목록이 없습니다</p>
+                  ) : searchHits.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      role="option"
+                      className="menu-item"
+                      aria-selected={target === item.value && activeScope === item.kind}
+                      onClick={() => {
+                        setScope(item.kind)
+                        setTarget(item.value)
+                        setScopeSearchOpen(false)
+                        setScopeQuery('')
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
           </div>
         )}
-      </div>
 
-      {isAdmin && (
-        <div className="tt-scope-bar">
-          <div className="tt-scope-search" ref={scopeSearchRef}>
-            <div className="tt-scope-search-field">
-              <div className="tt-scope-kind">
-                <button
-                  type="button"
-                  className="tt-scope-kind-trigger"
-                  aria-expanded={kindOpen}
-                  aria-haspopup="listbox"
-                  aria-label="검색 조건"
-                  onClick={() => {
-                    setKindOpen((open) => !open)
-                    setScopeSearchOpen(false)
-                  }}
-                >
-                  <span>{searchKindLabel}</span>
-                  <span aria-hidden="true">▾</span>
-                </button>
-                {kindOpen && (
-                  <div className="dropdown-panel dropdown-panel-top tt-scope-kind-panel" role="listbox" aria-label="검색 조건">
-                    {[
-                      { id: 'class', label: '학급별' },
-                      { id: 'teacher', label: '교사별' },
-                    ].map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        role="option"
-                        className="menu-item"
-                        aria-selected={scope === item.id}
-                        onClick={() => {
-                          setScope(item.id)
-                          setTarget('')
-                          setScopeQuery('')
-                          setKindOpen(false)
-                          setScopeSearchOpen(false)
-                        }}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
+        {SHOW_EDIT && editing && (
+          <div className="tt-edit-banner" role="status">
+            <div className="tt-edit-banner-copy">
+              <strong>시간표 수정 중</strong>
+              <p>수업을 끌어 옮긴 뒤 아래 저장으로 반영합니다.</p>
+            </div>
+            <button type="button" className="tt-secondary" onClick={toggleEditing}>수정 취소</button>
+          </div>
+        )}
+
+        {failed ? (
+          <LoadError onRetry={() => refetch()} />
+        ) : isLoading ? (
+          <div className="tt-board tt-skeleton" aria-hidden="true">
+            {Array.from({ length: 6 }, (_, index) => (
+              <span key={index} className="home-skeleton" />
+            ))}
+          </div>
+        ) : breakLabel ? (
+          <div className="home-empty">
+            이번 주는 수업이 없습니다({breakLabel})
+            <button type="button" className="history-link" onClick={() => setWeekStart(nextOpenWeek(weekStart))}>다음 수업 주로 이동</button>
+          </div>
+        ) : (
+          <>
+            {timetable.weekClassCount === 0 && (
+              <div className="tt-empty-note">
+                <span>{emptyCopy}</span>
+                {isAdmin && (
+                  <>
+                    <span aria-hidden="true"> · </span>
+                    <button type="button" className="history-link" onClick={openCreate}>시간표 생성</button>
+                  </>
                 )}
               </div>
-              <span className="tt-scope-kind-rule" aria-hidden="true" />
-              <input
-                value={scopeQuery}
-                placeholder={scope === 'teacher' ? '교사 검색' : '학급 검색'}
-                aria-label={scope === 'teacher' ? '교사 검색' : '학급 검색'}
-                onChange={(event) => setScopeQuery(event.target.value)}
-                onFocus={() => setKindOpen(false)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault()
-                    setKindOpen(false)
-                    setScopeSearchOpen(true)
-                  }
-                }}
-              />
-              <button
-                type="button"
-                className="tt-scope-search-submit"
-                aria-label="검색"
-                onClick={() => {
-                  setKindOpen(false)
-                  setScopeSearchOpen(true)
-                }}
-              >
-                <SearchIcon />
-              </button>
-            </div>
-            {target ? (
-              <button
-                type="button"
-                className="tt-scope-chip"
-                onClick={() => {
-                  setTarget('')
-                  setScopeQuery('')
-                }}
-              >
-                {targetChipLabel}
-                <span aria-hidden="true"> ×</span>
-              </button>
-            ) : null}
-            {scopeSearchOpen && (
-              <div className="dropdown-panel dropdown-panel-top tt-scope-panel" role="listbox" aria-label="검색 결과">
-                {searchHits.length === 0 ? (
-                  <p className="tt-picker-empty">목록이 없습니다</p>
-                ) : searchHits.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    role="option"
-                    className="menu-item"
-                    aria-selected={target === item.value && activeScope === item.kind}
-                    onClick={() => {
-                      setScope(item.kind)
-                      setTarget(item.value)
-                      setScopeSearchOpen(false)
-                      setScopeQuery('')
-                    }}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
             )}
-          </div>
-        </div>
-      )}
 
-      {SHOW_EDIT && editing && (
-        <div className="tt-edit-banner" role="status">
-          <div className="tt-edit-banner-copy">
-            <strong>시간표 수정 중</strong>
-            <p>수업을 끌어 옮긴 뒤 아래 저장으로 반영합니다.</p>
-          </div>
-          <button type="button" className="tt-secondary" onClick={toggleEditing}>수정 취소</button>
-        </div>
-      )}
+            {SHOW_EDIT && editing && hoverReason && <p className="tt-reject">{hoverReason}</p>}
 
-      {failed ? (
-        <LoadError onRetry={() => refetch()} />
-      ) : isLoading ? (
-        <div className="tt-board tt-skeleton" aria-hidden="true">
-          {Array.from({ length: 6 }, (_, index) => (
-            <span key={index} className="home-skeleton" />
-          ))}
-        </div>
-      ) : breakLabel ? (
-        <div className="home-empty">
-          이번 주는 수업이 없습니다({breakLabel})
-          <button type="button" className="history-link" onClick={() => setWeekStart(nextOpenWeek(weekStart))}>다음 수업 주로 이동</button>
-        </div>
-      ) : (
-        <>
-          {timetable.weekClassCount === 0 && (
-            <div className="tt-empty-note">
-              <span>{emptyCopy}</span>
-              {isAdmin && (
-                <>
-                  <span aria-hidden="true"> · </span>
-                  <button type="button" className="history-link" onClick={openCreate}>시간표 생성</button>
-                </>
-              )}
-            </div>
-          )}
+            <WeeklyTimetableGrid
+              timetable={shown}
+              days={days}
+              detailMode={detailMode}
+              selectedKey={selected ? cellSlotKey(selected.day, selected.period) : ''}
+              editing={SHOW_EDIT && editing}
+              dragFrom={dragFrom}
+              hoverKey={hover ? cellSlotKey(hover.day, hover.period) : ''}
+              hoverReason={hoverReason}
+              showFreeLabel={timetable.weekClassCount > 0}
+              onSelect={(slot) => {
+                setSelected(slot)
+                setRequestMode('')
+                setActiveLesson(null)
+                setCreating(Boolean(SHOW_EDIT && editing && isAdmin && !shown.byDay?.[slot.day]?.[slot.period]))
+              }}
+              onDragStart={(slot) => {
+                dragRef.current = slot
+                setDragFrom(slot)
+              }}
+              onDragHover={setHover}
+              onDrop={(slot) => {
+                const from = dragRef.current
+                if (!from) return
+                const reason = dropRejection(
+                  shown.byDay,
+                  from,
+                  slot,
+                  days.find((day) => day.key === slot.day)?.holiday || '',
+                )
+                if (!reason && (from.day !== slot.day || from.period !== slot.period)) {
+                  setMoves((list) => [...list, { from, to: slot }])
+                }
+                dragRef.current = null
+                setDragFrom(null)
+                setHover(null)
+              }}
+              onDragEnd={() => {
+                dragRef.current = null
+                setDragFrom(null)
+                setHover(null)
+              }}
+            />
+          </>
+        )}
 
-          {SHOW_EDIT && editing && hoverReason && <p className="tt-reject">{hoverReason}</p>}
-
-          <WeeklyTimetableGrid
-            timetable={shown}
-            days={days}
-            detailMode={detailMode}
-            selectedKey={selected ? cellSlotKey(selected.day, selected.period) : ''}
-            editing={SHOW_EDIT && editing}
-            dragFrom={dragFrom}
-            hoverKey={hover ? cellSlotKey(hover.day, hover.period) : ''}
-            hoverReason={hoverReason}
-            showFreeLabel={timetable.weekClassCount > 0}
-            onSelect={(slot) => {
-              setSelected(slot)
-              setRequestMode('')
-              setActiveLesson(null)
-              setCreating(Boolean(SHOW_EDIT && editing && isAdmin && !shown.byDay?.[slot.day]?.[slot.period]))
-            }}
-            onDragStart={(slot) => {
-              dragRef.current = slot
-              setDragFrom(slot)
-            }}
-            onDragHover={setHover}
-            onDrop={(slot) => {
-              const from = dragRef.current
-              if (!from) return
-              const reason = dropRejection(
-                shown.byDay,
-                from,
-                slot,
-                days.find((day) => day.key === slot.day)?.holiday || '',
-              )
-              if (!reason && (from.day !== slot.day || from.period !== slot.period)) {
-                setMoves((list) => [...list, { from, to: slot }])
-              }
-              dragRef.current = null
-              setDragFrom(null)
-              setHover(null)
-            }}
-            onDragEnd={() => {
-              dragRef.current = null
-              setDragFrom(null)
-              setHover(null)
-            }}
-          />
-        </>
-      )}
+      </section>
 
       {query.error && failed ? <p className="sr-only">{String(query.error?.message || '')}</p> : null}
 
       {selected && (
-        <>
-          <button type="button" className="history-scrim" aria-label="상세 닫기" onClick={clearDetail} />
-          <aside className="tt-detail" role="dialog" aria-modal="true" aria-label="수업 상세">
-            <div className="tt-detail-head">
-              <p className="tt-detail-kicker">
-                {selectedDate ? `${selectedDate.date.getMonth() + 1}월 ${selectedDate.date.getDate()}일 (${selectedDate.key})` : ''}
-                {` · ${selected.period}교시`}
-                {periodRange(selectedCell, selected.period) ? ` · ${periodRange(selectedCell, selected.period)}` : ''}
-              </p>
-              <button type="button" className="panel-close" onClick={clearDetail}>닫기</button>
-            </div>
-            <h2>
+        <Dialog title="수업 상세" onClose={clearDetail}>
+          <div className="detail-lesson">
+            <p className="tt-detail-kicker">
+              {selectedDate ? `${selectedDate.date.getMonth() + 1}월 ${selectedDate.date.getDate()}일 (${selectedDate.key})` : ''}
+              {` · ${selected.period}교시`}
+              {periodRange(selectedCell, selected.period) ? ` · ${periodRange(selectedCell, selected.period)}` : ''}
+            </p>
+            <h3>
               {selectedCrowded
                 ? `${selectedLessons.length}학급`
                 : (selectedCell?.subject || (creating ? '수업 추가' : '공강'))}
-            </h2>
+            </h3>
             {selectedCrowded ? (
               <ul className="tt-lesson-list">
                 {selectedLessons.map((lesson) => {
@@ -686,8 +687,8 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
               </div>
             ) : null}
             {saveError && selected ? <p className="tt-reject">{saveError}</p> : null}
-          </aside>
-        </>
+          </div>
+        </Dialog>
       )}
 
       {editing && moves.length > 0 && (
@@ -703,9 +704,9 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
       )}
 
       {confirmLeave && (
-        <div className="tt-modal" role="dialog" aria-modal="true" aria-label="저장하지 않은 변경">
-          <p>변경을 저장하지 않고 나갈까요</p>
-          <div>
+        <Dialog title="저장하지 않은 변경" onClose={() => setConfirmLeave(false)}>
+          <p>변경을 저장하지 않고 나갈까요?</p>
+          <div className="detail-actions">
             <button type="button" className="tt-secondary" onClick={() => setConfirmLeave(false)}>머무르기</button>
             <button
               type="button"
@@ -721,7 +722,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
               나가기
             </button>
           </div>
-        </div>
+        </Dialog>
       )}
     </div>
   )

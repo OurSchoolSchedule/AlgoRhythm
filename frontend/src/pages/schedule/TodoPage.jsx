@@ -1,3 +1,4 @@
+import { DetailHeading } from '@/components/ui/DetailPage'
 import { useEffect, useRef, useState } from 'react'
 import {
   useTodos,
@@ -379,10 +380,8 @@ export default function TodoPage({ date, userRole }) {
   }
 
   return (
-    <div className="todo-page">
-      <h1 className="sr-only">할 일</h1>
-      <div className="home-title-row">
-        <p className="todo-date">{formatListDate(date)}</p>
+    <div className="detail-page todo-page">
+      <DetailHeading title="할 일" context={formatListDate(date)}>
         {isAdmin && (
           <div className="todo-scope" role="group" aria-label="할 일 범위">
             <button type="button" aria-pressed={view === 'mine'} onClick={() => setScope('mine')}>
@@ -393,7 +392,7 @@ export default function TodoPage({ date, userRole }) {
             </button>
           </div>
         )}
-      </div>
+      </DetailHeading>
       <TodoStats
         loading={showSkeleton}
         failed={listFailed && needFailed}
