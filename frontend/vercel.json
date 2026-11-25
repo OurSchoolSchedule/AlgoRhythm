@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/school42", "destination": "/index.html" },
     {
       "source": "/guide",
       "destination": "/index.html"
