@@ -1,9 +1,14 @@
 import { TableScroll } from '@/components/ui/DetailPage'
 import type { Assignment, CellIssue, RosterEntry, RosterPreview } from '@/types/rosterImport'
 
-const subjects = (a: Assignment) => a.subjects.map((s) => s.subjectName).join(', ') || '미배정'
-const room = (a: Assignment) =>
-  a.homeroomClass ? `${a.homeroomClass.grade}학년 ${a.homeroomClass.classNumber}반` : '없음'
+function subjects(a: Assignment) {
+  if (a.assignmentRecorded === false) return '이 학기 명부 미등록'
+  return a.subjects.map((s) => s.subjectName).join(', ') || '미배정'
+}
+function room(a: Assignment) {
+  if (a.assignmentRecorded === false) return '이 학기 명부 미등록'
+  return a.homeroomClass ? `${a.homeroomClass.grade}학년 ${a.homeroomClass.classNumber}반` : '없음'
+}
 const actionLabel = { ADD: '신규', UPDATE: '변경', UNCHANGED: '동일' }
 
 function ChangedValue({ before, after }: { before?: string; after: string }) {

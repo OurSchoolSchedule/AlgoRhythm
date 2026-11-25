@@ -2,6 +2,7 @@ import type { HomeTerm } from './datedLesson'
 
 export type RosterScope = Pick<HomeTerm, 'schoolId' | 'termId'>
 export interface Assignment {
+  assignmentRecorded?: boolean
   subjects: { subjectId: number; subjectName: string }[]
   homeroomClass: {
     classId: number
