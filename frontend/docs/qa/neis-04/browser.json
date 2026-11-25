@@ -1,0 +1,267 @@
+{
+  "desktop": {
+    "viewport": [
+      1440,
+      900
+    ],
+    "browser": "149.0.7827.0",
+    "source": "로컬 빌드 · 13.4 HTTP fixture",
+    "horizontalOverflowPx": {
+      "page": 0,
+      "card": 0
+    },
+    "keyboard": [
+      "Tab",
+      "ArrowDown",
+      "ArrowUp",
+      "ArrowRight",
+      "ArrowLeft",
+      "Enter"
+    ],
+    "previousMenuExposures": {
+      "A→B": 0,
+      "B relink v1→v2": 0,
+      "logout": 0
+    },
+    "timetableDuring503": {
+      "newWeekRead": true,
+      "openedLesson": "수학 · 김하늘",
+      "retryMealStatus": "STALE"
+    },
+    "verifiedRehearsalOnly": true,
+    "unlinkedAdminOpenedSettings": true,
+    "delayedResponses": [
+      {
+        "schoolId": 17,
+        "linkVersion": 1,
+        "fromDate": "2026-11-23",
+        "toDate": "2026-11-29"
+      },
+      {
+        "schoolId": 18,
+        "linkVersion": 1,
+        "fromDate": "2026-11-23",
+        "toDate": "2026-11-29"
+      },
+      {
+        "schoolId": 18,
+        "linkVersion": 2,
+        "fromDate": "2026-11-25",
+        "toDate": "2026-11-25"
+      }
+    ],
+    "requests": [
+      {
+        "method": "GET",
+        "path": "/api/mypage/active-school",
+        "params": {}
+      },
+      {
+        "method": "GET",
+        "path": "/api/neis/schools/17/link",
+        "params": {}
+      },
+      {
+        "method": "GET",
+        "path": "/api/timetable/year/2026/semester/2",
+        "params": {
+          "weekOf": [
+            "2026-11-23"
+          ]
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/neis/schools/17/meals/today",
+        "params": {}
+      },
+      {
+        "method": "GET",
+        "path": "/api/neis/schools/17/meals",
+        "params": {
+          "from": [
+            "2026-11-23"
+          ],
+          "to": [
+            "2026-11-29"
+          ]
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/neis/schools/17/meals/today",
+        "params": {}
+      },
+      {
+        "method": "GET",
+        "path": "/api/neis/schools/17/meals",
+        "params": {
+          "from": [
+            "2026-11-23"
+          ],
+          "to": [
+            "2026-11-29"
+          ]
+        }
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/mypage/active-school/18",
+        "params": {}
+      },
+      {
+        "method": "GET",
+        "path": "/api/neis/schools/18/link",
+        "params": {}
+      },
+      {
+        "method": "GET",
+        "path": "/api/timetable/year/2026/semester/2",
+        "params": {
+          "weekOf": [
+            "2026-11-23"
+          ]
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/neis/schools/18/meals/today",
+        "params": {}
+      },
+      {
+        "method": "GET",
+        "path": "/api/neis/schools/18/meals",
+        "params": {
+          "from": [
+            "2026-11-23"
+          ],
+          "to": [
+            "2026-11-29"
+          ]
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/neis/schools/search",
+        "params": {
+          "q": [
+            "검수"
+          ],
+          "page": [
+            "1"
+          ]
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/mypage/active-school",
+        "params": {}
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/neis/schools/18/link",
+        "params": {}
+      },
+      {
+        "method": "GET",
+        "path": "/api/neis/schools/18/meals/today",
+        "params": {}
+      },
+      {
+        "method": "GET",
+        "path": "/api/neis/schools/18/meals",
+        "params": {
+          "from": [
+            "2026-11-23"
+          ],
+          "to": [
+            "2026-11-29"
+          ]
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/timetable/year/2026/semester/2",
+        "params": {
+          "weekOf": [
+            "2026-11-30"
+          ]
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/neis/schools/18/meals",
+        "params": {
+          "from": [
+            "2026-11-23"
+          ],
+          "to": [
+            "2026-11-29"
+          ]
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/neis/schools/18/meals/today",
+        "params": {}
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/logout",
+        "params": {}
+      },
+      {
+        "method": "GET",
+        "path": "/api/school42/status",
+        "params": {}
+      },
+      {
+        "method": "GET",
+        "path": "/api/school42/week",
+        "params": {}
+      },
+      {
+        "method": "GET",
+        "path": "/api/mypage/active-school",
+        "params": {}
+      },
+      {
+        "method": "GET",
+        "path": "/api/neis/schools/18/link",
+        "params": {}
+      },
+      {
+        "method": "GET",
+        "path": "/api/timetable/year/2026/semester/2",
+        "params": {
+          "weekOf": [
+            "2026-11-23"
+          ]
+        }
+      }
+    ],
+    "pageErrors": []
+  },
+  "mobile": {
+    "viewport": [
+      360,
+      820
+    ],
+    "browser": "149.0.7827.0",
+    "source": "로컬 빌드 · 13.4 HTTP fixture",
+    "horizontalOverflowPx": {
+      "page": 0,
+      "card": 0
+    },
+    "keyboard": [
+      "Tab",
+      "ArrowDown",
+      "ArrowUp",
+      "ArrowRight",
+      "ArrowLeft",
+      "Enter"
+    ],
+    "otherMealLongLabelNoOverflow": true,
+    "weekendEmpty": true
+  }
+}

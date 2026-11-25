@@ -4,6 +4,7 @@ import { useTermChoice } from '@/hooks/useTermChoice'
 import AIFloatingChat from '@/components/common/AIFloatingChat'
 import { Actions, Dialog, Icon, Notices, Profile, TermForm } from './HomePanels'
 import HomeTimetable from './HomeTimetable'
+import HomeMeals from './meals/HomeMeals'
 
 export default function HomeContent({ session, navigate, panel, openPanel }) {
   const { choice, saveChoice, term, weeklyTerm } = useTermChoice(session)
@@ -105,6 +106,9 @@ export default function HomeContent({ session, navigate, panel, openPanel }) {
             <h2>학교 시간표</h2>
             <p>{accessMessage}</p>
           </section>
+        )}
+        {import.meta.env.VITE_NEIS_MEALS_ENABLED !== 'false' && (
+          <HomeMeals session={session} today={home.today} onOpenSchoolSettings={() => openPanel('settings')} />
         )}
       </main>
       {menus.profile && (

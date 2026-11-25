@@ -3,6 +3,7 @@ import axios from 'axios'
 import { validateTeachingLoad, LoadValidationError } from '@/api/loadValidation'
 import { submitGeneration, getGenerationStatus } from '@/api/generationJobs'
 import { publishCandidate } from '@/api/publications'
+import RehearsalMeals from './RehearsalMeals'
 import './school42.css'
 
 const term = 547001
@@ -392,6 +393,9 @@ export default function School42() {
             </div>
             <Timetable lessons={lessons} admin={admin} />
           </section>
+          {http && ['ADMIN', 'TEACHER'].includes(status.role) && Number.isSafeInteger(status.round) && (
+            <RehearsalMeals />
+          )}
           {admin && (
             <section>
               <h2>다음 회차</h2>
