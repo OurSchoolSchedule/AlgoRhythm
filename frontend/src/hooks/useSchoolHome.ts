@@ -71,6 +71,7 @@ export function useSchoolHome({ term, weeklyTerm, classId = null, date, timeZone
     calendar?.semester,
     currentTerm?.termId,
     selected,
+    { date: day },
   )
   const notifications = useHomeNotices(session)
   const subjects = useSubjects()

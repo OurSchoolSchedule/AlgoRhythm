@@ -8,6 +8,7 @@ import {
   getSchoolTimetable,
   getSchoolTimetableByTerm,
 } from '@/api/timetable.js'
+import { getSchoolWeekRange } from '@/utils/weekRange.js'
 import type { TimetableDto } from '@/types/timetable.js'
 import { queryKeys } from './queryKeys.js'
 import { type HomeSession, type ReadOptions, useScopedRead } from './useHomeSession'
@@ -58,8 +59,9 @@ export function useWeekRead(
   semester?: number,
   termId?: number,
   classId?: number,
-  options: ReadOptions<TimetableDto[], TimetableDto[]> = {},
+  { date, ...options }: ReadOptions<TimetableDto[], TimetableDto[]> & { date?: string } = {},
 ) {
+  const weekOf = date ? getSchoolWeekRange(new Date(date + 'T12:00:00')).start : undefined
   const mine = view === 'mine'
   const key = mine
     ? queryKeys.timetable.mine(year, semester)
@@ -71,15 +73,16 @@ export function useWeekRead(
       : session.access.queries.teacherProfile || session.access.queries.adminProfile)
   return useScopedRead(
     session,
-    [...key, termId ?? null, view, classId ?? null],
+    [...key, termId ?? null, view, weekOf ? { weekOf, classId: classId ?? null } : classId ?? null],
     allowed,
     async (signal) => {
       const termRead = mine ? getMyTimetableByTerm : getSchoolTimetableByTerm
       const allRead = mine ? getMyTimetable : getSchoolTimetable
+      const request = { signal, weekOf, termId }
       const rows =
         year != null && semester != null
-          ? await termRead(year, semester, { signal })
-          : await allRead({ signal })
+          ? await termRead(year, semester, request)
+          : await allRead(request)
       return rows.filter(
         (row) =>
           row.schoolId === session.scope.schoolId &&

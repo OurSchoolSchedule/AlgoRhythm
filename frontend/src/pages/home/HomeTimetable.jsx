@@ -121,7 +121,7 @@ function WeekTable({ home, daysOfWeek, rows, selected, onPick }) {
           {selectedRows.length ? (
             <ul>
               {selectedRows.map((row) => (
-                <li key={row.id}>
+                <li key={row.id ?? `weekly-${row.weeklyLessonId}`}>
                   {[
                     row.subjectName,
                     row.teacherName,
