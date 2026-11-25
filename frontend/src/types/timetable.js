@@ -1,7 +1,8 @@
 /**
  * 시간표 셀 (GET /api/timetable, GET /api/timetable/me).
  * @typedef {Object} TimetableDto
- * @property {number} id
+ * @property {number | null} id 기존 시간표 쓰기 API의 ID
+ * @property {number | null} [weeklyLessonId] 게시한 주간 수업의 ID
  * @property {number} schoolId
  * @property {number} academicYear
  * @property {number} semester

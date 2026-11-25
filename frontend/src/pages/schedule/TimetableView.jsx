@@ -84,8 +84,10 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
   const [academicYear, setAcademicYear] = useState(defaultTerm.academicYear || new Date().getFullYear())
   const [semester, setSemester] = useState(defaultTerm.semester || 2)
   const [useTermFilter, setUseTermFilter] = useState(true)
+  const [weekStart, setWeekStart] = useState(() => startOfSchoolWeek(new Date()))
   const query = useSchoolTimetable({
     referenceDate: now,
+    weekOf: toISODate(weekStart),
     academicYear: useTermFilter ? academicYear : undefined,
     semester: useTermFilter ? semester : undefined,
   })
@@ -95,7 +97,6 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
   const failed = query.isError && !previewOnly
   const refetch = query.refetch
 
-  const [weekStart, setWeekStart] = useState(() => startOfSchoolWeek(new Date()))
   const [scope, setScope] = useState(isAdmin ? 'class' : 'mine')
   const [target, setTarget] = useState('')
   const [termOpen, setTermOpen] = useState(false)
@@ -603,7 +604,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
                   const isActive = activeLesson?.id != null && lesson.id === activeLesson.id
                   return (
                     <li
-                      key={lesson.id ?? `${lesson.class}-${lesson.subject}`}
+                      key={lesson.id ?? `weekly-${lesson.weeklyLessonId ?? lesson.class}`}
                       className={isActive ? 'is-active' : undefined}
                     >
                       <span className="tt-lesson-main">
@@ -650,7 +651,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
                 onCreated={clearDetail}
                 onCancel={clearDetail}
               />
-            ) : actionLesson && requestMode === 'substitute' ? (
+            ) : actionLesson?.id != null && requestMode === 'substitute' ? (
               <CreateSubstituteForm
                 key={`sub-${actionLesson.id}`}
                 timetableId={actionLesson.id}
@@ -662,6 +663,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
                 <button
                   type="button"
                   className="tt-secondary"
+                  disabled={selectedCell.id == null}
                   onClick={() => startLessonRequest(selectedCell, 'substitute')}
                 >
                   공개 보결 모집

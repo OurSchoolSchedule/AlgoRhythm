@@ -1,22 +1,29 @@
 import client from './client.js'
 
+/** @typedef {{ signal?: AbortSignal, weekOf?: string, termId?: number }} WeekOptions */
+
+/** @param {WeekOptions} options */
+function weeklyRequest({ signal, weekOf, termId }) {
+  return { signal, params: { weekOf, termId } }
+}
+
 /**
  * 내 시간표 (GET /api/timetable/me).
  * @returns {Promise<import('@/types/timetable.js').TimetableDto[]>}
- * @param {{ signal?: AbortSignal }} [options]
+ * @param {WeekOptions} [options]
  */
 export async function getMyTimetable(options = {}) {
-  const { data } = await client.get('/api/timetable/me', { signal: options.signal })
+  const { data } = await client.get('/api/timetable/me', weeklyRequest(options))
   return Array.isArray(data) ? data : []
 }
 
 /**
  * 학교 시간표 (GET /api/timetable).
  * @returns {Promise<import('@/types/timetable.js').TimetableDto[]>}
- * @param {{ signal?: AbortSignal }} [options]
+ * @param {WeekOptions} [options]
  */
 export async function getSchoolTimetable(options = {}) {
-  const { data } = await client.get('/api/timetable', { signal: options.signal })
+  const { data } = await client.get('/api/timetable', weeklyRequest(options))
   return Array.isArray(data) ? data : []
 }
 
@@ -24,11 +31,11 @@ export async function getSchoolTimetable(options = {}) {
  * 학년도·학기 학교 시간표 (GET /api/timetable/year/{year}/semester/{semester}).
  * @param {number} year
  * @param {number} semester
- * @param {{ signal?: AbortSignal }} [options]
+ * @param {WeekOptions} [options]
  * @returns {Promise<import('@/types/timetable.js').TimetableDto[]>}
  */
 export async function getSchoolTimetableByTerm(year, semester, options = {}) {
-  const { data } = await client.get(`/api/timetable/year/${year}/semester/${semester}`, { signal: options.signal })
+  const { data } = await client.get(`/api/timetable/year/${year}/semester/${semester}`, weeklyRequest(options))
   return Array.isArray(data) ? data : []
 }
 
@@ -36,11 +43,11 @@ export async function getSchoolTimetableByTerm(year, semester, options = {}) {
  * 학년도·학기 내 시간표 (GET /api/timetable/me/year/{year}/semester/{semester}).
  * @param {number} year
  * @param {number} semester
- * @param {{ signal?: AbortSignal }} [options]
+ * @param {WeekOptions} [options]
  * @returns {Promise<import('@/types/timetable.js').TimetableDto[]>}
  */
 export async function getMyTimetableByTerm(year, semester, options = {}) {
-  const { data } = await client.get(`/api/timetable/me/year/${year}/semester/${semester}`, { signal: options.signal })
+  const { data } = await client.get(`/api/timetable/me/year/${year}/semester/${semester}`, weeklyRequest(options))
   return Array.isArray(data) ? data : []
 }
 
