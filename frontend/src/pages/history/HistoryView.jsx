@@ -439,7 +439,7 @@ export function AdminView({ navigate }) {
                           <td style={{ padding: "10px 12px", color: "var(--color-text-secondary)" }}>
                             {s.homeroomClasses?.length
                               ? s.homeroomClasses.map((item) => `${item.grade}-${item.classNumber}`).join(", ")
-                              : "—"}
+                              : s.homeroomClasses ? "미배정" : "미확인"}
                           </td>
                           <td style={{ padding: "10px 12px", color: "var(--color-text-secondary)", fontVariantNumeric: "tabular-nums" }}>
                             {s.weeklyLessonCount ?? "—"}

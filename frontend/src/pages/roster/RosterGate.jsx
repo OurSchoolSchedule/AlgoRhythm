@@ -125,6 +125,8 @@ function TeacherReview({ session, logout, children }) {
     setCorrecting(false)
   }
   const termLabel = `${choice.academicYear}학년도 ${choice.semester}학기`
+  const assignment = entry?.term?.assignmentRecorded === false ? null : entry?.term
+  const missingAssignment = termId === null ? '학기 연결 후 확인' : '이 학기 명부 미등록'
   return (
     <Frame logout={logout}>
       <p className="roster-context">
@@ -147,20 +149,20 @@ function TeacherReview({ session, logout, children }) {
           <div>
             <dt>담당 과목</dt>
             <dd>
-              {entry.term
-                ? entry.term.subjects.map((s) => s.subjectName).join(', ') ||
+              {assignment
+                ? assignment.subjects.map((s) => s.subjectName).join(', ') ||
                   '등록된 과목 없음'
-                : '학기 연결 후 확인'}
+                : missingAssignment}
             </dd>
           </div>
           <div>
             <dt>담임 학급</dt>
             <dd>
-              {entry.term
-                ? entry.term.homeroomClass
-                  ? `${entry.term.homeroomClass.grade}학년 ${entry.term.homeroomClass.classNumber}반`
+              {assignment
+                ? assignment.homeroomClass
+                  ? `${assignment.homeroomClass.grade}학년 ${assignment.homeroomClass.classNumber}반`
                   : '담임 미등록'
-                : '학기 연결 후 확인'}
+                : missingAssignment}
             </dd>
           </div>
         </dl>

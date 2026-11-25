@@ -24,6 +24,8 @@ export interface HomeroomDto {
 
 export interface HomeMemberDto {
   displayName?: string | null
+  rosterLinked?: boolean
+  rosterAssignmentTermId?: number | null
   rosterSubjects?: readonly SubjectInfoDto[]
   rosterHomeroomClass?: HomeroomDto | null
   userId: number
