@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/guide",
+      "destination": "/index.html"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://edu.rssolplan.com/api/:path*"
     },
