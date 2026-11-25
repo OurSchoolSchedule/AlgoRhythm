@@ -1,0 +1,51 @@
+.service-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 24px;
+  min-width: 0;
+  padding: 16px clamp(16px, 2.5vw, 32px);
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.service-footer small {
+  color: var(--color-text-muted);
+  font-size: inherit;
+}
+
+.service-footer-contact {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 8px;
+  max-width: 100%;
+}
+
+.service-footer a {
+  color: var(--color-primary-text);
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.service-footer a:focus-visible {
+  outline: 2px solid var(--keyboard-focus-ring);
+  outline-offset: 3px;
+}
+
+.auth-layout {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-layout-main {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+}

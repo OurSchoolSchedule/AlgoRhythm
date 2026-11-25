@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import SchoolWorkspace from '@/components/layout/SchoolWorkspace'
+import ServiceFooter from '@/components/layout/ServiceFooter'
 import { DevLoginView } from '@/pages/auth'
 import {
   getAccessToken,
@@ -39,6 +40,13 @@ export default function App() {
     })
   }
 
-  if (!authed) return <DevLoginView onSuccess={() => setAuthed(true)} />
+  if (!authed) {
+    return (
+      <div className="auth-layout">
+        <DevLoginView onSuccess={() => setAuthed(true)} />
+        <ServiceFooter />
+      </div>
+    )
+  }
   return <SchoolWorkspace onLogout={handleLogout} />
 }
