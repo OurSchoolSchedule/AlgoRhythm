@@ -75,6 +75,7 @@ export function entryToTimetableCell(entry) {
 
   return {
     id: entry.id,
+    weeklyLessonId: entry.weeklyLessonId,
     dayKey,
     period,
     class: classLabel(entry),
@@ -142,7 +143,8 @@ function mergeCell(existing, cell) {
 
 /**
  * @typedef {Object} TimetableCell
- * @property {number} id
+ * @property {number | null} id
+ * @property {number | null} [weeklyLessonId]
  * @property {string} dayKey
  * @property {number} period
  * @property {string} class

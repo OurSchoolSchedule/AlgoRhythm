@@ -11,6 +11,7 @@ export interface OwnRoster {
   schoolUserId: number | null
   term: {
     termId: number
+    assignmentRecorded?: boolean
     subjects: SubjectInfoDto[]
     homeroomClass: HomeroomDto | null
   } | null

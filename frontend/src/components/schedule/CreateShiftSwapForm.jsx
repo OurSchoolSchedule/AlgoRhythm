@@ -52,11 +52,11 @@ export default function CreateShiftSwapForm({
   const [receiverDate, setReceiverDate] = useState(today)
   const [reason, setReason] = useState('')
 
-  const mySlots = mineQuery.data ?? []
+  const mySlots = (mineQuery.data ?? []).filter((slot) => slot.id != null)
   const requesterInMine = mySlots.some((slot) => String(slot.id) === String(requesterTimetableId))
   const otherSlots = useMemo(() => {
     const selected = Number(requesterTimetableId)
-    return (schoolQuery.data ?? []).filter((slot) => slot.id !== selected)
+    return (schoolQuery.data ?? []).filter((slot) => slot.id != null && slot.id !== selected)
   }, [schoolQuery.data, requesterTimetableId])
 
   const canSubmit =
@@ -103,7 +103,7 @@ export default function CreateShiftSwapForm({
       )}
       {!mineQuery.isLoading && !mineQuery.isError && mySlots.length === 0 && !requesterTimetableId && (
         <p style={{ margin: 0, fontSize: 12, color: 'var(--color-text-muted)' }}>
-          등록된 내 수업이 없습니다. 시간표가 등록되면 교환을 요청할 수 있습니다.
+          이 양식에서 신청할 수 있는 수업이 없습니다. 게시된 수업은 보결·교환 업무에서 선택하세요.
         </p>
       )}
       {(mySlots.length > 0 || requesterTimetableId) && (
