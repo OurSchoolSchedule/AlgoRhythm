@@ -12,6 +12,7 @@ export function WorkspaceNavigation({ items, currentView, navigate, onLogout }) 
             run: () => navigate(item.view),
           }))}
         />
+        <a className="desk-line-button" href="/guide">사용 가이드</a>
       </nav>
       <button className="desk-logout" onClick={onLogout}>
         <Icon name="logout" /> 로그아웃
