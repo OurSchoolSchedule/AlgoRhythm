@@ -9,7 +9,7 @@ import {
 import { shouldForceReLogin } from '@/utils/authToken.js'
 
 // 개발은 Vite 프록시, 배포는 Vercel rewrite를 통해 같은 /api 경로를 사용한다.
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
+export const API_BASE_URL = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_BASE_URL ?? '')
 
 const client = axios.create({
   baseURL: API_BASE_URL,
@@ -68,7 +68,7 @@ client.interceptors.response.use(
       getAccessToken() &&
       shouldForceReLogin(response) &&
       (response.status !== 401 || !getRefreshToken()) &&
-      !config?.url?.includes('/api/auth/dev-token')
+      !(import.meta.env.DEV && config?.url?.includes('/api/auth/dev-token'))
     ) {
       clearTokens()
       onAuthError?.()

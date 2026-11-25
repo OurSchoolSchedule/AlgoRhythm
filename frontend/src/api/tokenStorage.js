@@ -5,6 +5,21 @@ const REFRESH_TOKEN_KEY = 'refreshToken'
 const USER_ID_KEY = 'userId'
 const SCHOOL_SWITCH_KEY = 'activeSchoolChanged'
 const PREVIEW_ROLE_KEY = 'previewUserRole'
+const PENDING_SCHOOL_KEY = 'onboardingUserId'
+
+export function hasPendingSchool() {
+  const id = getUserId()
+  return Boolean(getAccessToken() && id && localStorage.getItem(PENDING_SCHOOL_KEY) === id)
+}
+
+export function markPendingSchool(userId) {
+  if (userId == null) localStorage.removeItem(PENDING_SCHOOL_KEY)
+  else localStorage.setItem(PENDING_SCHOOL_KEY, String(userId))
+}
+
+export function localLoginEnabled() {
+  return import.meta.env.DEV && ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)
+}
 
 export function getAccessToken() {
   return localStorage.getItem(ACCESS_TOKEN_KEY)
@@ -61,6 +76,7 @@ export function setAccessToken(accessToken) {
 }
 
 export function clearTokens() {
+  markPendingSchool(null)
   localStorage.removeItem(ACCESS_TOKEN_KEY)
   localStorage.removeItem(REFRESH_TOKEN_KEY)
   localStorage.removeItem(USER_ID_KEY)
@@ -69,12 +85,13 @@ export function clearTokens() {
 
 /** 서버 계정 없이 화면만 보는 테스트 로그인. 값은 admin | worker */
 export function getPreviewUserRole() {
+  if (!localLoginEnabled()) return null
   const role = sessionStorage.getItem(PREVIEW_ROLE_KEY)
   return role === 'admin' || role === 'worker' ? role : null
 }
 
 export function setPreviewUserRole(role) {
-  sessionStorage.setItem(PREVIEW_ROLE_KEY, role)
+  if (localLoginEnabled()) sessionStorage.setItem(PREVIEW_ROLE_KEY, role)
 }
 
 export function clearPreviewUserRole() {
