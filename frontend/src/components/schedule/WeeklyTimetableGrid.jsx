@@ -76,12 +76,13 @@ export default function WeeklyTimetableGrid({
   const currentPeriod = timetable.currentPeriod ?? getPeriodFromDatetime(now || new Date())
 
   return (
-    <div className="tt-board show-scrollbar">
+    <div className="tt-board show-scrollbar" role="region" aria-label="주간 시간표 격자" tabIndex={0}>
       <div className="tt-head-row">
       <div className="tt-corner" />
       {days.map((day) => (
         <div
           key={day.key}
+          aria-current={day.isToday ? 'date' : undefined}
           className={`tt-headcell${day.isToday ? ' is-today' : ''}${day.holiday ? ' is-off' : ''}${day.isPast ? ' is-past' : ''}`}
         >
           <span className="tt-dow">{day.key}</span>
@@ -154,7 +155,8 @@ export default function WeeklyTimetableGrid({
                   style={style}
                   draggable={editing && Boolean(cell) && !crowded}
                   title={rejected ? hoverReason : undefined}
-                  aria-label={crowded ? `${day.key}요일 ${row.period}교시, ${lessons.length}학급` : undefined}
+                  aria-pressed={selectedKey === key}
+                  aria-label={`${day.key}요일 ${row.period}교시 · ${crowded ? lessons.length + '학급' : cell?.subject || '공강'}`}
                   onClick={() => onSelect?.({ day: day.key, period: row.period })}
                   onDragStart={(event) => {
                     event.dataTransfer.effectAllowed = 'move'

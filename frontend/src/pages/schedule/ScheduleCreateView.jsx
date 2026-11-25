@@ -168,7 +168,7 @@ function Generation({ term }) {
           <ScheduleProgress progress={gen.progress} />
         )}
         {gen.statusError && (
-          <div role="alert">
+          <div className="work-error" role="alert">
             작업 상태를 불러오지 못했습니다.{' '}
             <button onClick={() => gen.refetchStatus().catch((e) => setError(operationError(e)))}>
               작업 다시 조회

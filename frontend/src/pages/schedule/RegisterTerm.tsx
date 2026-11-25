@@ -91,7 +91,7 @@ export default function RegisterTerm({
           <button>새 학기 등록 확정</button>
         </fieldset>
       </form>
-      {error && <p role="alert">{error}</p>}
+      {error && <p className="work-error" role="alert">{error}</p>}
     </details>
   )
 }
