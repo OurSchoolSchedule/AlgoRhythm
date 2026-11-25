@@ -5,8 +5,9 @@ export async function publishCandidate(
   termId: number,
   { jobId, candidateId, effectiveFrom, expectedPublishRev }: PublicationRequest,
   signal?: AbortSignal,
+  http = client,
 ): Promise<PublicationReceipt> {
-  const { data, status } = await client.post<PublicationReceipt>(
+  const { data, status } = await http.post<PublicationReceipt>(
     `/api/v2/terms/${termId}/publications`,
     { jobId, candidateId, effectiveFrom, expectedPublishRev },
     { signal },

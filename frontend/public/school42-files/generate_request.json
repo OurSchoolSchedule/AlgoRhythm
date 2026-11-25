@@ -1,0 +1,173 @@
+{
+  "validatedLoadId": "검증 응답의 validatedLoadId로 교체",
+  "teachingSlots": [
+    {
+      "day": "MON",
+      "period": 1
+    },
+    {
+      "day": "MON",
+      "period": 2
+    },
+    {
+      "day": "MON",
+      "period": 3
+    },
+    {
+      "day": "MON",
+      "period": 4
+    },
+    {
+      "day": "MON",
+      "period": 5
+    },
+    {
+      "day": "MON",
+      "period": 6
+    },
+    {
+      "day": "MON",
+      "period": 7
+    },
+    {
+      "day": "TUE",
+      "period": 1
+    },
+    {
+      "day": "TUE",
+      "period": 2
+    },
+    {
+      "day": "TUE",
+      "period": 3
+    },
+    {
+      "day": "TUE",
+      "period": 4
+    },
+    {
+      "day": "TUE",
+      "period": 5
+    },
+    {
+      "day": "TUE",
+      "period": 6
+    },
+    {
+      "day": "WED",
+      "period": 1
+    },
+    {
+      "day": "WED",
+      "period": 2
+    },
+    {
+      "day": "WED",
+      "period": 3
+    },
+    {
+      "day": "WED",
+      "period": 4
+    },
+    {
+      "day": "WED",
+      "period": 5
+    },
+    {
+      "day": "WED",
+      "period": 6
+    },
+    {
+      "day": "THU",
+      "period": 1
+    },
+    {
+      "day": "THU",
+      "period": 2
+    },
+    {
+      "day": "THU",
+      "period": 3
+    },
+    {
+      "day": "THU",
+      "period": 4
+    },
+    {
+      "day": "THU",
+      "period": 5
+    },
+    {
+      "day": "THU",
+      "period": 6
+    },
+    {
+      "day": "THU",
+      "period": 7
+    },
+    {
+      "day": "FRI",
+      "period": 1
+    },
+    {
+      "day": "FRI",
+      "period": 2
+    },
+    {
+      "day": "FRI",
+      "period": 3
+    },
+    {
+      "day": "FRI",
+      "period": 4
+    },
+    {
+      "day": "FRI",
+      "period": 5
+    },
+    {
+      "day": "FRI",
+      "period": 6
+    }
+  ],
+  "preferences": [
+    {
+      "teacherId": "542002",
+      "kind": "WANT",
+      "anyOf": [
+        {
+          "day": "MON",
+          "period": 2
+        },
+        {
+          "day": "TUE",
+          "period": 2
+        }
+      ]
+    },
+    {
+      "teacherId": "542009",
+      "kind": "WANT",
+      "anyOf": [
+        {
+          "day": "THU",
+          "period": 3
+        },
+        {
+          "day": "FRI",
+          "period": 3
+        }
+      ]
+    },
+    {
+      "teacherId": "542014",
+      "kind": "AVOID",
+      "anyOf": [
+        {
+          "day": "WED",
+          "period": 6
+        }
+      ]
+    }
+  ]
+}

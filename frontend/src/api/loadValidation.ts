@@ -22,6 +22,7 @@ export async function validateTeachingLoad(
   termId: number,
   { file, sheet, subjectAliases }: LoadUpload,
   options: UploadOptions = {},
+  http = client,
 ): Promise<ValidatedLoad> {
   const body = new FormData()
   body.append('file', file)
@@ -34,7 +35,7 @@ export async function validateTeachingLoad(
   }
 
   try {
-    const { status, data } = await client.post<ValidatedLoad>(
+    const { status, data } = await http.post<ValidatedLoad>(
       `/api/v2/terms/${termId}/load-imports/validate`,
       body,
       {
