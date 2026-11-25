@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   updateActiveStore,
   getOwnerProfile,
@@ -87,11 +87,9 @@ export function useUpdateOwnerProfile() {
 }
 
 export function useOwnerStore(options = {}) {
-  return useQuery({
-    queryKey: queryKeys.mypage.ownerStore(),
-    queryFn: getOwnerStore,
-    ...options,
-  })
+  const session = useHomeSession()
+  return useScopedRead(session, queryKeys.mypage.ownerStore(), session.access.queries.adminProfile,
+    signal => getOwnerStore({ signal }), options)
 }
 
 export function useUpdateOwnerStore() {
@@ -105,11 +103,9 @@ export function useUpdateOwnerStore() {
 }
 
 export function useOwnerStores(options = {}) {
-  return useQuery({
-    queryKey: queryKeys.mypage.ownerStores(),
-    queryFn: getOwnerStores,
-    ...options,
-  })
+  const session = useHomeSession()
+  return useScopedRead(session, queryKeys.mypage.ownerStores(), session.access.queries.adminProfile,
+    signal => getOwnerStores({ signal }), options)
 }
 
 export function useCreateOwnerStore() {

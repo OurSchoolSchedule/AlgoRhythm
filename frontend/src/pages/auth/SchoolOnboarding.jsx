@@ -1,10 +1,20 @@
 import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import SchoolPicker from '@/components/neis/SchoolPicker'
+import { useHomeSession } from '@/hooks/useHomeSession'
+import { neisKeys } from '@/hooks/useNeisSchool'
+import { getUserId } from '@/api/tokenStorage'
 import { useOnboarding } from '@/hooks/useAuth'
 import { getApiErrorMessage } from '@/utils/timetableGeneration'
 
 export default function SchoolOnboarding({ onComplete, onExit, error }) {
   const [role, setRole] = useState('TEACHER')
   const join = useOnboarding()
+  const cache = useQueryClient()
+  const session = useHomeSession({ enabled: false })
+  const [option, setOption] = useState(null)
+  const [name, setName] = useState('')
+  const [address, setAddress] = useState('')
 
   function submit(event) {
     event.preventDefault()
@@ -18,7 +28,23 @@ export default function SchoolOnboarding({ onComplete, onExit, error }) {
     if (role === 'TEACHER' && value('displayName')) payload.displayName = value('displayName')
     if (value('hireDate')) payload.hireDate = value('hireDate')
     if (value('phoneNumber')) payload.phoneNumber = value('phoneNumber')
-    join.mutate(payload, { onSuccess: onComplete })
+    join.mutate(payload, {
+      onSuccess: (membership) => {
+        if (
+          role === 'ADMIN' &&
+          option &&
+          membership.schoolId > 0 &&
+          String(membership.userId) === getUserId()
+        ) {
+          cache.setQueryData(neisKeys.registration(session.identity), {
+            schoolId: membership.schoolId,
+            name: membership.schoolName,
+            option,
+          })
+        }
+        onComplete(membership)
+      },
+    })
   }
 
   return (
@@ -34,6 +60,7 @@ export default function SchoolOnboarding({ onComplete, onExit, error }) {
               onChange={(e) => {
                 setRole(e.target.value)
                 join.reset()
+                setOption(null)
               }}
             >
               <option value="TEACHER">교사</option>
@@ -53,13 +80,38 @@ export default function SchoolOnboarding({ onComplete, onExit, error }) {
             </>
           ) : (
             <>
+              <SchoolPicker
+                session={session}
+                value={option}
+                onChange={(school) => {
+                  setOption(school)
+                  if (school) {
+                    setName(school.schoolName || '')
+                    setAddress(school.address || '')
+                  }
+                }}
+              />
               <label>
                 학교 이름
-                <input name="name" autoComplete="organization" required pattern={'.*\\S.*'} />
+                <input
+                  name="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  autoComplete="organization"
+                  required
+                  pattern={'.*\\S.*'}
+                />
               </label>
               <label>
                 주소
-                <input name="address" autoComplete="street-address" required pattern={'.*\\S.*'} />
+                <input
+                  name="address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  autoComplete="street-address"
+                  required
+                  pattern={'.*\\S.*'}
+                />
               </label>
             </>
           )}

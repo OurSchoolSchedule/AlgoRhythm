@@ -1,7 +1,11 @@
 import { useContext, useState } from 'react'
+import { skipToken, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useHomeSession } from '@/hooks/useHomeSession'
+import { neisKeys } from '@/hooks/useNeisSchool'
+import SchoolLinkSettings from '@/components/neis/SchoolLinkSettings'
+import AddSchoolForm from '@/components/neis/AddSchoolForm'
 import { RosterReviewContext } from '@/pages/roster/RosterReviewContext'
 import {
-  useActiveStore,
   useCreateOwnerStore,
   useDeleteOwnerStore,
   useJoinStaffStore,
@@ -24,7 +28,7 @@ import { getApiErrorMessage } from '@/utils/timetableGeneration.js'
  */
 export default function ProfileSchoolDialog({ isAdmin, onClose }) {
   const onReviewRoster = useContext(RosterReviewContext)
-  const active = useActiveStore()
+  const session = useHomeSession()
   const ownerProfile = useOwnerProfile({ enabled: isAdmin })
   const staffProfile = useStaffProfile({ enabled: !isAdmin })
   const ownerSchool = useOwnerStore({ enabled: isAdmin })
@@ -34,6 +38,12 @@ export default function ProfileSchoolDialog({ isAdmin, onClose }) {
   const updateStaffProfile = useUpdateStaffProfile()
   const updateSchool = useUpdateOwnerStore()
   const createSchool = useCreateOwnerStore()
+  const cache = useQueryClient()
+  const registrationKey = neisKeys.registration(session.identity)
+  const { data: registration } = useQuery({ queryKey: registrationKey, queryFn: skipToken })
+  const [adding, setAdding] = useState(false)
+  const finishRegistration = () => cache.setQueryData(registrationKey, null)
+  const mustSwitch = registration && registration.schoolId !== session.scope.schoolId
   const deleteSchool = useDeleteOwnerStore()
   const joinSchool = useJoinStaffStore()
   const leaveSchool = useLeaveStaffStore()
@@ -90,21 +100,6 @@ export default function ProfileSchoolDialog({ isAdmin, onClose }) {
       setMessage('학교 정보를 저장했습니다.')
     } catch (error) {
       setMessage(getApiErrorMessage(error, '학교 정보를 저장하지 못했습니다.'))
-    }
-  }
-
-  const handleCreateSchool = async () => {
-    setMessage('')
-    try {
-      await createSchool.mutateAsync({
-        name: schoolName.trim(),
-        address: schoolAddress.trim(),
-        phoneNumber: schoolPhone.trim(),
-        hireDate: hireDate || undefined,
-      })
-      setMessage('학교를 추가했습니다.')
-    } catch (error) {
-      setMessage(getApiErrorMessage(error, '학교를 추가하지 못했습니다.'))
     }
   }
 
@@ -221,13 +216,33 @@ export default function ProfileSchoolDialog({ isAdmin, onClose }) {
             </label>
             <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
               <button type="button" className="tt-create" disabled={busy} onClick={saveSchool}>학교 저장</button>
-              <button type="button" className="tt-secondary" disabled={busy} onClick={handleCreateSchool}>새 학교 추가</button>
             </div>
-            <label style={{ ...labelStyle, marginTop: 8 }}>고용일 (추가 시)
-              <input type="date" value={hireDate} onChange={(e) => setHireDate(e.target.value)} style={inputStyle} />
-            </label>
           </section>
         )}
+
+        {isAdmin && mustSwitch && (
+          <section className="neis-section" aria-label="새 학교로 전환">
+            <h3>{registration.name} 등록 완료</h3>
+            <p>새 학교로 전환하면 선택한 나이스 학교를 연결할 수 있습니다.</p>
+            <div className="neis-actions">
+              <button type="button" className="tt-create" disabled={busy} onClick={async () => {
+                try { await switchActive.mutateAsync(registration.schoolId) }
+                catch (error) { setMessage(getApiErrorMessage(error, '학교를 전환하지 못했습니다.')) }
+              }}>새 학교로 전환</button>
+              <button type="button" className="tt-secondary" disabled={busy} onClick={finishRegistration}>나중에</button>
+            </div>
+          </section>
+        )}
+        {session.scope.employment === 'HIRED' && !mustSwitch && !adding && (
+          <SchoolLinkSettings key={session.scope.schoolId} session={session} registration={registration} finish={finishRegistration} />
+        )}
+        {isAdmin && !registration && (adding ? (
+          <AddSchoolForm session={session} create={createSchool} onCancel={() => setAdding(false)} onCreated={(school, option) => {
+            if (option) cache.setQueryData(registrationKey, { schoolId: school.schoolId, name: school.name, option })
+            setAdding(false)
+            setMessage('학교를 추가했습니다.')
+          }} />
+        ) : <button type="button" className="tt-secondary" disabled={busy} onClick={() => { createSchool.reset(); setAdding(true) }}>새 학교 추가</button>)}
 
         {!isAdmin && (
           <section style={{ marginBottom: 16 }}>
@@ -255,7 +270,7 @@ export default function ProfileSchoolDialog({ isAdmin, onClose }) {
           <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
             {schools.map((school) => {
               const id = school.schoolId
-              const activeId = active.data?.schoolId
+              const activeId = session.scope.schoolId
               return (
                 <li
                   key={id}

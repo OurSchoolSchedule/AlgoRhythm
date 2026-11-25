@@ -1,0 +1,87 @@
+.neis-picker,
+.neis-section {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  color: var(--color-text);
+}
+.neis-picker {
+  margin: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 12px;
+}
+.neis-picker legend,
+.neis-section h3 {
+  font-size: 14px;
+  font-weight: 650;
+}
+.neis-section {
+  margin: 16px 0;
+}
+.neis-section h3,
+.neis-section p,
+.neis-picker p {
+  margin: 0;
+}
+.neis-section p,
+.neis-picker p {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.neis-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.neis-picker label,
+.neis-create label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+.neis-picker :is(select, input[type='search']),
+.neis-create input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 7px 8px;
+  font: inherit;
+  border: 1px solid var(--color-border-input);
+  border-radius: 6px;
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+.neis-picker label.neis-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+}
+.neis-picker .neis-option input[type='radio'] {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  margin: 2px 0;
+}
+.neis-option span,
+.neis-summary {
+  display: grid;
+  gap: 3px;
+  overflow-wrap: anywhere;
+}
+.neis-option small,
+.neis-summary small {
+  color: var(--color-text-muted);
+  font-weight: normal;
+}
+.neis-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.neis-create {
+  display: grid;
+  gap: 8px;
+}

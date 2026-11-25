@@ -1,0 +1,8 @@
+{
+  "items": [
+    { "officeCode": "B10", "standardSchoolCode": "7010125", "officeName": "서울특별시교육청", "schoolName": "경신고등학교", "schoolKind": "고등학교", "address": "서울특별시 종로구 혜화로 74", "selectable": true },
+    { "officeCode": "D10", "standardSchoolCode": "7240073", "officeName": "대구광역시교육청", "schoolName": "경신고등학교", "schoolKind": "고등학교", "address": "대구광역시 수성구 달구벌대로504길 34", "selectable": true },
+    { "officeCode": "D10", "standardSchoolCode": null, "officeName": "대구광역시교육청", "schoolName": "경신 코드누락 예시", "schoolKind": "고등학교", "address": null, "selectable": false }
+  ],
+  "page": 1, "size": 20, "totalCount": 3, "hasNext": false
+}

@@ -42,9 +42,12 @@ export async function updateOwnerProfile(payload) {
   return data
 }
 
-/** @returns {Promise<import('@/types/mypage.js').AdminSchoolResponse>} */
-export async function getOwnerStore() {
-  const { data } = await client.get('/api/mypage/admin/school')
+/**
+ * @param {{ signal?: AbortSignal }} [options]
+ * @returns {Promise<import('@/types/mypage.js').AdminSchoolResponse>}
+ */
+export async function getOwnerStore({ signal } = {}) {
+  const { data } = await client.get('/api/mypage/admin/school', { signal })
   return data
 }
 
@@ -57,9 +60,12 @@ export async function updateOwnerStore(payload) {
   return data
 }
 
-/** @returns {Promise<import('@/types/mypage.js').SchoolSimpleResponse[]>} */
-export async function getOwnerStores() {
-  const { data } = await client.get('/api/mypage/admin/schools')
+/**
+ * @param {{ signal?: AbortSignal }} [options]
+ * @returns {Promise<import('@/types/mypage.js').SchoolSimpleResponse[]>}
+ */
+export async function getOwnerStores({ signal } = {}) {
+  const { data } = await client.get('/api/mypage/admin/schools', { signal })
   return data
 }
 

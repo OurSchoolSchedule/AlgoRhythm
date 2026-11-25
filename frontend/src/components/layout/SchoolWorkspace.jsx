@@ -1,4 +1,6 @@
 import { lazy, Suspense, useState, useSyncExternalStore } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { neisKeys } from '@/hooks/useNeisSchool'
 import { useHomeSession } from '@/hooks/useHomeSession'
 import { useHomeNotices, useHomeProfile } from '@/hooks/homeReads'
 import { useTermChoice } from '@/hooks/useTermChoice'
@@ -108,7 +110,11 @@ function DetailProfile({ session, openPanel }) {
 
 function Workspace({ session, navigate: onNavigate, onLogout, onOpenPasskeys }) {
   const [page, setPage] = useState({ view: 'home' })
-  const [panel, openPanel] = useState(null)
+  const cache = useQueryClient()
+  const [panel, openPanel] = useState(() => {
+    const pending = cache.getQueryData(neisKeys.registration(session.identity))
+    return pending?.schoolId === session.scope.schoolId ? 'settings' : null
+  })
   const [theme, setTheme] = useState(getStoredTheme)
   const phone = useSyncExternalStore(
     observePhone,
