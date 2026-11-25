@@ -27,6 +27,8 @@ export function useHomeSession(options: { enabled?: boolean } = {}) {
     queryFn: userId !== null && !switching ? ({ signal }) => getActiveStore({ signal }) : skipToken,
     enabled: options.enabled !== false && userId !== null && !switching,
     retry: false,
+    // A pending teacher legitimately has no active school. Retry on an explicit status refresh.
+    retryOnMount: false,
   })
   const school = userId !== null && !switching && !active.isError ? (active.data ?? null) : null
   const access = homeAccess(userId !== null, school)

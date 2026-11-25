@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useContext, useState } from 'react'
+import { RosterReviewContext } from '@/pages/roster/RosterReviewContext'
 import {
   useActiveStore,
   useCreateOwnerStore,
@@ -22,6 +23,7 @@ import { getApiErrorMessage } from '@/utils/timetableGeneration.js'
  * @param {{ isAdmin: boolean, onClose: () => void }} props
  */
 export default function ProfileSchoolDialog({ isAdmin, onClose }) {
+  const onReviewRoster = useContext(RosterReviewContext)
   const active = useActiveStore()
   const ownerProfile = useOwnerProfile({ enabled: isAdmin })
   const staffProfile = useStaffProfile({ enabled: !isAdmin })
@@ -43,6 +45,7 @@ export default function ProfileSchoolDialog({ isAdmin, onClose }) {
   const [draft, setDraft] = useState(null)
   const [schoolDraft, setSchoolDraft] = useState(null)
   const [joinCode, setJoinCode] = useState('')
+  const [displayName, setDisplayName] = useState('')
   const [hireDate, setHireDate] = useState('')
   const [message, setMessage] = useState('')
 
@@ -108,12 +111,14 @@ export default function ProfileSchoolDialog({ isAdmin, onClose }) {
   const handleJoin = async () => {
     setMessage('')
     try {
-      await joinSchool.mutateAsync({
+      const result = await joinSchool.mutateAsync({
+        displayName: displayName.trim(),
         schoolCode: joinCode.trim(),
         hireDate: hireDate || undefined,
       })
       setJoinCode('')
-      setMessage('학교에 가입했습니다.')
+      setDisplayName('')
+      setMessage(result.employmentStatus === 'PENDING' ? '학교 가입 승인 대기 중입니다.' : '학교 연결 상태를 확인하세요.')
     } catch (error) {
       setMessage(getApiErrorMessage(error, '학교 가입에 실패했습니다.'))
     }
@@ -156,7 +161,8 @@ export default function ProfileSchoolDialog({ isAdmin, onClose }) {
         )}
 
         <section style={{ marginBottom: 16 }}>
-          <h3 style={sectionTitle}>내 정보</h3>
+          <h3 style={sectionTitle}>계정 정보</h3>
+          {!isAdmin && onReviewRoster && <button className="btn" type="button" onClick={onReviewRoster}>학교 명부 다시 확인</button>}
           <label style={labelStyle}>이름
             <input
               value={username}
@@ -164,7 +170,7 @@ export default function ProfileSchoolDialog({ isAdmin, onClose }) {
               style={inputStyle}
             />
           </label>
-          <label style={labelStyle}>이메일
+          <label style={labelStyle}>연락처 이메일
             <input
               type="email"
               value={email}
@@ -229,10 +235,13 @@ export default function ProfileSchoolDialog({ isAdmin, onClose }) {
             <label style={labelStyle}>학교 코드
               <input value={joinCode} onChange={(e) => setJoinCode(e.target.value)} style={inputStyle} />
             </label>
+            <label style={labelStyle}>학교 표시 이름
+              <input value={displayName} onChange={e => setDisplayName(e.target.value)} maxLength={100} style={inputStyle} />
+            </label>
             <label style={labelStyle}>고용일
               <input type="date" value={hireDate} onChange={(e) => setHireDate(e.target.value)} style={inputStyle} />
             </label>
-            <button type="button" className="tt-create" disabled={busy || !joinCode.trim()} onClick={handleJoin} style={{ marginTop: 8 }}>
+            <button type="button" className="tt-create" disabled={busy || !joinCode.trim() || !displayName.trim()} onClick={handleJoin} style={{ marginTop: 8 }}>
               가입
             </button>
           </section>
@@ -262,13 +271,13 @@ export default function ProfileSchoolDialog({ isAdmin, onClose }) {
                 >
                   <div>
                     <strong>{school.name}</strong>
-                    <div style={{ color: 'var(--color-text-muted)' }}>{school.schoolCode}</div>
+                    <div style={{ color: 'var(--color-text-muted)' }}>{school.schoolCode}{school.employmentStatus === 'PENDING' && ' · 승인 대기'}</div>
                   </div>
                   <div style={{ display: 'flex', gap: 6 }}>
                     <button
                       type="button"
                       className="tt-text"
-                      disabled={busy || id === activeId}
+                      disabled={busy || id === activeId || (!isAdmin && school.employmentStatus !== 'HIRED')}
                       onClick={async () => {
                         setMessage('')
                         try {
@@ -284,7 +293,7 @@ export default function ProfileSchoolDialog({ isAdmin, onClose }) {
                     <button
                       type="button"
                       className="tt-text"
-                      disabled={busy}
+                      disabled={busy || school.employmentStatus === 'PENDING'}
                       onClick={async () => {
                         setMessage('')
                         try {

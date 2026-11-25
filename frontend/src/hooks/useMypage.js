@@ -151,11 +151,9 @@ export function useUpdateStaffProfile() {
 }
 
 export function useStaffStores(options = {}) {
-  return useQuery({
-    queryKey: queryKeys.mypage.staffStores(),
-    queryFn: getStaffStores,
-    ...options,
-  })
+  const session = useHomeSession()
+  return useScopedRead(session, queryKeys.mypage.staffStores(), session.access.queries.teacherProfile,
+    signal => getStaffStores({ signal }), options)
 }
 
 export function useJoinStaffStore() {

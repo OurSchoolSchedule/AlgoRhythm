@@ -97,9 +97,10 @@ export async function updateStaffProfile(payload) {
   return data
 }
 
-/** @returns {Promise<import('@/types/mypage.js').SchoolSimpleResponse[]>} */
-export async function getStaffStores() {
-  const { data } = await client.get('/api/mypage/teacher/schools')
+/** @param {{ signal?: AbortSignal }} [options]
+ * @returns {Promise<import('@/types/mypage.js').SchoolSimpleResponse[]>} */
+export async function getStaffStores({ signal } = {}) {
+  const { data } = await client.get('/api/mypage/teacher/schools', { signal })
   return data
 }
 

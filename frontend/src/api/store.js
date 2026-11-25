@@ -6,10 +6,10 @@ import client from './client.js'
  * 담당 과목, 담임 학급, 주간 시수를 포함한다.
  * @returns {Promise<import('@/types/store.js').AllStaffSummaryResponseDto>}
  */
-export async function getStoreStaffSummary() {
+export async function getStoreStaffSummary(termId = null, signal) {
   const [membersResult, schoolResult] = await Promise.all([
-    client.get('/api/school/members'),
-    client.get('/api/school/me'),
+    client.get('/api/school/members', { params: termId ? { termId } : undefined, signal }),
+    client.get('/api/school/me', { signal }),
   ])
   const members = Array.isArray(membersResult.data) ? membersResult.data : []
   const schoolName = schoolResult.data?.name ?? ''
@@ -23,11 +23,13 @@ export async function getStoreStaffSummary() {
         schoolUserId,
         userStoreId: schoolUserId,
         userId: member.userId,
-        username: member.username,
+        username: member.displayName ?? member.username,
         role: member.position,
         employmentStatus: member.employmentStatus,
-        subjects: Array.isArray(member.subjects) ? member.subjects : [],
-        homeroomClasses: Array.isArray(member.homeroomClasses) ? member.homeroomClasses : [],
+        subjects: member.rosterSubjects ?? member.subjects ?? [],
+        homeroomClasses: 'rosterHomeroomClass' in member
+          ? (member.rosterHomeroomClass ? [member.rosterHomeroomClass] : [])
+          : (member.homeroomClasses ?? []),
         weeklyLessonCount: member.weeklyLessonCount ?? null,
       }
     }),
