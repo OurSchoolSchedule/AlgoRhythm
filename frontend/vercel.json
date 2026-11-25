@@ -6,6 +6,26 @@
     },
     {
       "source": "/api/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "algorhythm-git-qa-fe20-school42-release-sihyes-projects.vercel.app"
+        }
+      ],
+      "destination": "https://fe20-api-fe20-qa.up.railway.app/api/:path*"
+    },
+    {
+      "source": "/oauth2/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "algorhythm-git-qa-fe20-school42-release-sihyes-projects.vercel.app"
+        }
+      ],
+      "destination": "https://fe20-api-fe20-qa.up.railway.app/oauth2/:path*"
+    },
+    {
+      "source": "/api/:path*",
       "destination": "https://edu.rssolplan.com/api/:path*"
     },
     {
