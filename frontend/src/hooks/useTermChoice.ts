@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { HomeTerm } from '@/types/datedLesson'
 import type { HomeSession } from './useHomeSession'
 import { schoolDate } from '@/utils/homeContract'
@@ -32,8 +32,17 @@ export function useTermChoice(session: HomeSession) {
     }
     return fallback
   })
+  useEffect(() => {
+    // The confirmation screen, profile and workspace share the same selected school term.
+    const sync = (event: Event) => {
+      const change = (event as CustomEvent<{key: string; choice: Choice}>).detail
+      if (change?.key === key) setChoice(change.choice)
+    }
+    window.addEventListener('school-term-selected', sync)
+    return () => window.removeEventListener('school-term-selected', sync)
+  }, [key])
   function saveChoice(next: Choice) {
-    setChoice(next)
+    window.dispatchEvent(new CustomEvent('school-term-selected', { detail: { key, choice: next } }))
     try {
       sessionStorage.setItem(key, JSON.stringify(next))
     } catch {

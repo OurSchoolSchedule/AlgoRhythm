@@ -31,9 +31,10 @@ function assignment(
   members?: readonly DirectoryMember[],
   periods?: PeriodSettingResponse[],
 ) {
+  const member = members?.find(m => m.schoolUserId === dto.teacherId)
   return {
     ...dto,
-    teacherName: members?.find((m) => m.schoolUserId === dto.teacherId)?.username ?? null,
+    teacherName: member?.displayName ?? member?.username ?? null,
     periodNumber: periods?.find((p) => p.id === dto.periodId)?.periodNumber ?? null,
   }
 }
@@ -58,6 +59,7 @@ export function useSchoolHome({ term, weeklyTerm, classId = null, date, timeZone
   const { profileQuery, directory, profile } = useHomeProfile(
     session,
     calendar?.academicYear ?? null,
+    currentTerm?.termId ?? null,
   )
   const week = homeWeekAccess(access, profile.homerooms, classId)
   const view = inWeek ? week.selection.view : 'unavailable'

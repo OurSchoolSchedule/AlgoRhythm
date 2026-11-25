@@ -12,17 +12,17 @@ import type { TimetableDto } from '@/types/timetable.js'
 import { queryKeys } from './queryKeys.js'
 import { type HomeSession, type ReadOptions, useScopedRead } from './useHomeSession'
 
-export function useHomeDirectory(session: HomeSession, enabled = true) {
+export function useHomeDirectory(session: HomeSession, enabled = true, termId: number | null = null) {
   const { members, teachers } = session.access.queries
   return useScopedRead(
     session,
-    queryKeys.home.directory(),
+    termId === null ? queryKeys.home.directory() : [...queryKeys.home.directory(), termId],
     enabled && (members || teachers),
-    (signal) => getHomeDirectory(members, signal),
+    (signal) => getHomeDirectory(members, signal, termId),
   )
 }
 
-export function useHomeProfile(session: HomeSession, academicYear: number | null) {
+export function useHomeProfile(session: HomeSession, academicYear: number | null, termId: number | null = null) {
   const staff = session.access.menus.profile
   const admin = session.access.queries.adminProfile
   const profileQuery = useScopedRead(
@@ -31,12 +31,13 @@ export function useHomeProfile(session: HomeSession, academicYear: number | null
     staff,
     (signal) => (admin ? getOwnerProfile({ signal }) : getStaffProfile({ signal })),
   )
-  const directory = useHomeDirectory(session)
+  const directory = useHomeDirectory(session, true, termId)
   const profile = toHomeProfile(
     session.userId,
     academicYear,
     fieldRead(profileQuery, staff),
     fieldRead(directory, staff),
+    termId,
   )
   return { profileQuery, directory, profile }
 }

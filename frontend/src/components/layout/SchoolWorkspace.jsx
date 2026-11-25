@@ -94,7 +94,7 @@ function DetailView({ view, date, navigate, role }) {
 
 function DetailProfile({ session, openPanel }) {
   const { choice } = useTermChoice(session)
-  const { profile } = useHomeProfile(session, choice.academicYear)
+  const { profile } = useHomeProfile(session, choice.academicYear, choice.termId)
   return (
     <Dialog title="내 프로필" onClose={() => openPanel(null)}>
       <Profile

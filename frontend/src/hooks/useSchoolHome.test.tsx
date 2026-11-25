@@ -534,10 +534,19 @@ describe('FE11 공통 업무 메뉴', () => {
       routes.set(active, () => response.promise)
       routes.set('/api/todos', () => ({ personalTodos: [] }))
       const ui = render(<App />, { wrapper })
-      const initialMenu = ui.getByRole('navigation', { name: '업무 메뉴' })
-      expect(within(initialMenu).getAllByRole('button')).toHaveLength(1)
+      expect(ui.queryByRole('navigation', { name: '업무 메뉴' })).toBeNull()
+      expect(ui.getByText('소속 학교를 확인하고 있습니다.')).toBeTruthy()
       await waitFor(() => expect(requests.map((r) => r.url)).toEqual([active]))
+      if (role === 'TEACHER') {
+        routes.set('/api/mypage/teacher/schools', () => [activeSchool(role)])
+        routes.set('/api/schools/540001/roster/me', () => ({
+          schoolId: 540001, rosterId: 8, schoolUserId: teacher.schoolUserId, status: 'LINKED',
+          employmentStatus: 'HIRED', authEmail: 'teacher@example.invalid', displayName: teacher.username,
+          term: { termId: term.termId, subjects: [], homeroomClass: null },
+        }))
+      }
       await act(async () => response.resolve(activeSchool(role)))
+      if (role === 'TEACHER') fireEvent.click(await ui.findByRole('button', { name: '확인하고 업무 홈으로' }))
 
       await ui.findByRole('button', { name: '요청 내역' })
       const menu = ui.getByRole('navigation', { name: '업무 메뉴' })
@@ -576,15 +585,15 @@ describe('FE11 공통 업무 메뉴', () => {
   it('관리 화면에서 학교 권한을 잃으면 이전 화면과 관리자 메뉴를 즉시 해제한다', async () => {
     routes.set(active, () => activeSchool('ADMIN'))
     const ui = render(<App />, { wrapper })
-    const menu = () => within(ui.getByRole('navigation', { name: '업무 메뉴' }))
+    routes.set('/api/mypage/teacher/schools', () => [])
     fireEvent.click(await ui.findByRole('button', { name: '관리자 도구' }))
     await ui.findByRole('heading', { name: '관리자 도구' })
     routes.set(active, httpError(403))
     await act(async () => {
       await cache.invalidateQueries({ queryKey: ['mypage', 'active-store'] })
     })
-    expect(menu().getAllByRole('button')).toHaveLength(1)
+    await ui.findByRole('heading', { name: '학교 연결 확인' })
+    expect(ui.queryByRole('navigation', { name: '업무 메뉴' })).toBeNull()
     expect(ui.queryByRole('heading', { name: '관리자 도구' })).toBeNull()
-    expect(ui.getByText('활성 학교 조회 권한이 없습니다.')).toBeTruthy()
   })
 })

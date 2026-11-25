@@ -1,11 +1,11 @@
-import { useQuery } from '@tanstack/react-query'
+import { useHomeSession, useScopedRead } from './useHomeSession'
+import { useTermChoice } from './useTermChoice'
 import { getStoreStaffSummary } from '@/api'
 import { queryKeys } from './queryKeys.js'
 
 export function useStoreStaffSummary(options = {}) {
-  return useQuery({
-    queryKey: queryKeys.store.staffSummary(),
-    queryFn: getStoreStaffSummary,
-    ...options,
-  })
+  const session = useHomeSession()
+  const { choice } = useTermChoice(session)
+  return useScopedRead(session, [...queryKeys.store.staffSummary(), choice.termId],
+    session.access.queries.members, signal => getStoreStaffSummary(choice.termId, signal), options)
 }

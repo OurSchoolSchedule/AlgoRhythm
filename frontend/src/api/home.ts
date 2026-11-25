@@ -8,14 +8,14 @@ export interface DirectoryMember extends HomeMemberDto {
   username: string | null
 }
 
-async function readList<T>(url: string, signal?: AbortSignal, params?: Record<string, string>) {
+async function readList<T>(url: string, signal?: AbortSignal, params?: Record<string, string | number>) {
   const { data } = await client.get<T[]>(url, { signal, params })
   if (!Array.isArray(data)) throw new TypeError('목록 응답 형식을 확인하세요.')
   return data
 }
 
-export function getHomeDirectory(admin: boolean, signal: AbortSignal) {
-  return readList<DirectoryMember>(admin ? '/api/school/members' : '/api/school/teachers', signal)
+export function getHomeDirectory(admin: boolean, signal: AbortSignal, termId: number | null = null) {
+  return readList<DirectoryMember>(admin ? '/api/school/members' : '/api/school/teachers', signal, termId ? { termId } : undefined)
 }
 
 export function getHomeNotices(signal?: AbortSignal) {

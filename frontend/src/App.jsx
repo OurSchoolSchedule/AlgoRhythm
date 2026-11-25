@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import SchoolWorkspace from '@/components/layout/SchoolWorkspace'
+import { RosterReviewContext } from '@/pages/roster/RosterReviewContext'
+import RosterGate from '@/pages/roster/RosterGate'
 import ServiceFooter from '@/components/layout/ServiceFooter'
 import { EmailEntryView } from '@/pages/auth'
 import {
@@ -53,5 +55,9 @@ export default function App() {
       </div>
     )
   }
-  return <SchoolWorkspace onLogout={handleLogout} />
+  return <RosterGate onLogout={handleLogout}>
+    {review => <RosterReviewContext.Provider value={review}>
+      <SchoolWorkspace onLogout={handleLogout} />
+    </RosterReviewContext.Provider>}
+  </RosterGate>
 }

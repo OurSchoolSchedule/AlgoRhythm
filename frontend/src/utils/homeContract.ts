@@ -32,19 +32,23 @@ export function toHomeProfile(
   academicYear: number | null,
   profile: HomeRead<HomeProfileDto>,
   directory: HomeRead<readonly HomeMemberDto[]>,
+  termId: number | null = null,
 ): HomeProfile {
   // userId identifies the account; schoolUserId identifies its school membership.
   const member =
     directory.state === 'success' ? directory.data.find((row) => row.userId === userId) : undefined
   return {
-    name: readField(profile, (row) => {
+    name: member?.displayName ? { state: 'value', value: member.displayName } : readField(profile, (row) => {
       if (row.userId !== userId) return undefined
       return row.username === '' ? null : row.username
     }),
     schoolUserId: readField(directory, () => member?.schoolUserId),
-    subjects: readField(directory, () => member?.subjects),
+    subjects: readField(directory, () => member?.rosterSubjects === undefined ? member?.subjects :
+      termId === null ? undefined : member.rosterSubjects),
     homerooms: readField(directory, () =>
-      academicYear === null
+      member && 'rosterHomeroomClass' in member
+        ? termId === null ? undefined : member.rosterHomeroomClass ? [member.rosterHomeroomClass] : []
+        : academicYear === null
         ? undefined
         : member?.homeroomClasses?.filter((room) => room.academicYear === academicYear),
     ),
