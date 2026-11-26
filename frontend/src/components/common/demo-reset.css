@@ -1,0 +1,8 @@
+.demo-reset-form { display: grid; gap: 10px; padding: 14px 16px; border-top: 1px solid var(--color-border); }
+.demo-reset-form label { font-weight: 600; }
+.demo-reset-form p { margin: 0; font-size: 13px; line-height: 1.5; }
+.demo-reset-form input { color: var(--color-text); background: var(--color-surface); border: 1px solid var(--color-border-input); border-radius: 6px; padding: 8px; min-width: 0; }
+.demo-reset-form > div { display: flex; gap: 8px; }
+.demo-reset-form button { border: 1px solid var(--color-border-input); border-radius: 6px; padding: 7px 11px; background: var(--color-surface); color: var(--color-text); cursor: pointer; }
+.demo-reset-form .demo-reset-submit { background: var(--color-danger); color: white; }
+.demo-reset-form button:disabled { opacity: .55; cursor: default; }
