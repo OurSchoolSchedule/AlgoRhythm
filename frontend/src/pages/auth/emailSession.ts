@@ -14,7 +14,6 @@ export type VerifiedEmail = {
 export type PasskeyContinuation = ComponentType<{
   verification: VerifiedEmail
   onAuthenticated: (session: WorkSession) => void
-  onRecoveryIssued?: (userId: number) => void
   onRestart: () => void
 }>
 
