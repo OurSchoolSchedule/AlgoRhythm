@@ -159,6 +159,7 @@ describe('FE3 홈 조회', () => {
         actual: { ...lesson.actual, teacherName: teacher.username, periodNumber: 2 },
       }),
     ])
+    expect(result.current.slotLessons.data?.map((row) => row.lessonId)).toEqual([51, 52])
     expect(result.current.weekly.data?.[0].id).toBe(12)
     expect(getCalls(lessonsUrl)[0].params).toEqual({ date: day })
     expect(getCalls('/api/school/classes')[0].params).toEqual({ academicYear: 2026 })

@@ -3,6 +3,7 @@ import mochi from '@/assets/home-mochi.webp?no-inline'
 import { toISODate } from '@/utils'
 import { startOfSchoolWeek, shiftSchoolWeek } from '@/utils/schoolWeek'
 import { resolveSubjectColor } from '@/utils/subjectColor'
+import SelectedLesson from './SelectedLesson'
 import { Icon } from './HomePanels'
 
 const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
@@ -30,7 +31,7 @@ function ReadMessage({ query, label, retry }) {
   )
 }
 
-function WeekTable({ home, daysOfWeek, rows, selected, onPick }) {
+function WeekTable({ home, term, roomId, onRequest, daysOfWeek, rows, selected, onPick }) {
   const periods = [
     ...new Set([
       ...(home.periods.data ?? []).map((p) => p.periodNumber),
@@ -43,9 +44,14 @@ function WeekTable({ home, daysOfWeek, rows, selected, onPick }) {
     if (!slots.has(key)) slots.set(key, [])
     slots.get(key).push(row)
   }
+  const actualPeriods = new Set(
+    (home.dated.data ?? [])
+      .filter((row) => !row.actual.cancelled && (!roomId || row.classId === roomId))
+      .map((row) => row.actual.periodNumber),
+  )
   const selectedRows = selected ? (slots.get(`${selected.day}/${selected.period}`) ?? []) : []
   return (
-    <>
+    <div className={selected ? 'desk-selection-layout' : undefined}>
       <div className="desk-table-scroll">
         <table className="desk-week">
           <caption className="desk-sr">주간 기본 시간표</caption>
@@ -78,12 +84,14 @@ function WeekTable({ home, daysOfWeek, rows, selected, onPick }) {
                 {daysOfWeek.map((d) => {
                   const lessons = slots.get(`${d.key}/${period}`) ?? []
                   const first = lessons[0]
+                  const actualOnly = !first && d.iso === home.date && actualPeriods.has(period)
+                  const emptyLabel = actualOnly ? '날짜 수업 있음' : '수업 없음'
                   return (
                     <td key={d.key} data-today={d.iso === home.today}>
                       <button
                         className="desk-cell"
                         type="button"
-                        aria-label={`${d.name}요일 ${period}교시 · ${first?.subjectName ?? (first ? '과목 미확인' : '수업 없음')}${lessons.length > 1 ? ' 외 ' + (lessons.length - 1) + '건' : ''}`}
+                        aria-label={`${d.name}요일 ${period}교시 · ${first?.subjectName ?? (first ? '과목 미확인' : emptyLabel)}${lessons.length > 1 ? ' 외 ' + (lessons.length - 1) + '건' : ''}`}
                         aria-pressed={selected?.iso === d.iso && selected.period === period}
                         onClick={() => onPick({ day: d.key, iso: d.iso, period })}
                       >
@@ -102,7 +110,7 @@ function WeekTable({ home, daysOfWeek, rows, selected, onPick }) {
                             </small>
                           </>
                         ) : (
-                          <span className="desk-dash">—</span>
+                          <span className="desk-dash">{actualOnly ? emptyLabel : '—'}</span>
                         )}
                       </button>
                     </td>
@@ -114,34 +122,21 @@ function WeekTable({ home, daysOfWeek, rows, selected, onPick }) {
         </table>
       </div>
       {selected && (
-        <div className="desk-cell-detail" aria-live="polite">
-          <strong>
-            {dayNames[days.indexOf(selected.day)]}요일 {selected.period}교시
-          </strong>
-          {selectedRows.length ? (
-            <ul>
-              {selectedRows.map((row) => (
-                <li key={row.id ?? `weekly-${row.weeklyLessonId}`}>
-                  {[
-                    row.subjectName,
-                    row.teacherName,
-                    row.grade && row.classNumber ? roomName(row) : null,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <span>기본표에 등록된 수업이 없습니다.</span>
-          )}
-        </div>
+        <SelectedLesson
+          key={selected.iso + '/' + selected.period}
+          cell={selected}
+          home={home}
+          term={term}
+          roomId={roomId}
+          weeklyRows={selectedRows}
+          onRequest={onRequest}
+        />
       )}
-    </>
+    </div>
   )
 }
 
-function DatedLessons({ home, roomId, term, onSettings }) {
+function DatedLessons({ home, roomId, term, onSettings, onRequest }) {
   const q = home.dated
   const rows = (q.data ?? [])
     .filter((r) => !roomId || r.classId === roomId)
@@ -193,6 +188,29 @@ function DatedLessons({ home, roomId, term, onSettings }) {
                     {room ? roomName(room) : '학급 #' + row.classId} ·{' '}
                     {row.actual.teacherName ?? '교사 #' + row.actual.teacherId}
                   </small>
+                  {row.actual.cancelled && <span>휴강</span>}
+                  {!row.actual.cancelled &&
+                    (home.access.actions.requestSubstitute ||
+                      (home.access.actions.requestSwap &&
+                        row.actual.teacherId === home.profile.schoolUserId.value)) && (
+                      <button
+                        className="desk-text-button"
+                        disabled={!!q.refreshError}
+                        onClick={() =>
+                          onRequest({
+                            schoolId: term.schoolId,
+                            termId: term.termId,
+                            date: row.date,
+                            datedLessonId: row.lessonId,
+                            rev: row.rev,
+                            teacherId: row.actual.teacherId,
+                            kind: home.access.actions.requestSubstitute ? 'SUBSTITUTE' : 'SWAP',
+                          })
+                        }
+                      >
+                        {home.access.actions.requestSubstitute ? '보결 요청' : '교환 요청'}
+                      </button>
+                    )}
                   {row.actual.teacherId !== row.planned.teacherId && (
                     <span className="desk-tag">담당 변경</span>
                   )}
@@ -213,7 +231,7 @@ function DatedLessons({ home, roomId, term, onSettings }) {
   )
 }
 
-export default function HomeTimetable({ home, term, setDate, setRoom, onSettings }) {
+export default function HomeTimetable({ home, term, setDate, setRoom, onSettings, onRequest }) {
   const [cell, setCell] = useState(null)
   const [classFilter, setClassFilter] = useState(null)
   const weekly = home.weekly
@@ -319,7 +337,7 @@ export default function HomeTimetable({ home, term, setDate, setRoom, onSettings
       </div>
       {!['empty', 'ready'].includes(weekly.state) ? (
         <ReadMessage query={weekly} label="주간 기본표" retry={home.retryWeekly} />
-      ) : !rows.length ? (
+      ) : !rows.length && !home.dated.data?.length ? (
         <div className="desk-empty">
           <img src={mochi} alt="" width="98" height="98" />
           <div>
@@ -331,6 +349,9 @@ export default function HomeTimetable({ home, term, setDate, setRoom, onSettings
         <WeekTable
           home={home}
           rows={rows}
+          term={term}
+          onRequest={onRequest}
+          roomId={classFilter}
           daysOfWeek={daysOfWeek}
           selected={chosen}
           onPick={(value) => {
@@ -358,6 +379,7 @@ export default function HomeTimetable({ home, term, setDate, setRoom, onSettings
         term={term}
         roomId={classFilter}
         onSettings={onSettings}
+        onRequest={onRequest}
       />
     </section>
   )
