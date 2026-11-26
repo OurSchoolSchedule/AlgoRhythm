@@ -5,7 +5,10 @@ export interface TeachingSlot {
   period: number
 }
 
+export type GenerationObjective = 'BALANCED' | 'MIN_TEACHER_GAPS' | 'PREFER_WANTS'
+
 export interface GenerationRequest {
+  objective?: GenerationObjective
   validatedLoadId: string
   teachingSlots?: TeachingSlot[]
   preferences?: {
@@ -25,6 +28,7 @@ export interface AcceptedGeneration {
 export interface ScheduleCandidate {
   candidateId: string
   score: {
+    teacherGapPeriods?: number | null
     wantsMet: number
     wantsTotal: number
     teachersWithNoWantMet: number
@@ -50,8 +54,10 @@ interface GenerationResult {
   candidates: ScheduleCandidate[]
 }
 
-export type GenerationJob = Pick<AcceptedGeneration, 'jobId' | 'expectedPublishRev'> &
-  (
+export type GenerationJob = Pick<AcceptedGeneration, 'jobId' | 'expectedPublishRev'> & {
+  objective?: GenerationObjective
+  teachingSlots?: TeachingSlot[]
+} & (
     | { state: 'QUEUED' | 'RUNNING' | 'FAILED'; result: null }
     | { state: 'READY'; result: GenerationResult & { status: 'READY' } }
     | {
