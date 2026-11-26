@@ -14,6 +14,7 @@ import { homeAccess, homeWeekAccess } from '@/utils/homeAccess'
 import { toHomeProfile } from '@/utils/homeContract'
 import { auditCandidate } from './school42Candidate'
 import { readSchool42 } from './school42Fixture'
+import { verifySchool42Publication } from './school42Publication'
 
 declare const jsdom: { reconfigure(options: { url: string }): void }
 
@@ -124,6 +125,9 @@ it(
       console.info(
         `School42 job=${job.jobId} state=READY candidates=${job.result.candidates.length} periods=672 per candidate; demand mismatches=0 teacher conflicts=0 class conflicts=0`,
       )
+      if (process.env.FE20_VERIFY_PUBLICATION === '1') {
+        await verifySchool42Publication(termId, job, job.result.candidates[0])
+      }
     }),
   120_000,
 )
@@ -143,12 +147,12 @@ it('담임 연결 전후의 교사 API 응답으로 보기 전환을 결정하�
     }
     const { academicYear, grade, classNumber } = original
     const teacherToken = await issueDevToken('teacher42-04@example.invalid')
-    async function readAsTeacher() {
+    async function readAsTeacher(termId: number | null = null) {
       saveDevLoginTokens(teacherToken)
       const [activeSchool, identity, members] = await Promise.all([
         getActiveStore(),
         getStaffProfile(),
-        getHomeDirectory(false, new AbortController().signal),
+        getHomeDirectory(false, new AbortController().signal, termId),
       ])
       expect(activeSchool).toMatchObject({
         schoolId: 540001,
@@ -162,6 +166,7 @@ it('담임 연결 전후의 교사 API 응답으로 보기 전환을 결정하�
         academicYear,
         { state: 'success', data: identity },
         { state: 'success', data: members },
+        termId,
       )
       return homeWeekAccess(homeAccess(true, activeSchool), profile.homerooms, roomId)
     }
@@ -180,10 +185,12 @@ it('담임 연결 전후의 교사 API 응답으로 보기 전환을 결정하�
     })
     try {
       await linkTeacher(schoolUserId)
-      expect(await readAsTeacher()).toMatchObject({
-        canSwitchHomeroom: true,
-        selection: { view: 'homeroom', classId: roomId },
-      })
+      for (const termId of [null, 547001]) {
+        expect(await readAsTeacher(termId)).toMatchObject({
+          canSwitchHomeroom: true,
+          selection: { view: 'homeroom', classId: roomId },
+        })
+      }
     } finally {
       await linkTeacher(null)
     }
