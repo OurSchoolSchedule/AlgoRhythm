@@ -7,6 +7,8 @@ import { useTermChoice } from '@/hooks/useTermChoice'
 import { TermForm } from '@/pages/home/HomePanels'
 import ServiceFooter from '@/components/layout/ServiceFooter'
 import Schools from './Schools'
+import SchoolJoinForm from '@/pages/auth/SchoolJoinForm'
+import { joinStaffStore } from '@/api/mypage'
 import './roster.css'
 
 function Frame({ children, logout }) {
@@ -173,6 +175,11 @@ function TeacherReview({ session, logout, children }) {
           코드와 표시 이름으로 연결을 요청할 수 있습니다.
         </p>
       )}
+      {(legacy || linked) && <details>
+        <summary>이 학교의 본인 이름 확인·수정</summary>
+        <SchoolJoinForm initialCode={school.schoolCode} initialName={entry?.baseName || entry?.displayName || ''}
+          submit={joinStaffStore} label="학교별 이름 확정" onComplete={() => query.refetch()} />
+      </details>}
       {query.isError && !legacy && (
         <p role="alert">
           명부를 확인하지 못했습니다. 학교와 학기 ID를 확인하고 다시 조회해

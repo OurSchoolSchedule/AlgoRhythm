@@ -4,6 +4,7 @@ import type { HomeroomDto, SubjectInfoDto } from '@/types/home'
 export interface OwnRoster {
   rosterId: number
   schoolId: number
+  baseName?: string | null
   displayName: string
   authEmail: string
   status: 'UNLINKED' | 'PENDING' | 'LINKED'
