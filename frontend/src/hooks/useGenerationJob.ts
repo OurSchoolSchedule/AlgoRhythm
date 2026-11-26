@@ -123,6 +123,11 @@ export function useGenerationJob(term: SchoolTerm | null) {
   const latest = job ?? accepted
   return {
     start,
+    discardFinished() {
+      if (accepted && job && !inProgress(job.state)) {
+        void cache.resetQueries({ queryKey: acceptedKey, exact: true })
+      }
+    },
     canStart: termId !== null && !submitting && (!latest || !inProgress(latest.state)),
     submitting,
     accepted,

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { isAxiosError } from 'axios'
-import type { HomeTerm, DatedLessonDto } from '@/types/datedLesson'
+import type { HomeTerm, DatedLessonDto, HomeLessonSelection } from '@/types/datedLesson'
 import type { ChangeResult, LessonChange } from '@/types/lessonChange'
 import { useLessonChanges } from '@/hooks/useLessonChanges'
 import { useSubjects, useSchoolClasses } from '@/hooks/useSchoolCatalog'
@@ -16,6 +16,7 @@ const states = {
   APPROVED: '승인 완료',
 }
 const conflictActions: Record<string, string> = {
+  LESSON_CANCELLED: '휴강 수업을 제외하고 최신 날짜 수업을 다시 선택하세요.',
   STALE_LESSON: '최신 날짜 수업을 다시 선택해 새 신청을 접수하세요.',
   SLOT_CONFLICT:
     '해당 교시의 담당 교사와 학급 시간표를 확인해 다른 수업 또는 보결 교사를 선택하세요.',
@@ -34,13 +35,20 @@ interface RetryApproval {
   send: () => Promise<ChangeResult>
 }
 
-function LessonDesk({ term, initialDate }: { term: HomeTerm; initialDate?: string }) {
-  const [date, setDate] = useState(initialDate || schoolDate(new Date()))
-  const [otherDate, setOtherDate] = useState('')
+interface Props {
+  initialDate?: string
+  selection?: HomeLessonSelection
+  onHome?: () => void
+}
+
+function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: HomeTerm }) {
+  const [date, setDate] = useState(selection?.date ?? (initialDate || schoolDate(new Date())))
+  const [otherDate, setOtherDate] = useState<string | null>(null)
   const changes = useLessonChanges(term, date, otherDate || date)
-  const [firstKey, setFirst] = useState(''),
-    [secondKey, setSecond] = useState(''),
-    [teacher, setTeacher] = useState('')
+  const [firstKey, setFirst] = useState('')
+  const [secondKey, setSecond] = useState('')
+  const [teacher, setTeacher] = useState('')
+  const [search, setSearch] = useState('')
   const [message, setMessage] = useState<{ text: string; error: boolean } | null>(null)
   const [retry, setRetry] = useState<RetryApproval | null>(null)
   const [result, setResult] = useState<ChangeResult | null>(null)
@@ -51,21 +59,49 @@ function LessonDesk({ term, initialDate }: { term: HomeTerm; initialDate?: strin
     classes = useSchoolClasses(term.academicYear).data ?? []
   const mine = changes.canRequestSwap
   const firstRows = (changes.lessons.data ?? []).filter(
-    (r) => !mine || r.actual.teacherId === changes.memberId,
+    (r) => !r.actual.cancelled && (!mine || r.actual.teacherId === changes.memberId),
   )
-  const first = firstRows.find((r) => stamp(r) === firstKey)
-  const secondRows = (changes.secondLessons.data ?? []).filter(
-    (r) => first && r.actual.teacherId !== first.actual.teacherId && r.id !== first.id,
-  )
-  const second = secondRows.find((r) => stamp(r) === secondKey)
+  const first = selection
+    ? firstRows.find(
+        (r) =>
+          term.schoolId === selection.schoolId &&
+          r.termId === selection.termId &&
+          r.date === selection.date &&
+          r.id === selection.datedLessonId &&
+          r.rev === selection.rev &&
+          r.actual.teacherId === selection.teacherId &&
+          (selection.kind === 'SWAP' ? mine : changes.canRequestSubstitute),
+      )
+    : firstRows.find((r) => stamp(r) === firstKey)
+  const name = (id: number) => {
+    const person = members.find((m) => m.schoolUserId === id)
+    return person?.displayName ?? person?.username ?? '교사 #' + id
+  }
   const teachers = members.filter(
     (m) =>
       m.position === 'TEACHER' &&
       m.employmentStatus === 'HIRED' &&
-      m.schoolUserId !== first?.actual.teacherId,
+      m.schoolUserId !== first?.actual.teacherId &&
+      m.schoolUserId !== changes.memberId,
   )
   const validTeacher = teachers.some((t) => String(t.schoolUserId) === teacher)
-  const name = (id: number) => members.find((m) => m.schoolUserId === id)?.username ?? '교사 #' + id
+  const secondRows = (changes.secondLessons.data ?? []).filter(
+    (r) =>
+      first &&
+      validTeacher &&
+      r.actual.teacherId === Number(teacher) &&
+      !r.actual.cancelled &&
+      r.versionId === first.versionId &&
+      r.id !== first.id &&
+      !(r.date === first.date && r.actual.periodId === first.actual.periodId),
+  )
+  const second = secondRows.find((r) => stamp(r) === secondKey)
+  function clearTarget() {
+    setSecond('')
+    setTeacher('')
+    setSearch('')
+    setOtherDate(null)
+  }
   function lessonName(r: DatedLessonDto) {
     const room = classes.find((c) => c.id === r.classId)
     const period = periods.find((p) => p.id === r.actual.periodId)
@@ -92,8 +128,7 @@ function LessonDesk({ term, initialDate }: { term: HomeTerm; initialDate?: strin
       setRetry(null)
       if (next.phase === 'created' || next.phase === 'conflict') {
         setFirst('')
-        setSecond('')
-        setTeacher('')
+        clearTarget()
       }
     } catch (err) {
       setMessage({ text: operationError(err), error: true })
@@ -128,122 +163,212 @@ function LessonDesk({ term, initialDate }: { term: HomeTerm; initialDate?: strin
   return (
     <>
       <section className="work-card">
-        <h2>날짜 수업 선택</h2>
-        <div className="work-row">
-          <label>
-            첫 수업 날짜
-            <input
-              type="date"
-              value={date}
-              disabled={locked}
-              onChange={(e) => {
-                if (e.target.value) {
-                  setDate(e.target.value)
-                  setFirst('')
-                  setSecond('')
-                  setTeacher('')
-                }
-              }}
-            />
-          </label>
-          <label>
-            교환 상대 수업 날짜
-            <input
-              type="date"
-              value={otherDate || date}
-              disabled={locked}
-              onChange={(e) => {
-                setOtherDate(e.target.value)
-                setSecond('')
-              }}
-            />
-          </label>
-        </div>
-        {(changes.canRequestSubstitute || mine) && (
+        <h2>{selection ? '홈에서 선택한 수업' : '날짜 수업 선택'}</h2>
+        {selection ? (
+          <>
+            <p>
+              {selection.date} ·{' '}
+              {first
+                ? lessonName(first)
+                : changes.lessons.state === 'loading'
+                  ? '날짜 수업 확인 중'
+                  : '선택한 수업의 상태 또는 담당자가 변경됐습니다.'}
+            </p>
+            <button onClick={onHome}>홈에서 다시 선택</button>
+          </>
+        ) : (
+          <div className="work-row">
+            <label>
+              첫 수업 날짜
+              <input
+                type="date"
+                value={date}
+                disabled={locked}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    setDate(e.target.value)
+                    setFirst('')
+                    clearTarget()
+                  }
+                }}
+              />
+            </label>
+            <label>
+              {mine ? '내가 담당하는 수업' : '보결할 수업'}
+              <select
+                value={first ? firstKey : ''}
+                disabled={locked}
+                onChange={(e) => {
+                  setFirst(e.target.value)
+                  clearTarget()
+                }}
+              >
+                <option value="">수업 선택</option>
+                {firstRows.map((r) => (
+                  <option key={r.id} value={stamp(r)}>
+                    {lessonName(r)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {!firstRows.length && (
+              <small>
+                {readLabel[changes.lessons.state] ?? '이 날짜에 선택할 수업이 없습니다.'}
+              </small>
+            )}
+          </div>
+        )}
+        {changes.canRequestSubstitute ? (
           <form
+            aria-label="보결 신청"
             onSubmit={(e) => {
               e.preventDefault()
-              if (!first) return
-              if (mine && second) void run(() => changes.requestSwap(first, second))
-              else if (changes.canRequestSubstitute && validTeacher)
+              if (first && validTeacher)
                 void run(() => changes.requestSubstitute(first, Number(teacher)))
             }}
           >
             <fieldset disabled={locked || !!retry}>
-              <legend>{mine ? '수업 교환 신청' : '지정 교사 보결 신청'}</legend>
+              <legend>보결 요청</legend>
               <label>
-                {mine ? '내가 담당하는 수업' : '보결할 수업'}
+                지정 교사
                 <select
                   required
-                  value={first?.id ? firstKey : ''}
+                  disabled={!first}
+                  value={validTeacher ? teacher : ''}
+                  onChange={(e) => setTeacher(e.target.value)}
+                >
+                  <option value="">보결 교사 선택</option>
+                  {teachers.map((t) => (
+                    <option key={t.schoolUserId} value={t.schoolUserId}>
+                      {name(t.schoolUserId)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button className="work-primary" disabled={!first || !validTeacher}>
+                보결 신청
+              </button>
+            </fieldset>
+          </form>
+        ) : (
+          <p>보결은 재직 관리자만 신청할 수 있습니다.</p>
+        )}
+        {mine ? (
+          <form
+            aria-label="교환 신청"
+            onSubmit={(e) => {
+              e.preventDefault()
+              if (first && second) void run(() => changes.requestSwap(first, second))
+            }}
+          >
+            <fieldset disabled={locked || !!retry}>
+              <legend>1:1 수업 교환</legend>
+              <label>
+                상대 교사 검색
+                <input
+                  type="search"
+                  disabled={!first}
+                  value={search}
                   onChange={(e) => {
-                    setFirst(e.target.value)
-                    setSecond('')
+                    setSearch(e.target.value)
                     setTeacher('')
+                    setSecond('')
+                  }}
+                />
+              </label>
+              <label>
+                상대 교사
+                <select
+                  required
+                  disabled={!first}
+                  value={validTeacher ? teacher : ''}
+                  onChange={(e) => {
+                    setTeacher(e.target.value)
+                    setSecond('')
                   }}
                 >
-                  <option value="">수업 선택</option>
-                  {firstRows.map((r) => (
+                  <option value="">상대 교사 선택</option>
+                  {teachers
+                    .filter((t) => name(t.schoolUserId).includes(search.trim()))
+                    .map((t) => (
+                      <option key={t.schoolUserId} value={t.schoolUserId}>
+                        {name(t.schoolUserId)}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <label className="change-date-toggle">
+                <input
+                  type="checkbox"
+                  disabled={!validTeacher}
+                  checked={otherDate !== null}
+                  onChange={(e) => {
+                    setOtherDate(e.target.checked ? date : null)
+                    setSecond('')
+                  }}
+                />
+                다른 날짜의 수업 선택
+              </label>
+              {otherDate !== null && (
+                <label>
+                  교환 상대 수업 날짜
+                  <input
+                    type="date"
+                    value={otherDate}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setOtherDate(e.target.value)
+                        setSecond('')
+                      }
+                    }}
+                  />
+                </label>
+              )}
+              <label>
+                교환할 상대 수업 · {otherDate || date}
+                <select
+                  required
+                  disabled={!first || !validTeacher}
+                  value={second ? secondKey : ''}
+                  onChange={(e) => setSecond(e.target.value)}
+                >
+                  <option value="">상대 수업 선택</option>
+                  {secondRows.map((r) => (
                     <option key={r.id} value={stamp(r)}>
                       {lessonName(r)}
                     </option>
                   ))}
                 </select>
               </label>
-              {changes.lessons.state !== 'ready' || !firstRows.length ? (
+              {validTeacher && !secondRows.length && (
                 <small>
-                  {readLabel[changes.lessons.state] ?? '이 날짜에 선택할 수업이 없습니다.'}
+                  {readLabel[changes.secondLessons.state] ??
+                    '해당 날짜에 교환할 수 있는 상대 수업이 없습니다.'}
                 </small>
-              ) : null}
-              {mine ? (
-                <label>
-                  교환할 상대 수업
-                  <select
-                    required
-                    disabled={!first}
-                    value={second ? secondKey : ''}
-                    onChange={(e) => setSecond(e.target.value)}
-                  >
-                    <option value="">상대 수업 선택</option>
-                    {secondRows.map((r) => (
-                      <option key={r.id} value={stamp(r)}>
-                        {lessonName(r)}
-                      </option>
-                    ))}
-                  </select>
-                  {first && !secondRows.length && (
-                    <small>
-                      {readLabel[changes.secondLessons.state] ??
-                        '이 날짜에 다른 교사의 수업이 없습니다.'}
-                    </small>
-                  )}
-                </label>
-              ) : (
-                <label>
-                  지정 교사
-                  <select
-                    required
-                    disabled={!first}
-                    value={validTeacher ? teacher : ''}
-                    onChange={(e) => setTeacher(e.target.value)}
-                  >
-                    <option value="">보결 교사 선택</option>
-                    {teachers.map((t) => (
-                      <option key={t.schoolUserId} value={t.schoolUserId}>
-                        {name(t.schoolUserId)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
               )}
-              <button
-                className="work-primary"
-                disabled={!first || (mine ? !second : !validTeacher)}
-              >
-                {mine ? '교환 신청' : '보결 신청'}
+              {first && second && (
+                <div className="change-preview" aria-label="교환 미리보기">
+                  <div>
+                    <strong>내 수업</strong>
+                    <p>
+                      {first.date} · {lessonName(first)}
+                    </p>
+                  </div>
+                  <div>
+                    <strong>상대 수업</strong>
+                    <p>
+                      {second.date} · {lessonName(second)}
+                    </p>
+                  </div>
+                </div>
+              )}
+              <button className="work-primary" disabled={!first || !second}>
+                교환 신청
               </button>
             </fieldset>
           </form>
+        ) : (
+          <p>교환은 재직 교사가 본인 담당 수업에서 신청할 수 있습니다.</p>
         )}
         {changes.directory.state !== 'ready' && (
           <p>학교 명부 · {readLabel[changes.directory.state]}</p>
@@ -348,10 +473,10 @@ function LessonDesk({ term, initialDate }: { term: HomeTerm; initialDate?: strin
     </>
   )
 }
-export default function LessonChangesView({ initialDate }: { initialDate?: string }) {
+export default function LessonChangesView(props: Props) {
   return (
     <TermWorkspace title="보결·교환 업무">
-      {(term) => <LessonDesk term={term} initialDate={initialDate} />}
+      {(term) => <LessonDesk term={term} {...props} />}
     </TermWorkspace>
   )
 }

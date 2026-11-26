@@ -159,6 +159,7 @@ describe('FE3 홈 조회', () => {
         actual: { ...lesson.actual, teacherName: teacher.username, periodNumber: 2 },
       }),
     ])
+    expect(result.current.slotLessons.data?.map((row) => row.lessonId)).toEqual([51, 52])
     expect(result.current.weekly.data?.[0].id).toBe(12)
     expect(getCalls(lessonsUrl)[0].params).toEqual({ date: day })
     expect(getCalls('/api/school/classes')[0].params).toEqual({ academicYear: 2026 })
@@ -476,14 +477,19 @@ describe('FE9 업무 홈', () => {
     routes.set(mine, () => [])
     routes.set('/api/school/teachers', () => [{ ...teacher, homeroomClasses: [] }, other])
     routes.set('/api/school/subjects', () => [{ id: lesson.subjectId, name: '실제 수업 과목' }])
-    const ui = render(<HomeView navigate={vi.fn()} onLogout={vi.fn()} />, { wrapper })
-    expect(await ui.findByText('조회된 주간 기본표가 없습니다')).toBeTruthy()
-    const dated = within(ui.getByRole('region', { name: '날짜별 실제 수업' }))
+    const navigate = vi.fn()
+    const ui = render(<HomeView navigate={navigate} onLogout={vi.fn()} />, { wrapper })
+    const dated = within(await ui.findByRole('region', { name: '날짜별 실제 수업' }))
     await dated.findByText('실제 수업 과목')
     expect(dated.getByText('담당 변경')).toBeTruthy()
     expect(dated.getByText(/최도현/)).toBeTruthy()
     expect(ui.queryByRole('radio', { name: /담임/ })).toBeNull()
-    expect(ui.container.querySelectorAll('img')).toHaveLength(1)
+    fireEvent.click(await ui.findByRole('button', { name: '월요일 2교시 · 날짜 수업 있음' }))
+    fireEvent.click(ui.getByRole('button', { name: '교환 요청하기' }))
+    expect(navigate).toHaveBeenCalledWith('lesson-changes', day, {
+      kind: 'SWAP', schoolId: term.schoolId, termId: term.termId,
+      date: day, datedLessonId: lesson.id, rev: lesson.rev, teacherId: teacher.schoolUserId,
+    })
   })
 
   it('주간 조회 조건이 이전 학교의 것이면 기본표와 날짜 수업 모두 요청하지 않는다', async () => {

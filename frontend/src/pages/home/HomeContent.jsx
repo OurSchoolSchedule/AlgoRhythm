@@ -85,6 +85,7 @@ export default function HomeContent({ session, navigate, panel, openPanel }) {
               key={choice.academicYear + '-' + choice.semester + '-' + choice.termId}
               term={term}
               home={home}
+              onRequest={(selection) => navigate('lesson-changes', selection.date, selection)}
               setDate={setDate}
               setRoom={setClassId}
               onSettings={() => setEditingTerm(true)}
