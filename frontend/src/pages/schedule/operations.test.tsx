@@ -279,7 +279,11 @@ it('학교 총합이 같아도 초과 학급을 차단하고, 파일을 교체�
   ]
   let submissions = 0
   adapter((config) => {
-    if (config.url === '/api/v2/terms') return [201, { termId: 547001 }]
+    if (config.url === '/api/v2/terms') {
+      if (config.method === 'get') return [200, terms]
+      terms = [registered]
+      return [201, { termId: registered.termId }]
+    }
     if (config.url === '/api/school-setting/periods')
       return [200, Array.from({ length: 7 }, (_, i) => ({ periodNumber: i + 1 }))]
     if (config.url === base + '/load-imports/validate') {
@@ -303,7 +307,7 @@ it('학교 총합이 같아도 초과 학급을 차단하고, 파일을 교체�
     return [200, []]
   })
   mount()
-  register()
+  await register()
   const file = await screen.findByLabelText('시수표 엑셀 파일')
   async function upload(name: string) {
     fireEvent.change(file, { target: { files: [new File(['load'], name)] } })
