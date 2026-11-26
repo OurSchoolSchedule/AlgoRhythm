@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   addPasskey,
+  approveDemoReset,
   listPasskeys,
   loginWithPasskey,
   passkeyErrorMessage,
@@ -198,6 +199,18 @@ describe('기기 관리 재인증', () => {
     expect(requests().map(row => row[2])).toEqual([
       { operation: 'VERIFY' }, { ceremonyId: 'first', credential: assertion },
       { operation: 'VERIFY' }, { ceremonyId: 'second', credential: assertion },
+    ])
+  })
+
+  it('시연 초기화는 별도 승인을 요청하고 일반 패스키 확인 응답을 거부한다', async () => {
+    responses(envelope('reset'), { approvalToken: 'reset-grant' }, envelope('verify-only'), { verified: true })
+    await expect(approveDemoReset()).resolves.toBe('reset-grant')
+    await expect(approveDemoReset()).rejects.toMatchObject({ code: 'PASSKEY_RESPONSE_INVALID' })
+    expect(requests()).toEqual([
+      ['post', '/reauthentication/options', { operation: 'DEMO_RESET' }],
+      ['post', '/authentication/finish', { ceremonyId: 'reset', credential: assertion }],
+      ['post', '/reauthentication/options', { operation: 'DEMO_RESET' }],
+      ['post', '/authentication/finish', { ceremonyId: 'verify-only', credential: assertion }],
     ])
   })
 
