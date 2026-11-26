@@ -193,7 +193,7 @@ export async function listPasskeys(signal?: AbortSignal): Promise<PasskeyDevice[
 
 async function approval(
   ctx: Attempt,
-  operation: 'ADD' | 'DELETE' | 'ROTATE',
+  operation: 'ADD' | 'DELETE' | 'ROTATE' | 'DEMO_RESET',
   credentialId?: string,
 ) {
   const body = credentialId === undefined ? { operation } : { operation, credentialId }
@@ -220,4 +220,9 @@ export async function rotateRecoveryCode(signal?: AbortSignal) {
   const ctx = attempt(signal)
   const grant = await approval(ctx, 'ROTATE')
   return recoveryCode(await request(ctx, 'post', '/recovery-code', grant))
+}
+
+export async function approveDemoReset(signal?: AbortSignal): Promise<string> {
+  const grant = await approval(attempt(signal), 'DEMO_RESET')
+  return grant.approvalToken
 }

@@ -19,6 +19,8 @@ export default function App() {
   const [authed, setAuthed] = useState(() => Boolean((getAccessToken() && !hasPendingSchool()) || getPreviewUserRole()))
   const [entryVersion, setEntryVersion] = useState(0)
   const logoutMutation = useLogout()
+  const [resetNotice] = useState(() => sessionStorage.getItem('demoResetNotice'))
+  useEffect(() => { sessionStorage.removeItem('demoResetNotice') }, [])
 
   useEffect(() => {
     setOnAuthError(() => {
@@ -50,6 +52,7 @@ export default function App() {
   if (!authed) {
     return (
       <div className="auth-layout">
+        {resetNotice && <p role="status">{resetNotice}</p>}
         <EmailEntryView key={entryVersion} onSuccess={() => setAuthed(true)} />
         <ServiceFooter />
       </div>

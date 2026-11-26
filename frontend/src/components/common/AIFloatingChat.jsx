@@ -3,6 +3,9 @@ import { useConfirmVoiceCommand, usePreviewVoiceCommand } from '@/hooks'
 import { getApiErrorMessage } from '@/utils/timetableGeneration.js'
 import { VOICE_INTENT_LABEL, canConfirmVoicePreview, previewLines } from '@/utils/voicePreview.js'
 
+import DemoResetForm from './DemoResetForm'
+import './demo-reset.css'
+
 const EXAMPLES = ['내일 3교시 보결 부탁해', '월요일 1교시 근무 불가']
 
 function speechRecognition() {
@@ -12,6 +15,8 @@ function speechRecognition() {
 
 export default function AIFloatingChat() {
   const [open, setOpen] = useState(false)
+  const [resetBusy, setResetBusy] = useState(false)
+  const [resetOpen, setResetOpen] = useState(false)
   const [input, setInput] = useState('')
   const [listening, setListening] = useState(false)
   const [speechError, setSpeechError] = useState('')
@@ -62,6 +67,16 @@ export default function AIFloatingChat() {
   const sendText = (text) => {
     const trimmed = text.trim()
     if (!trimmed || preview.isPending) return
+    if (trimmed === 'Algorhythm') {
+      stopListening()
+      setInput('')
+      setSentText(trimmed)
+      setSpeechError('')
+      preview.reset()
+      confirm.reset()
+      setResetOpen(true)
+      return
+    }
     confirm.reset()
     setSentText(trimmed)
     preview.mutate(trimmed)
@@ -85,7 +100,7 @@ export default function AIFloatingChat() {
             background: 'var(--color-surface)',
           }}>
             <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--color-text)', flex: 1 }}>AI 도우미</p>
-            <button type="button" className="panel-close" onClick={() => setOpen(false)} aria-label="질문 닫기">
+            <button type="button" className="panel-close" disabled={resetBusy} onClick={() => { stopListening(); setResetOpen(false); setSentText(''); setOpen(false) }} aria-label="질문 닫기">
               <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
               </svg>
@@ -135,6 +150,9 @@ export default function AIFloatingChat() {
             {speechError && <Bubble>{speechError}</Bubble>}
           </div>
 
+          {resetOpen ? (
+            <DemoResetForm onBusy={setResetBusy} onCancel={() => { setResetOpen(false); setSentText(''); setInput('') }} />
+          ) : <>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: '12px 12px 0' }}>
             {EXAMPLES.map((chip) => (
               <button key={chip} type="button" onClick={() => setInput(chip)} style={chipButton}>{chip}</button>
@@ -205,6 +223,7 @@ export default function AIFloatingChat() {
               </svg>
             </button>
           </div>
+          </>}
         </div>
       )}
 
