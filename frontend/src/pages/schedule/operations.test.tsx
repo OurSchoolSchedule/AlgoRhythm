@@ -11,6 +11,8 @@ import ScheduleCreateView from './ScheduleCreateView'
 import LessonChangesView from './LessonChangesView'
 
 const base = '/api/v2/terms/547001'
+const registered = { termId: 547001, academicYear: 2026, semester: 2, startDate: '2026-08-20', endDate: '2027-02-20' }
+let terms: typeof registered[]
 const job = {
   jobId: 'job-42',
   expectedPublishRev: 0,
@@ -65,8 +67,8 @@ function adapter(handler: (config: InternalAxiosRequestConfig) => [number, unkno
     return { status, data, config, headers: {}, statusText: '' }
   }
 }
-function register() {
-  fireEvent.click(screen.getByText('새 학기 등록', { selector: 'summary' }))
+async function register() {
+  fireEvent.click(await screen.findByRole('button', { name: '새 학기 등록' }))
   fireEvent.change(screen.getByLabelText('시작일'), {
     target: { value: '2026-08-20' },
   })
@@ -79,6 +81,9 @@ beforeEach(() => {
   cache = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   })
+  terms = []
+  HTMLDialogElement.prototype.showModal = function () { this.open = true }
+  HTMLDialogElement.prototype.close = function () { this.open = false }
   sessionStorage.clear()
   setTokens({ accessToken: 'local-test', userId: 541000 })
   vi.stubGlobal('matchMedia', () => ({
@@ -104,13 +109,17 @@ it('재직 교사는 직접 진입해도 편성·학기 등록 요청을 보낼 
   expect(request).not.toHaveBeenCalled()
 })
 
-it('이미 등록된 학기는 필드를 보존하고 학교의 기존 ID 연결로 안내한다', async () => {
-  adapter((config) => failure(config, 409, { code: 'TERM_OVERLAP' }))
+it('학기 중복이면 기간을 보존하고 새로 조회된 목록에서 적용할 수 있다', async () => {
+  let reads = 0
+  adapter(config => {
+    if (config.method === 'get') return [200, ++reads === 1 ? [] : [registered]]
+    return failure(config, 409, { code: 'TERM_EXISTS' })
+  })
   mount()
-  register()
-  expect((await screen.findByRole('alert')).textContent).toContain('학기 ID로 연결')
+  await register()
+  expect((await screen.findByRole('alert')).textContent).toContain('목록에서 기존 학기를 선택')
   expect((screen.getByLabelText('시작일') as HTMLInputElement).value).toBe('2026-08-20')
-  expect(screen.getByRole('button', { name: '학기 연결' })).toBeTruthy()
+  expect(await screen.findByRole('option', { name: '2026학년도 2학기' })).toBeTruthy()
 })
 
 it('학기 등록과 셀 오류 수정 후 후보 한 개를 표시하고 게시 충돌에서 재선택 없이 재전송하지 않는다', async () => {
@@ -120,8 +129,12 @@ it('학기 등록과 셀 오류 수정 후 후보 한 개를 표시하고 게시
     lessonReads = 0
   adapter((config) => {
     const url = config.url
-    if (url === '/api/v2/terms') return [201, { termId: 547001 }]
-    if (url === '/api/school-setting/periods') return [200, [{ periodNumber: 1 }]]
+    if (url === '/api/v2/terms') {
+      if (config.method === 'get') return [200, terms]
+      terms = [registered]
+      return [201, { termId: 547001 }]
+    }
+    if (url === "/api/school-setting/periods") return [200, [{ periodNumber: 1 }]]
     if (url === base + '/load-imports/validate') {
       if (++uploads === 1)
         return failure(config, 422, {
@@ -186,7 +199,7 @@ it('학기 등록과 셀 오류 수정 후 후보 한 개를 표시하고 게시
     return [200, []]
   })
   mount()
-  register()
+  await register()
   const file = await screen.findByLabelText('시수표 엑셀 파일')
   fireEvent.change(file, {
     target: { files: [new File(['workbook'], 'school.xlsx')] },
@@ -266,7 +279,11 @@ it('학교 총합이 같아도 초과 학급을 차단하고, 파일을 교체�
   ]
   let submissions = 0
   adapter((config) => {
-    if (config.url === '/api/v2/terms') return [201, { termId: 547001 }]
+    if (config.url === '/api/v2/terms') {
+      if (config.method === 'get') return [200, terms]
+      terms = [registered]
+      return [201, { termId: registered.termId }]
+    }
     if (config.url === '/api/school-setting/periods')
       return [200, Array.from({ length: 7 }, (_, i) => ({ periodNumber: i + 1 }))]
     if (config.url === base + '/load-imports/validate') {
@@ -290,7 +307,7 @@ it('학교 총합이 같아도 초과 학급을 차단하고, 파일을 교체�
     return [200, []]
   })
   mount()
-  register()
+  await register()
   const file = await screen.findByLabelText('시수표 엑셀 파일')
   async function upload(name: string) {
     fireEvent.change(file, { target: { files: [new File(['load'], name)] } })
@@ -340,7 +357,11 @@ it.each(['lost-response', 'conflict'] as const)(
     const bodies: string[] = []
     let reads = 0
     adapter((config) => {
-      if (config.url === '/api/v2/terms') return [201, { termId: 547001 }]
+      if (config.url === '/api/v2/terms') {
+        if (config.method === 'get') return [200, terms]
+        terms = [registered]
+        return [201, { termId: 547001 }]
+      }
       if (config.url === base + '/lesson-changes') {
         reads++
         return [200, [row]]
@@ -371,7 +392,7 @@ it.each(['lost-response', 'conflict'] as const)(
       return [200, []]
     })
     const page = mount()
-    register()
+    await register()
     await screen.findByLabelText('시수표 엑셀 파일')
     page.rerender(
       <QueryClientProvider client={cache}>

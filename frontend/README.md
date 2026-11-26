@@ -81,10 +81,18 @@ frontend/
 
 `frontend/`에서 `npm test`를 실행하면 합성 명부와 원본 엑셀을 읽어 교사 42명·21학급·35과목의 배정 252건, 주 672차시를 검산합니다. `example_week.csv`는 가능한 배치 한 가지입니다. 후보의 합격 기준은 교사·과목·학급별 시수 일치, 허용 교시 준수, 동일 요일·교시의 교사·학급 중복 0건입니다.
 
-실제 HTTP 검증에는 백엔드 커밋 `17811f4`의 [로컬 데모 실행 방법](https://github.com/OurSchoolSchedule/AlgoRhythm-BE/blob/17811f4d007e9ba1d356bea13fb7f082d0b9a4ae/demo/README.md)을 따릅니다. 백엔드 초기화 후 별도의 로컬 `algorhythm_demo` DB에 [School42 seed](src/test/fixtures/school42/school_seed.sql)를 적용하고 다음을 실행합니다.
+실제 HTTP 검증에는 [주간표·담임 수정이 반영된 백엔드의 로컬 데모 실행 방법](https://github.com/OurSchoolSchedule/AlgoRhythm-BE/blob/a86243cb92732f87bec21d11ae9666d212483d26/demo/README.md)을 따릅니다. 백엔드 초기화 후 별도의 로컬 `algorhythm_demo` DB에 [School42 seed](src/test/fixtures/school42/school_seed.sql)를 적용하고 다음을 실행합니다.
 
 ```bash
 npm run test:school42:local
 ```
 
 기본 주소는 `http://127.0.0.1:8080`이며 `SCHOOL42_LOCAL_URL`로 다른 로컬 포트를 지정할 수 있습니다. 테스트는 학교 540001·학기 547001에서 검증 결과의 ID로 편성 작업을 생성하고 반환된 모든 후보를 검사합니다. 담임 조회 테스트는 1학년 6반의 연결을 임시로 등록한 뒤 원래의 미지정 상태로 복원합니다.
+
+FE20 전체 검수에서는 새로 초기화한 School42 DB에서 다음 명령을 실행합니다.
+
+```bash
+FE20_VERIFY_PUBLICATION=1 npm run test:school42:local
+```
+
+이 검사는 학기 547001의 후보를 실제로 게시합니다. 2026-11-23 적용 주의 날짜 수업과 학교 주간표를 각각 672차시, 교사 542004를 15차시, 학급 544006을 32차시로 대조합니다. 같은 DB에서 게시 검사를 다시 실행하려면 게시 이력이 없는 원본 fixture로 시작해야 합니다.

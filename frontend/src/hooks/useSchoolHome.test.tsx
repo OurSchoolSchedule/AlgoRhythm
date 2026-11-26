@@ -107,6 +107,7 @@ beforeEach(() => {
   requests = []
   routes = new Map<string, Route>([
     [active, () => activeSchool()],
+    ['/api/v2/terms', () => [{ ...term, startDate: '2026-08-20', endDate: '2027-02-20' }]],
     ['/api/mypage/teacher/profile', () => teacher],
     ['/api/mypage/admin/profile', () => teacher],
     ['/api/school/teachers', () => [teacher, other]],
@@ -450,7 +451,8 @@ describe('FE9 업무 홈', () => {
     sessionStorage.clear()
   })
 
-  it('학기 ID를 모르는 교사는 기본표와 확인된 담임을 조회하고 알림 실패에도 선택한 수업을 읽는다', async () => {
+  it('등록 학기가 없는 기존 교사는 기본표와 확인된 담임을 조회하고 알림 실패에도 선택한 수업을 읽는다', async () => {
+    routes.set('/api/v2/terms', () => [])
     routes.set(mine, () => [displayRow])
     routes.set('/api/notifications', httpError(500))
     const ui = render(<HomeView navigate={vi.fn()} onLogout={vi.fn()} />, { wrapper })
@@ -472,15 +474,45 @@ describe('FE9 업무 홈', () => {
     expect(ui.queryByRole('button', { name: '시간표 생성' })).toBeNull()
   })
 
+  it('학교 전환 중 지연된 학기 목록은 취소하고 새 학교의 날짜 수업만 요청한다', async () => {
+    const old = deferred<unknown[]>()
+    routes.set('/api/v2/terms', () => old.promise)
+    routes.set(active, () => activeSchool('ADMIN'))
+    const ui = render(<HomeView navigate={vi.fn()} onLogout={vi.fn()} />, { wrapper })
+    await waitFor(() => expect(getCalls('/api/v2/terms')).toHaveLength(1))
+    const pending = getCalls('/api/v2/terms')[0]
+    const nextTerm = { ...term, schoolId: term.schoolId + 1, termId: 77, startDate: day, endDate: '2026-12-31' }
+    routes.set(active, () => activeSchool('ADMIN', nextTerm.schoolId))
+    routes.set('/api/v2/terms', () => [nextTerm])
+    routes.set('/api/v2/terms/77/lessons', () => [])
+    act(() => window.dispatchEvent(new StorageEvent('storage', { key: 'activeSchoolChanged', storageArea: localStorage })))
+    await waitFor(() => expect(getCalls('/api/v2/terms/77/lessons')).toHaveLength(1))
+    expect(pending.signal?.aborted).toBe(true)
+    await act(async () => old.resolve([{ ...term, startDate: day, endDate: '2026-12-31' }]))
+    expect(getCalls(lessonsUrl)).toHaveLength(0)
+    expect(ui.getByRole('button', { name: '조회 학기 설정' }).textContent).toContain('2026학년도 2학기')
+  })
+
+  it('학기 목록 조회 실패는 빈 목록으로 표시하지 않고 재시도로 복구한다', async () => {
+    routes.set('/api/v2/terms', httpError(500))
+    const ui = render(<HomeView navigate={vi.fn()} onLogout={vi.fn()} />, { wrapper })
+    expect(await ui.findByText('학기 목록을 불러오지 못했습니다.')).toBeTruthy()
+    expect(ui.queryByText('등록된 학기가 없습니다.')).toBeNull()
+    routes.set('/api/v2/terms', () => [])
+    fireEvent.click(ui.getByRole('button', { name: '다시 조회' }))
+    expect(await ui.findByText('등록된 학기가 없습니다.')).toBeTruthy()
+    expect(getCalls(lessonsUrl)).toHaveLength(0)
+  })
+
   it('담임 미등록과 빈 기본표에서도 해당 날짜 실제 수업과 변경된 담당 교사를 표시한다', async () => {
-    sessionStorage.setItem('school-home-term/541004/540001/2026/2', JSON.stringify(term))
+    routes.set('/api/v2/terms', () => [{ ...term, startDate: day, endDate: '2026-12-31' }])
     routes.set(mine, () => [])
     routes.set('/api/school/teachers', () => [{ ...teacher, homeroomClasses: [] }, other])
     routes.set('/api/school/subjects', () => [{ id: lesson.subjectId, name: '실제 수업 과목' }])
     const navigate = vi.fn()
     const ui = render(<HomeView navigate={navigate} onLogout={vi.fn()} />, { wrapper })
-    const dated = within(await ui.findByRole('region', { name: '날짜별 실제 수업' }))
-    await dated.findByText('실제 수업 과목')
+    await ui.findByText('실제 수업 과목')
+    const dated = within(ui.getByRole('region', { name: '날짜별 실제 수업' }))
     expect(dated.getByText('담당 변경')).toBeTruthy()
     expect(dated.getByText(/최도현/)).toBeTruthy()
     expect(ui.queryByRole('radio', { name: /담임/ })).toBeNull()

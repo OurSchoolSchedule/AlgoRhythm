@@ -1,0 +1,47 @@
+.term-settings,
+.term-settings label,
+.term-settings .term-field,
+.term-settings .work-row {
+  display: grid;
+  gap: 8px;
+}
+.term-settings {
+  gap: 18px;
+}
+.term-settings .work-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.term-settings fieldset {
+  min-width: 0;
+  padding: 8px;
+}
+.term-settings :is(input, select) {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.term-settings summary {
+  cursor: pointer;
+}
+.term-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.term-actions button {
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid var(--color-border-input);
+  border-radius: 7px;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.term-settings .term-actions .term-apply {
+  background: var(--color-primary-button);
+  border-color: var(--color-primary-button);
+  color: var(--color-on-primary);
+}
+.term-settings :is(button, select, input, summary):focus-visible {
+  outline: 2px solid var(--keyboard-focus-ring);
+  outline-offset: 2px;
+}

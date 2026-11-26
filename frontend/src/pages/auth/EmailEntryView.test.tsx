@@ -122,6 +122,7 @@ it('restores unfinished onboarding after reload and shows the server’s pending
     .spyOn(client, 'post')
     .mockResolvedValueOnce({ data: { success: true } })
     .mockResolvedValueOnce({ data: { success: true, newUser: true, ...session } })
+    .mockResolvedValueOnce({ data: { schoolId: 7, schoolName: '시연고', baseName: '예시 교사', displayName: '예시 교사', confirmation: 'preview-7' } })
     .mockResolvedValueOnce({ data: { userId: 42, schoolId: 7, employmentStatus: 'PENDING' } })
   display(done)
   await emailAndCode()
@@ -135,13 +136,15 @@ it('restores unfinished onboarding after reload and shows the server’s pending
     </QueryClientProvider>,
   )
   fireEvent.change(await screen.findByLabelText('학교 코드'), { target: { value: 'SCHOOL42' } })
-  fireEvent.change(screen.getByLabelText(/표시 이름/), { target: { value: '예시 교사' } })
-  fireEvent.click(screen.getByRole('button', { name: '학교 가입 요청' }))
+  fireEvent.change(screen.getByLabelText('본인 이름'), { target: { value: '예시 교사' } })
+  fireEvent.click(screen.getByRole('button', { name: '학교·이름 확인' }))
+  fireEvent.click(await screen.findByRole('button', { name: '학교 가입 요청' }))
   await screen.findByRole('heading', { name: '학교 가입 승인 대기' })
   expect(post).toHaveBeenLastCalledWith('/api/auth/onboarding', {
     role: 'TEACHER',
     schoolCode: 'SCHOOL42',
     displayName: '예시 교사',
+    nameConfirmation: 'preview-7',
   })
   expect(hasPendingSchool()).toBe(false)
 })
