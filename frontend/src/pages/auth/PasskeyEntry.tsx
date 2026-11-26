@@ -8,6 +8,7 @@ import {
   supportsPasskeys,
 } from '@/api/passkeys'
 import { getSessionVersion, subscribeSession } from '@/api/tokenStorage.js'
+import { Icon } from '@/pages/home/HomePanels'
 import type { VerifiedEmail, WorkSession } from './emailSession'
 
 const unsupported =
@@ -119,11 +120,11 @@ export function DirectPasskeyLogin({ disabled, onBusyChange, onAuthenticated }: 
         disabled={disabled || action.pending || !supported}
         onClick={() => void action.run(loginWithPasskey, onAuthenticated)}
       >
-        패스키로 로그인
+        <Icon name="key" /> 패스키로 로그인
       </button>
       <p>
         {supported
-          ? '등록한 기기를 모두 잃어버렸다면 이메일 인증 후 복구 코드를 사용하세요.'
+          ? '패스키를 저장한 기기나 동기화된 비밀번호 관리자로 로그인하세요.'
           : unsupported}
       </p>
       <ActionStatus {...action} />
@@ -135,21 +136,17 @@ type VerifiedProps = {
   verification: VerifiedEmail
   onRestart: () => void
   onAuthenticated: (session: WorkSession) => void
-  onRecoveryIssued?: (userId: number) => void
 }
-type Issued = WorkSession & { recoveryCode: string }
 
 export function VerifiedPasskeyStep({
   verification,
   onRestart,
   onAuthenticated,
-  onRecoveryIssued,
 }: VerifiedProps) {
   const action = usePasskeyAction()
   const [recovering, setRecovering] = useState(false)
   const [code, setCode] = useState('')
   const [usedGrant, setUsedGrant] = useState(false)
-  const [issued, setIssued] = useState<Issued | null>(null)
   const sessionVersion = useSyncExternalStore(subscribeSession, getSessionVersion)
   const [initialVersion] = useState(getSessionVersion)
   const register = verification.nextStep === 'REGISTER'
@@ -166,11 +163,6 @@ export function VerifiedPasskeyStep({
     )
     return false
   }
-  function completeRegistration(result: Issued) {
-    if (!matchesAccount(result)) return
-    onRecoveryIssued?.(result.userId)
-    setIssued(result)
-  }
   function enroll() {
     if (usedGrant || action.pending) return
     // BE consumes the email grant when it issues options, including failed recovery attempts.
@@ -182,7 +174,9 @@ export function VerifiedPasskeyStep({
         recovering
           ? recoverPasskey(verification.flowToken, oldCode, signal)
           : registerPasskey(verification.flowToken, signal),
-      completeRegistration,
+      (session) => {
+        if (matchesAccount(session)) onAuthenticated(session)
+      },
     )
   }
   if (sessionVersion !== initialVersion)
@@ -192,29 +186,6 @@ export function VerifiedPasskeyStep({
         {restart}
       </>
     )
-  if (issued)
-    return (
-      <div className="entry-form">
-        <h2 className="entry-auth-title">복구 코드 보관</h2>
-        <p>
-          기기를 분실하면 이메일 인증 후 이 코드로 패스키를 다시 등록할 수 있습니다. 지금 한 번만
-          표시되니 비밀번호 관리자 등 안전한 곳에 보관하세요.
-        </p>
-        <code className="passkey-recovery-code">{issued.recoveryCode}</code>
-        <button
-          type="button"
-          className="entry-primary"
-          onClick={() => {
-            const { userId, accessToken, refreshToken } = issued
-            setIssued(null)
-            onAuthenticated({ userId, accessToken, refreshToken })
-          }}
-        >
-          복구 코드를 보관했습니다
-        </button>
-      </div>
-    )
-
   const supported = supportsPasskeys()
   return (
     <>
@@ -237,7 +208,7 @@ export function VerifiedPasskeyStep({
               <>
                 <p>
                   기존 복구 코드를 입력하고 새 패스키를 등록하세요. 등록이 끝나면 기존 패스키가 모두
-                  해제되고 복구 코드도 바뀝니다.
+                  해제되고 이 코드는 만료됩니다.
                 </p>
                 <form
                   className="entry-form"
@@ -286,7 +257,7 @@ export function VerifiedPasskeyStep({
                         })
                   }
                 >
-                  {register ? '패스키 등록' : '등록한 패스키로 인증'}
+                  <Icon name="key" /> {register ? '패스키 등록' : '등록한 패스키로 인증'}
                 </button>
                 {!register && (
                   <button
@@ -298,7 +269,7 @@ export function VerifiedPasskeyStep({
                       action.setError('')
                     }}
                   >
-                    복구 코드로 복구
+                    이전에 발급받은 복구 코드 사용
                   </button>
                 )}
               </>

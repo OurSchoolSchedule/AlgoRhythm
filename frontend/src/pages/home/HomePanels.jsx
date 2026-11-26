@@ -8,6 +8,7 @@ const strokes = {
   todos: 'm3 7 2 2 4-5 M12 7h9 M3 15l2 2 4-5 M12 15h9',
   history: 'M3 11a9 9 0 1 1 2 7 M3 5v6h6 M12 7v5l3 2',
   create: 'M4 5h16v15H4z M8 3v4 M16 3v4 M8 13h8 M12 9v8',
+  key: 'M14 4a5 5 0 0 1 6 7 5 5 0 0 1-6 2l-3 3H8v3H5v2H2v-5l9-9a5 5 0 0 1 3-3z M16 7h.01',
   settings: 'M3 6h9m4 0h5 M3 12h3m4 0h11 M3 18h10m4 0h4 M12 4v4 M7 10v4 M14 16v4',
   person: 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0 M4 21v-2a8 8 0 0 1 16 0v2',
   bell: 'M5 16c2-2 2-5 2-7a5 5 0 0 1 10 0c0 2 0 5 2 7l1 1H4z M10 20a2 2 0 0 0 4 0',

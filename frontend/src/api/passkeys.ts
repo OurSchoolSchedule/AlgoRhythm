@@ -145,6 +145,7 @@ async function ceremony(ctx: Attempt, kind: 'create' | 'get', optionsPath: strin
   return request(ctx, 'post', finishPath, {
     ceremonyId: options.ceremonyId,
     credential: credential.toJSON(),
+    ...(kind === 'create' ? { includeRecoveryCode: false } : {}),
   })
 }
 
@@ -153,19 +154,32 @@ function session(data: unknown): WorkSession {
   return { userId: data.userId, accessToken: data.accessToken, refreshToken: data.refreshToken }
 }
 
-function recoveryCode(data: unknown): string {
-  if (!record(data) || !nonempty(data.recoveryCode))
-    throw new PasskeyError('PASSKEY_RESPONSE_INVALID')
-  return data.recoveryCode
+type PasskeyUser = { rpId: string; userId: string; name: string; displayName: string }
+
+async function updateSavedName(data: unknown) {
+  const provider = PublicKeyCredential as typeof PublicKeyCredential & {
+    signalCurrentUserDetails?: (user: PasskeyUser) => Promise<void>
+  }
+  if (!provider.signalCurrentUserDetails || !record(data) || !record(data.passkeyUser)) return
+  const { rpId, userId, name, displayName } = data.passkeyUser
+  if (rpId !== window.location.hostname || !credentialId(userId) || !nonempty(name) || !nonempty(displayName)) return
+  try {
+    await provider.signalCurrentUserDetails({ rpId, userId, name, displayName })
+  } catch {
+    // Providers may decline a label update after a successful assertion.
+  }
 }
 
 export async function registerPasskey(flowToken: string, signal?: AbortSignal) {
   const data = await ceremony(attempt(signal), 'create', '/registration/options', { flowToken })
-  return { ...session(data), recoveryCode: recoveryCode(data) }
+  return session(data)
 }
 
 export async function loginWithPasskey(signal?: AbortSignal) {
-  return session(await ceremony(attempt(signal), 'get', '/authentication/options'))
+  const data = await ceremony(attempt(signal), 'get', '/authentication/options')
+  const authenticated = session(data)
+  void updateSavedName(data)
+  return authenticated
 }
 
 export async function recoverPasskey(flowToken: string, code: string, signal?: AbortSignal) {
@@ -173,7 +187,7 @@ export async function recoverPasskey(flowToken: string, code: string, signal?: A
     flowToken,
     recoveryCode: code,
   })
-  return { ...session(data), recoveryCode: recoveryCode(data) }
+  return session(data)
 }
 
 export async function listPasskeys(signal?: AbortSignal): Promise<PasskeyDevice[]> {
@@ -193,7 +207,7 @@ export async function listPasskeys(signal?: AbortSignal): Promise<PasskeyDevice[
 
 async function approval(
   ctx: Attempt,
-  operation: 'ADD' | 'DELETE' | 'ROTATE',
+  operation: 'ADD' | 'DELETE',
   credentialId?: string,
 ) {
   const body = credentialId === undefined ? { operation } : { operation, credentialId }
@@ -216,8 +230,8 @@ export async function removePasskey(id: string, signal?: AbortSignal): Promise<v
   await request(ctx, 'delete', '/credentials/' + encodeURIComponent(id), grant)
 }
 
-export async function rotateRecoveryCode(signal?: AbortSignal) {
-  const ctx = attempt(signal)
-  const grant = await approval(ctx, 'ROTATE')
-  return recoveryCode(await request(ctx, 'post', '/recovery-code', grant))
+export async function verifyCurrentPasskey(signal?: AbortSignal): Promise<void> {
+  const data = await ceremony(attempt(signal), 'get', '/reauthentication/options', { operation: 'VERIFY' })
+  if (!record(data) || data.verified !== true) throw new PasskeyError('PASSKEY_RESPONSE_INVALID')
+  void updateSavedName(data)
 }

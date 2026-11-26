@@ -6,7 +6,6 @@ import {
   passkeyErrorCode,
   passkeyErrorMessage,
   removePasskey,
-  rotateRecoveryCode,
   supportsPasskeys,
 } from '@/api/passkeys'
 import {
@@ -19,7 +18,7 @@ import {
 import type { WorkSession } from './emailSession'
 import './passkey-settings.css'
 
-type Change = { kind: 'add' } | { kind: 'remove'; id: string } | { kind: 'rotate' }
+type Change = { kind: 'add' } | { kind: 'remove'; id: string }
 type Scope = { userId: string; generation: number }
 
 export default function PasskeySettings() {
@@ -62,10 +61,9 @@ function AccountPasskeys({
   })
   const inFlight = useRef<AbortController | null>(null)
   const [busy, setBusy] = useState(false)
-  const [confirmation, setConfirmation] = useState<Change | null>(null)
+  const [confirmation, setConfirmation] = useState<string | null>(null)
   const [notice, setNotice] = useState(justAdded ? '패스키를 추가했습니다.' : '')
   const [error, setError] = useState('')
-  const [code, setCode] = useState<string | null>(null)
 
   useEffect(() => {
     const cancel = () => inFlight.current?.abort()
@@ -77,7 +75,7 @@ function AccountPasskeys({
   }, [])
 
   const devices = keys.data ?? []
-  const blocked = !supported || !keys.isSuccess || devices.length === 0 || busy || code !== null
+  const blocked = !supported || !keys.isSuccess || devices.length === 0 || busy
   const canStart = !blocked && !confirmation
 
   async function change(action: Change) {
@@ -101,14 +99,11 @@ function AccountPasskeys({
         }
         // The backend binds this new work session to the newly registered credential.
         onAdded(session)
-      } else if (action.kind === 'remove') {
+      } else {
         await removePasskey(action.id, controller.signal)
         if (!current()) return
         setNotice('패스키를 철회했습니다.')
         await keys.refetch()
-      } else {
-        const recovery = await rotateRecoveryCode(controller.signal)
-        if (current()) setCode(recovery)
       }
     } catch (cause) {
       if (!current()) return
@@ -121,16 +116,16 @@ function AccountPasskeys({
     }
   }
 
-  function confirm(action: Change) {
+  function confirmRemoval(id: string) {
     setNotice('')
     setError('')
-    setConfirmation(action)
+    setConfirmation(id)
   }
 
   return (
-    <section className="passkey-settings" aria-label="내 패스키와 복구 코드">
+    <section className="passkey-settings" aria-label="내 패스키">
       <p>
-        계정에 등록된 패스키를 확인하고 관리하세요. 변경할 때는 등록된 패스키로 본인을 확인합니다.
+        동기화되지 않는 패스키를 사용한다면 다른 기기에도 패스키를 추가해 두세요.
       </p>
       {keys.isPending && <p role="status">등록된 패스키를 불러오는 중입니다.</p>}
       {keys.isError && (
@@ -160,7 +155,7 @@ function AccountPasskeys({
                     type="button"
                     aria-label={`패스키 ${device.id.slice(-8)} 철회`}
                     disabled={!canStart || devices.length === 1}
-                    onClick={() => confirm({ kind: 'remove', id: device.id })}
+                    onClick={() => confirmRemoval(device.id)}
                   >
                     철회
                   </button>
@@ -184,23 +179,18 @@ function AccountPasskeys({
         <button type="button" disabled={!canStart} onClick={() => void change({ kind: 'add' })}>
           패스키 추가
         </button>
-        <button type="button" disabled={!canStart} onClick={() => confirm({ kind: 'rotate' })}>
-          복구 코드 재발급
-        </button>
       </div>
       {confirmation && (
         <div className="passkey-settings__confirm">
           <p>
-            {confirmation.kind === 'remove'
-              ? `패스키 ${confirmation.id.slice(-8)}를 철회할까요? 이 패스키로 로그인한 기기는 다시 로그인해야 합니다.`
-              : '새 복구 코드를 발급할까요? 기존 복구 코드는 즉시 만료됩니다.'}
+            패스키 {confirmation.slice(-8)}를 철회할까요? 이 패스키로 로그인한 기기는 다시 로그인해야 합니다.
           </p>
           <div className="passkey-settings__actions">
             <button type="button" onClick={() => setConfirmation(null)}>
               취소
             </button>
-            <button type="button" disabled={blocked} onClick={() => void change(confirmation)}>
-              {confirmation.kind === 'remove' ? '확인 후 철회' : '확인 후 재발급'}
+            <button type="button" disabled={blocked} onClick={() => void change({ kind: 'remove', id: confirmation })}>
+              확인 후 철회
             </button>
           </div>
         </div>
@@ -208,24 +198,6 @@ function AccountPasskeys({
       {busy && <p role="status">패스키 확인 중입니다. 기기의 안내에 따라 주세요.</p>}
       {error && <p role="alert">{error}</p>}
       {notice && <p role="status">{notice}</p>}
-      {code !== null && (
-        <div className="passkey-settings__code">
-          <h3>새 복구 코드</h3>
-          <p role="status">
-            이 코드는 한 번만 표시됩니다. 계정에 다시 접근할 수 있도록 안전한 곳에 보관하세요.
-          </p>
-          <code>{code}</code>
-          <button
-            type="button"
-            onClick={() => {
-              setCode(null)
-              setNotice('복구 코드 표시를 마쳤습니다.')
-            }}
-          >
-            저장했어요
-          </button>
-        </div>
-      )}
     </section>
   )
 }
