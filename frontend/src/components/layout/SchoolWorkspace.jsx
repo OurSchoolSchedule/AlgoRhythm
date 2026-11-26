@@ -73,14 +73,21 @@ function observePhone(change) {
   return () => media?.removeEventListener('change', change)
 }
 
-function DetailView({ view, date, navigate, role }) {
+function DetailView({ view, date, selection, navigate, role }) {
   switch (view) {
     case 'timetable':
       return <TimetableView navigate={navigate} userRole={role} />
     case 'todos':
       return <ScheduleTodoTab date={toISODate()} userRole={role} />
     case 'lesson-changes':
-      return <LessonChangesView initialDate={date} />
+      return (
+        <LessonChangesView
+          key={selection ? JSON.stringify(selection) : (date ?? 'menu')}
+          initialDate={date}
+          selection={selection}
+          onHome={() => navigate('home')}
+        />
+      )
     case 'schedule-create':
       return <ScheduleCreateView />
     case 'subject-manage':
@@ -120,7 +127,7 @@ function Workspace({ session, navigate: onNavigate, onLogout, passkeyButton }) {
   const navigate = (view, ...args) => {
     if (!items.some((item) => item.view === view)) return
     openPanel(null)
-    setPage({ view, date: args[0] })
+    setPage({ view, date: args[0], selection: args[1] })
     onNavigate?.(view, ...args)
   }
   const home = page.view === 'home'
@@ -184,7 +191,13 @@ function Workspace({ session, navigate: onNavigate, onLogout, passkeyButton }) {
       ) : (
         <main className="desk-main" id="desk-main" tabIndex="-1">
           <Suspense fallback={<p role="status">업무 화면을 여는 중입니다.</p>}>
-            <DetailView view={page.view} date={page.date} navigate={navigate} role={role} />
+            <DetailView
+              view={page.view}
+              date={page.date}
+              selection={page.selection}
+              navigate={navigate}
+              role={role}
+            />
           </Suspense>
           <AIFloatingChat />
         </main>

@@ -94,7 +94,8 @@ export function useSchoolHome({ term, weeklyTerm, classId = null, date, timeZone
       const rows = await getDatedLessons(currentTerm.termId, day, signal)
       return rows.filter(
         (row) =>
-          (view !== 'mine' || row.actual.teacherId === teacherId) &&
+          (view !== 'mine' || row.actual.teacherId === teacherId ||
+            row.planned.teacherId === teacherId) &&
           (view !== 'homeroom' || row.classId === selected),
       )
     },
@@ -117,6 +118,12 @@ export function useSchoolHome({ term, weeklyTerm, classId = null, date, timeZone
     },
   )
 
+  const slotLessons = homeQueryState(dated, datedEnabled)
+  // Keep the personal agenda restricted to actual teaching duties. A selected cell can also
+  // explain who took over a lesson the teacher was originally scheduled to teach.
+  const personalRows = view === 'mine'
+    ? slotLessons.data?.filter((row) => row.actual.teacherId === teacherId)
+    : undefined
   return {
     activeSchool: homeQueryState(session.active, userId !== null && !session.switching),
     access,
@@ -134,7 +141,10 @@ export function useSchoolHome({ term, weeklyTerm, classId = null, date, timeZone
     retryDated: datedEnabled ? dated.refetch : undefined,
     retryNotices: staff ? notifications.refetch : undefined,
     weekly: homeQueryState(weekly, inWeek),
-    dated: homeQueryState(dated, datedEnabled),
+    slotLessons,
+    dated: personalRows
+      ? { ...slotLessons, state: personalRows.length ? ('ready' as const) : ('empty' as const), data: personalRows }
+      : slotLessons,
     notifications: toHomeNotifications(fieldRead(notifications, staff)),
     notificationQuery: homeQueryState(notifications, staff),
   }

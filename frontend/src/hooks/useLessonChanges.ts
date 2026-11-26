@@ -150,6 +150,8 @@ export function useLessonChanges(term: SchoolTerm | null, date: string, secondDa
     if (
       !lesson ||
       selected.termId !== termId ||
+      lesson.actual.cancelled ||
+      lesson.actual.teacherId !== selected.actual.teacherId ||
       lesson.rev !== selected.rev ||
       !(selected.date === date || selected.date === otherDate)
     ) {

@@ -87,6 +87,7 @@ export default function HomeContent({ session, navigate, panel, openPanel }) {
               key={term?.termId ?? 'legacy'}
               term={term}
               home={home}
+              onRequest={(selection) => navigate('lesson-changes', selection.date, selection)}
               setDate={setDate}
               setRoom={setClassId}
               termStatus={<TermStatus state={state} onRegister={session.access.actions.generate ? () => setEditingTerm(true) : undefined} />}

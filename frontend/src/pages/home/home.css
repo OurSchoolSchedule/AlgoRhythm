@@ -843,3 +843,26 @@
 .desk-drawer .desk-logout {
   margin-top: auto;
 }
+
+.desk-selection-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(155px, 27%);
+  gap: 10px;
+  align-items: start;
+}
+.desk-lesson-selection {
+  display: grid;
+  gap: 8px;
+  margin: 0 12px;
+  padding: 12px;
+  background: var(--surface-1);
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+.desk-lesson-selection h3, .desk-lesson-selection p { margin: 0; }
+.desk-lesson-selection label { display: grid; gap: 4px; min-width: 0; }
+.desk-lesson-selection select { width: 100%; }
+.desk-lesson-selection button { padding: 7px; }
+@media (max-width: 719px) {
+  .desk-selection-layout { grid-template-columns: minmax(0, 1fr); }
+}
