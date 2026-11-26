@@ -136,7 +136,7 @@ function WeekTable({ home, term, roomId, onRequest, daysOfWeek, rows, selected, 
   )
 }
 
-function DatedLessons({ home, roomId, term, onSettings, onRequest }) {
+function DatedLessons({ home, roomId, term, termStatus, onRequest }) {
   const q = home.dated
   const rows = (q.data ?? [])
     .filter((r) => !roomId || r.classId === roomId)
@@ -155,12 +155,7 @@ function DatedLessons({ home, roomId, term, onSettings, onRequest }) {
       {!home.access.queries.datedLessons ? (
         <p>날짜 수업 조회 권한이 없습니다.</p>
       ) : !term ? (
-        <p>
-          학교에서 발급한 학기 ID를 연결하면 실제 담당 교사를 확인할 수 있습니다.{' '}
-          <button className="desk-text-button" onClick={onSettings}>
-            학기 설정
-          </button>
-        </p>
+        termStatus
       ) : q.state === 'disabled' &&
         ['error', 'forbidden', 'unconfirmed', 'empty'].includes(home.profile.schoolUserId.state) ? (
         <p>학교 명부에서 담당 교사를 확인할 수 없어 날짜 수업을 조회할 수 없습니다.</p>
@@ -231,7 +226,7 @@ function DatedLessons({ home, roomId, term, onSettings, onRequest }) {
   )
 }
 
-export default function HomeTimetable({ home, term, setDate, setRoom, onSettings, onRequest }) {
+export default function HomeTimetable({ home, term, setDate, setRoom, termStatus, onRequest }) {
   const [cell, setCell] = useState(null)
   const [classFilter, setClassFilter] = useState(null)
   const weekly = home.weekly
@@ -378,8 +373,8 @@ export default function HomeTimetable({ home, term, setDate, setRoom, onSettings
         home={home}
         term={term}
         roomId={classFilter}
-        onSettings={onSettings}
         onRequest={onRequest}
+        termStatus={termStatus}
       />
     </section>
   )

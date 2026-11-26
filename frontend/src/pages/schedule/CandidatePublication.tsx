@@ -1,7 +1,8 @@
-import { TableScroll } from '@/components/ui/DetailPage'
+import CandidateGrid from './CandidateGrid'
+import { objectives } from './generationOptions'
 import { useState } from 'react'
 import type { HomeTerm } from '@/types/datedLesson'
-import type { ScheduleCandidate } from '@/types/generationJob'
+import type { ScheduleCandidate, TeachingSlot, GenerationObjective } from '@/types/generationJob'
 import type { useCandidatePublication } from '@/hooks/useCandidatePublication'
 import { useHomeDirectory } from '@/hooks/homeReads'
 import { useHomeSession } from '@/hooks/useHomeSession'
@@ -9,7 +10,6 @@ import { useSubjects, useSchoolClasses } from '@/hooks/useSchoolCatalog'
 import { operationError } from '@/utils/operationInputs'
 import { schoolDate } from '@/utils/homeContract'
 
-const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
 const recoveryText = {
   'reselect-candidate': '최신 작업 상태를 확인한 뒤 후보를 다시 선택하세요.',
   regenerate: '기존 게시 버전이 만료되었습니다. 새 후보를 생성하세요.',
@@ -21,17 +21,26 @@ const recoveryText = {
 interface Props {
   term: HomeTerm
   publication: ReturnType<typeof useCandidatePublication>
+  slots?: TeachingSlot[]
+  objective?: GenerationObjective
   candidates: ScheduleCandidate[]
   onRestart: (revalidate: boolean) => void
 }
-export default function CandidatePublication({ term, publication, candidates, onRestart }: Props) {
+export default function CandidatePublication({
+  term,
+  publication,
+  candidates,
+  slots,
+  objective,
+  onRestart,
+}: Props) {
   const [id, setId] = useState('')
   const [room, setRoom] = useState('')
   const [date, setDate] = useState(schoolDate(new Date()))
   const [error, setError] = useState('')
   const subjects = useSubjects(),
     classes = useSchoolClasses(term.academicYear)
-  const members = useHomeDirectory(useHomeSession())
+  const members = useHomeDirectory(useHomeSession(), true, term.termId)
   const candidate = candidates.find((c) => c.candidateId === id)
   const className = (id: string) => {
     const r = classes.data?.find((c) => String(c.id) === id)
@@ -45,15 +54,10 @@ export default function CandidatePublication({ term, publication, candidates, on
     a.localeCompare(b, 'ko', { numeric: true }),
   )
   const selectedRoom = rooms.includes(room) ? room : rooms[0]
-  const placements = candidate?.placements
-    .filter((p) => p.classId === selectedRoom)
-    .sort(
-      (a, b) =>
-        days.indexOf(a.slot.day) - days.indexOf(b.slot.day) || a.slot.period - b.slot.period,
-    )
   return (
     <section className="work-card">
       <h2>후보 비교 및 게시</h2>
+      {objective && <p>후보 평가 기준 · {objectives[objective]}</p>}
       <fieldset disabled={publication.isPublishing || state.phase === 'published' || mustRestart}>
         <legend>게시할 후보 선택</legend>
         <div className="work-candidates">
@@ -79,17 +83,25 @@ export default function CandidatePublication({ term, publication, candidates, on
               <small>
                 기피 시간 회피 {c.score.avoidsMet}/{c.score.avoidsTotal}
               </small>
+              <small>
+                교사 공강{' '}
+                {c.score.teacherGapPeriods == null ? '미집계' : c.score.teacherGapPeriods + '교시'}
+              </small>
               <small>희망 미충족 교사 {c.score.teachersWithNoWantMet}명</small>
             </label>
           ))}
         </div>
       </fieldset>
       {candidate && (
-        <details className="work-detail">
-          <summary>선택한 후보의 학급별 배치</summary>
+        <section className="work-detail">
+          <h3>선택한 후보의 학급별 배치</h3>
           <label>
             학급{' '}
-            <select value={selectedRoom} onChange={(e) => setRoom(e.target.value)}>
+            <select
+              aria-label="학급"
+              value={selectedRoom}
+              onChange={(e) => setRoom(e.target.value)}
+            >
               {rooms.map((r) => (
                 <option key={r} value={r}>
                   {className(r)}
@@ -97,36 +109,23 @@ export default function CandidatePublication({ term, publication, candidates, on
               ))}
             </select>
           </label>
-          <TableScroll label="학급별 배치">
-            <table>
-              <caption className="desk-sr">선택한 학급의 주간 배치</caption>
-              <thead>
-                <tr>
-                  <th>요일</th>
-                  <th>교시</th>
-                  <th>과목</th>
-                  <th>담당 교사</th>
-                </tr>
-              </thead>
-              <tbody>
-                {placements?.map((p) => (
-                  <tr key={p.slot.day + '/' + p.slot.period}>
-                    <td>{'월화수목금토일'[days.indexOf(p.slot.day)]}</td>
-                    <td>{p.slot.period}</td>
-                    <td>
-                      {subjects.data?.find((s) => String(s.id) === p.subjectId)?.name ??
-                        '과목 #' + p.subjectId}
-                    </td>
-                    <td>
-                      {members.data?.find((m) => String(m.schoolUserId) === p.teacherId)
-                        ?.username ?? '교사 #' + p.teacherId}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableScroll>
-        </details>
+          {slots?.length ? (
+            <CandidateGrid
+              key={candidate.candidateId + '/' + selectedRoom}
+              slots={slots}
+              placements={candidate.placements}
+              room={selectedRoom}
+              subjectName={(id) =>
+                subjects.data?.find((s) => String(s.id) === id)?.name ?? '과목 #' + id
+              }
+              teacherName={(id) =>
+                members.data?.find((m) => String(m.schoolUserId) === id)?.username ?? '교사 #' + id
+              }
+            />
+          ) : (
+            <p role="status">이 작업의 운영 교시를 확인할 수 없습니다.</p>
+          )}
+        </section>
       )}
       <form
         className="work-row"
@@ -135,7 +134,10 @@ export default function CandidatePublication({ term, publication, candidates, on
           if (!candidate) return
           setError('')
           try {
-            const out = await publication.publish({ candidateId: id, effectiveFrom: date })
+            const out = await publication.publish({
+              candidateId: id,
+              effectiveFrom: date,
+            })
             if (out.phase === 'conflict') setId('')
           } catch (err) {
             setError(operationError(err))

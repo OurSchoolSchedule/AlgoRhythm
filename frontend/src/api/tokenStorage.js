@@ -47,6 +47,9 @@ function sessionChanged() {
 function storageChanged(event) {
   if (event.storageArea === localStorage && [null, ACCESS_TOKEN_KEY, USER_ID_KEY, SCHOOL_SWITCH_KEY].includes(event.key)) sessionChanged()
 }
+export function getSchoolSwitchStamp() {
+  return localStorage.getItem(SCHOOL_SWITCH_KEY)
+}
 // Other tabs share the backend's active school for this account.
 export function notifySchoolSwitch() {
   localStorage.setItem(SCHOOL_SWITCH_KEY, String(Date.now()))

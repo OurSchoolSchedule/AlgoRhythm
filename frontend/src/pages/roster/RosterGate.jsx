@@ -4,9 +4,11 @@ import { getPreviewUserRole } from '@/api/tokenStorage'
 import { ownRosterKey, readOwnRoster } from '@/api/ownRoster'
 import { useHomeSession, useScopedRead } from '@/hooks/useHomeSession'
 import { useTermChoice } from '@/hooks/useTermChoice'
-import { TermForm } from '@/pages/home/HomePanels'
+import TermForm, { TermStatus } from '@/pages/schedule/TermForm'
 import ServiceFooter from '@/components/layout/ServiceFooter'
 import Schools from './Schools'
+import SchoolJoinForm from '@/pages/auth/SchoolJoinForm'
+import { joinStaffStore } from '@/api/mypage'
 import './roster.css'
 
 function Frame({ children, logout }) {
@@ -55,12 +57,12 @@ function Correction({ school, entry, termLabel }) {
 
 function TeacherReview({ session, logout, children }) {
   const school = session.school
-  const { choice, saveChoice } = useTermChoice(session)
-  const { termId } = choice
+  const state = useTermChoice(session)
+  const termId = state.term?.termId ?? null
   const query = useScopedRead(
     session,
     [...ownRosterKey(school.schoolId), termId],
-    true,
+    state.list.isSuccess,
     (signal) => readOwnRoster(school.schoolId, termId, signal),
     { retry: false, refetchOnMount: 'always' },
   )
@@ -124,7 +126,7 @@ function TeacherReview({ session, logout, children }) {
     setReview(false)
     setCorrecting(false)
   }
-  const termLabel = `${choice.academicYear}학년도 ${choice.semester}학기`
+  const termLabel = state.term ? `${state.term.academicYear}학년도 ${state.term.semester}학기` : '학기 미선택'
   const assignment = entry?.term?.assignmentRecorded === false ? null : entry?.term
   const missingAssignment = termId === null ? '학기 연결 후 확인' : '이 학기 명부 미등록'
   return (
@@ -133,6 +135,7 @@ function TeacherReview({ session, logout, children }) {
         {school.name} · {termLabel}
       </p>
       <h1>내 교사 정보 확인</h1>
+      {!state.term && !editingTerm && <TermStatus state={state} />}
       {(query.isLoading || (query.isFetching && !entry && !query.isError)) && (
         <p role="status">학교 명부를 불러오고 있습니다.</p>
       )}
@@ -173,9 +176,14 @@ function TeacherReview({ session, logout, children }) {
           코드와 표시 이름으로 연결을 요청할 수 있습니다.
         </p>
       )}
+      {(legacy || linked) && <details>
+        <summary>이 학교의 본인 이름 확인·수정</summary>
+        <SchoolJoinForm initialCode={school.schoolCode} initialName={entry?.baseName || entry?.displayName || ''}
+          submit={joinStaffStore} label="학교별 이름 확정" onComplete={() => query.refetch()} />
+      </details>}
       {query.isError && !legacy && (
         <p role="alert">
-          명부를 확인하지 못했습니다. 학교와 학기 ID를 확인하고 다시 조회해
+          명부를 확인하지 못했습니다. 학교와 선택한 학기를 확인하고 다시 조회해
           주세요.
         </p>
       )}
@@ -215,13 +223,7 @@ function TeacherReview({ session, logout, children }) {
         )}
       </div>
       {editingTerm && (
-        <TermForm
-          current={choice}
-          onApply={(value) => {
-            saveChoice(value)
-            setEditingTerm(false)
-          }}
-        />
+        <TermForm session={session} state={state} onClose={() => setEditingTerm(false)} />
       )}
       {correcting && entry && (
         <Correction school={school.name} entry={entry} termLabel={termLabel} />

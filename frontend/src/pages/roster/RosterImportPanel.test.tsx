@@ -54,6 +54,9 @@ beforeEach(() => {
     let data: unknown
     if (config.method === 'post') posts.push(config.url!)
     switch (config.url) {
+      case '/api/v2/terms':
+        data = [{ termId: 11, academicYear: 2026, semester: 2, startDate: '2026-08-01', endDate: '2026-12-31' }]
+        break
       case '/api/mypage/active-school':
         data = school
         break
@@ -100,9 +103,9 @@ function open() {
   )
 }
 async function chooseTerm() {
-  fireEvent.click(await screen.findByRole('button', { name: '학기 선택' }))
-  fireEvent.change(screen.getByLabelText('학기 ID (선택)'), { target: { value: '11' } })
-  fireEvent.click(screen.getByRole('button', { name: '적용' }))
+  fireEvent.click(await screen.findByRole('button', { name: '2026학년도 2학기 변경' }))
+  expect((screen.getByLabelText('등록된 학기') as HTMLSelectElement).value).toBe('11')
+  fireEvent.click(screen.getByRole('button', { name: '선택한 학기 적용' }))
   await screen.findByText('이 학기에 등록된 교사가 없습니다.')
 }
 function file(contents = 'fixture') {

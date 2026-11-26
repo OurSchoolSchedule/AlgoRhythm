@@ -207,7 +207,7 @@ export async function listPasskeys(signal?: AbortSignal): Promise<PasskeyDevice[
 
 async function approval(
   ctx: Attempt,
-  operation: 'ADD' | 'DELETE',
+  operation: 'ADD' | 'DELETE' | 'DEMO_RESET',
   credentialId?: string,
 ) {
   const body = credentialId === undefined ? { operation } : { operation, credentialId }
@@ -234,4 +234,9 @@ export async function verifyCurrentPasskey(signal?: AbortSignal): Promise<void> 
   const data = await ceremony(attempt(signal), 'get', '/reauthentication/options', { operation: 'VERIFY' })
   if (!record(data) || data.verified !== true) throw new PasskeyError('PASSKEY_RESPONSE_INVALID')
   void updateSavedName(data)
+}
+
+export async function approveDemoReset(signal?: AbortSignal): Promise<string> {
+  const grant = await approval(attempt(signal), 'DEMO_RESET')
+  return grant.approvalToken
 }

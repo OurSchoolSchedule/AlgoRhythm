@@ -3,7 +3,9 @@ import { useLoadValidation } from '@/hooks/useLoadValidation'
 import { useCandidatePublication } from '@/hooks/useCandidatePublication'
 import { useGenerationJob } from '@/hooks/useGenerationJob'
 import { LoadValidationError } from '@/api/loadValidation'
-import { operationError, readAliases, readGenerationOptions } from '@/utils/operationInputs'
+import LoadFileForm from './LoadFileForm'
+import GenerationConditions from './GenerationConditions'
+import { operationError } from '@/utils/operationInputs'
 import ScheduleProgress from '@/components/schedule/ScheduleProgress'
 import CandidatePublication from './CandidatePublication'
 import TermWorkspace from './TermWorkspace'
@@ -11,11 +13,7 @@ import TermWorkspace from './TermWorkspace'
 function Generation({ term }) {
   const validation = useLoadValidation(term)
   const gen = useGenerationJob(term)
-  const [file, setFile] = useState(null),
-    [sheet, setSheet] = useState(''),
-    [aliases, setAliases] = useState('')
-  const [options, setOptions] = useState(''),
-    [receipt, setReceipt] = useState(null)
+  const [receipt, setReceipt] = useState(null)
   const [showJob, setShowJob] = useState(true),
     [error, setError] = useState(''),
     [busy, setBusy] = useState(false)
@@ -25,24 +23,17 @@ function Generation({ term }) {
     gen.submitting || gen.progress?.phase === 'queued' || gen.progress?.phase === 'running'
   const locked = busy || active || publication.isPublishing
   function edit() {
+    gen.discardFinished()
     setProblem(null)
     setReceipt(null)
     setShowJob(false)
     setError('')
   }
-  async function validate(e) {
-    e.preventDefault()
-    if (!file) return
+  async function validate(input) {
     edit()
     setBusy(true)
     try {
-      setReceipt(
-        await validation.validate({
-          file,
-          sheet: sheet.trim() || undefined,
-          subjectAliases: readAliases(aliases),
-        }),
-      )
+      setReceipt(await validation.validate(input))
     } catch (err) {
       if (err instanceof LoadValidationError) setProblem(err.problem)
       else setError(operationError(err))
@@ -50,15 +41,12 @@ function Generation({ term }) {
       setBusy(false)
     }
   }
-  async function generate() {
+  async function generate(request) {
     if (!receipt) return
     setError('')
     setShowJob(false)
     try {
-      await gen.start({
-        ...readGenerationOptions(options),
-        validatedLoadId: receipt.validatedLoadId,
-      })
+      await gen.start(request)
       setShowJob(true)
     } catch (err) {
       setError(operationError(err))
@@ -66,52 +54,20 @@ function Generation({ term }) {
   }
   return (
     <>
-      <section className="work-card">
-        <h2>시수표 검증</h2>
-        <form onSubmit={validate}>
-          <fieldset disabled={locked}>
-            <legend className="desk-sr">시수표 입력</legend>
-            <label>
-              시수표 엑셀 파일
-              <input
-                type="file"
-                required
-                accept=".xlsx"
-                onChange={(e) => {
-                  edit()
-                  setFile(e.target.files?.[0] ?? null)
-                }}
-              />
-            </label>
-            <details>
-              <summary>시트·과목 별칭 설정</summary>
-              <label>
-                시트 이름
-                <input
-                  value={sheet}
-                  onChange={(e) => {
-                    edit()
-                    setSheet(e.target.value)
-                  }}
-                />
-              </label>
-              <label>
-                과목 별칭 JSON
-                <textarea
-                  value={aliases}
-                  onChange={(e) => {
-                    edit()
-                    setAliases(e.target.value)
-                  }}
-                  placeholder='{"공수1": 20}'
-                />
-              </label>
-            </details>
-            <button className="work-primary" disabled={!file}>
-              시수표 검증
-            </button>
-          </fieldset>
-        </form>
+      <LoadFileForm
+        locked={locked}
+        onEdit={edit}
+        onValidate={validate}
+        status={
+          busy
+            ? '검증 중'
+            : receipt
+              ? '검증 완료'
+              : problem || error
+                ? '검증 결과 확인 필요'
+                : '검증 전'
+        }
+      >
         {busy && (
           <ScheduleProgress
             progress={validation.progress ?? { phase: 'uploading', percent: null }}
@@ -138,31 +94,26 @@ function Generation({ term }) {
             차시
           </p>
         )}
-      </section>
+      </LoadFileForm>
       <section className="work-card">
         <h2>시간표 후보 생성</h2>
-        <details>
-          <summary>교시·선호 조건 설정</summary>
-          <label>
-            편성 조건 JSON
-            <textarea
-              value={options}
-              disabled={locked}
-              onChange={(e) => {
-                setOptions(e.target.value)
-                setShowJob(false)
-              }}
-              aria-describedby="gen-options"
-            />
-          </label>
-          <p id="gen-options">
-            teachingSlots와 preferences를 입력할 수 있습니다. 검증 ID는 위 시수표의 응답값을
-            사용합니다.
-          </p>
-        </details>
-        <button disabled={!receipt || !gen.canStart || locked} onClick={generate}>
-          후보 생성
-        </button>
+        {receipt ? (
+          <GenerationConditions
+            key={receipt.validatedLoadId}
+            term={term}
+            receipt={receipt}
+            locked={locked}
+            canStart={gen.canStart}
+            onGenerate={generate}
+            onEdit={() => {
+              setShowJob(false)
+              gen.discardFinished()
+              setError('')
+            }}
+          />
+        ) : (
+          <p>시수표를 검증하면 운영 교시와 편성 조건을 선택할 수 있습니다.</p>
+        )}
         {gen.submitting && <p role="status">편성 요청 접수 중</p>}
         {showJob && gen.progress && !gen.statusError && (
           <ScheduleProgress progress={gen.progress} />
@@ -174,6 +125,9 @@ function Generation({ term }) {
               작업 다시 조회
             </button>
           </div>
+        )}
+        {showJob && gen.job?.state === 'READY' && gen.job.result.stopReason === 'TIME_LIMIT' && (
+          <p>탐색 제한 시간까지 찾은 후보를 평가 기준순으로 표시합니다.</p>
         )}
         {showJob && gen.job?.result?.detail && <p>{gen.job.result.detail}</p>}
       </section>
@@ -192,6 +146,8 @@ function Generation({ term }) {
             term={term}
             publication={publication}
             candidates={gen.candidates}
+            slots={gen.job?.teachingSlots}
+            objective={gen.job?.objective}
             onRestart={(revalidate) => {
               setShowJob(false)
               if (revalidate) setReceipt(null)

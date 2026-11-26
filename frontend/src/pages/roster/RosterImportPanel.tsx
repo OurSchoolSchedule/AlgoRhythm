@@ -6,7 +6,8 @@ import { useUpdateActiveStore } from '@/hooks/useMypage'
 import { queryKeys } from '@/hooks/queryKeys'
 import { useRosterImport } from '@/hooks/useRosterImport'
 import { useTermChoice } from '@/hooks/useTermChoice'
-import { Dialog, TermForm } from '@/pages/home/HomePanels'
+import TermForm, { TermStatus } from '@/pages/schedule/TermForm'
+import { Dialog } from '@/pages/home/HomePanels'
 import type { RosterReceipt, RosterScope } from '@/types/rosterImport'
 import { PreviewTable, SavedRoster } from './RosterTables'
 import './rosterImport.css'
@@ -202,7 +203,8 @@ function ImportForm({ scope }: { scope: RosterScope }) {
 }
 
 function ScopedPanel({ session }: { session: HomeSession }) {
-  const { choice, term, saveChoice } = useTermChoice(session)
+  const state = useTermChoice(session)
+  const { term } = state
   const [editing, setEditing] = useState(false)
   const schools = useScopedRead(session, queryKeys.mypage.ownerStores(), true, () =>
     getOwnerStores(),
@@ -240,7 +242,7 @@ function ScopedPanel({ session }: { session: HomeSession }) {
           <span>대상 학기</span>
           <button className="btn btn-outline" onClick={() => setEditing(true)}>
             {term
-              ? `${choice.academicYear}학년도 ${choice.semester}학기 · ID ${term.termId} 변경`
+              ? `${term.academicYear}학년도 ${term.semester}학기 변경`
               : '학기 선택'}
           </button>
         </div>
@@ -259,19 +261,13 @@ function ScopedPanel({ session }: { session: HomeSession }) {
       {changeSchool.isError && <p role="alert">활성 학교 전환에 실패했습니다.</p>}
       {editing && (
         <Dialog title="업무 학기 설정" onClose={() => setEditing(false)}>
-          <TermForm
-            current={choice}
-            onApply={(value: typeof choice) => {
-              saveChoice(value)
-              setEditing(false)
-            }}
-          />
+          <TermForm session={session} state={state} onClose={() => setEditing(false)} />
         </Dialog>
       )}
       {term ? (
         <ImportForm key={JSON.stringify(term)} scope={term} />
       ) : (
-        <p>학교에서 발급한 학기 ID를 연결하면 양식을 받을 수 있습니다.</p>
+        <TermStatus state={state} onRegister={() => setEditing(true)} />
       )}
     </section>
   )
