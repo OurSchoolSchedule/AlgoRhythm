@@ -1,8 +1,11 @@
 import { DetailHeading } from "@/components/ui/DetailPage";
 import { useRef, useState } from "react";
 import { createSubject } from "@/api";
-import LoadError from "@/components/LoadError.jsx";
-import { useCreateSubject, useDeleteSubject, useSubjects, useUpdateSubject } from "@/hooks";
+import TeachingDirectory from "./TeachingDirectory";
+import "./teaching-directory.css";
+import { useHomeSession } from "@/hooks/useHomeSession";
+import { useTermChoice } from "@/hooks/useTermChoice";
+import { useCreateSubject } from "@/hooks";
 import { queryKeys } from "@/hooks/queryKeys.js";
 import { useQueryClient } from "@tanstack/react-query";
 import { getApiErrorMessage } from "@/utils/timetableGeneration.js";
@@ -10,19 +13,14 @@ import { subjectNamesFromCsv } from "@/utils/subjectCsv.js";
 
 export default function SubjectManageView() {
   const queryClient = useQueryClient();
-  const subjects = useSubjects();
+  const session = useHomeSession();
+  const { term } = useTermChoice(session);
   const create = useCreateSubject();
-  const update = useUpdateSubject();
-  const remove = useDeleteSubject();
   const fileRef = useRef(null);
   const [name, setName] = useState("");
-  const [editingId, setEditingId] = useState(null);
-  const [editingName, setEditingName] = useState("");
   const [csvMessage, setCsvMessage] = useState("");
   const [csvError, setCsvError] = useState(false);
   const [csvPending, setCsvPending] = useState(false);
-
-  const rows = subjects.data ?? [];
 
   const handleAdd = (event) => {
     event.preventDefault();
@@ -93,63 +91,7 @@ export default function SubjectManageView() {
           <p role={csvError ? "alert" : "status"} className={csvError ? "detail-error" : "detail-success"}>{csvMessage}</p>
         )}
       </section>
-      <section className="detail-card" aria-labelledby="subject-list">
-        <h2 id="subject-list">등록된 과목{!subjects.isLoading && !subjects.isError && <small className="detail-count">{rows.length}개</small>}</h2>
-        {subjects.isLoading && <p style={{ color: "var(--color-text-muted)", fontSize: 13 }}>불러오는 중...</p>}
-        {subjects.isError && (
-          <LoadError onRetry={() => subjects.refetch()} />
-        )}
-        {!subjects.isLoading && !subjects.isError && rows.length === 0 && (
-          <p className="subject-help">등록된 과목이 없습니다.</p>
-        )}
-        {!subjects.isError && rows.map((subject) => (
-          <div key={subject.id} className="subject-row list-row">
-            {editingId === subject.id ? (
-              <input
-                aria-label="수정할 과목명"
-                value={editingName}
-                onChange={(event) => setEditingName(event.target.value)}
-                className="subject-compose-input"
-                style={{ flex: 1, width: "auto" }}
-              />
-            ) : (
-              <span style={{ flex: 1, color: "var(--color-text)" }}>{subject.name}</span>
-            )}
-            {editingId === subject.id ? (
-              <button
-                type="button"
-                disabled={update.isPending || !editingName.trim()}
-                onClick={() => update.mutate(
-                  { subjectId: subject.id, payload: { name: editingName.trim() } },
-                  { onSuccess: () => setEditingId(null) },
-                )}
-                className="detail-button"
-              >저장</button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingId(subject.id);
-                  setEditingName(subject.name ?? "");
-                }}
-                className="detail-button"
-              >수정</button>
-            )}
-            <button
-              type="button"
-              disabled={remove.isPending}
-              onClick={() => remove.mutate(subject.id)}
-              className="detail-button detail-danger"
-            >삭제</button>
-          </div>
-        ))}
-        {(update.isError || remove.isError) && (
-          <p className="detail-error" role="alert">
-            {getApiErrorMessage(update.error || remove.error, "과목을 바꾸지 못했습니다.")}{" "}
-            <button type="button" className="history-link" onClick={() => { update.reset(); remove.reset(); }}>다시 시도</button>
-          </p>
-        )}
-      </section>
+      <TeachingDirectory key={term?.termId ?? "catalog"} term={term} session={session} />
     </div>
   );
 }

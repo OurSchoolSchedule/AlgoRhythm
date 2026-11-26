@@ -1,0 +1,58 @@
+.directory-tools,
+.directory-modes,
+.directory-actions,
+.directory-tools label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.directory-tools {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.directory-tools label {
+  max-width: 100%;
+}
+.directory-tools input,
+.directory-row input {
+  min-width: 0;
+  max-width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--surface-1);
+  color: var(--color-text);
+}
+.detail-page .directory-modes button[aria-pressed='true'] {
+  background: var(--color-primary-button);
+  color: var(--color-on-primary);
+}
+.directory-count {
+  margin-block: 1rem 0.5rem;
+  color: var(--color-text-secondary);
+}
+.directory-list {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.directory-row {
+  display: grid;
+  grid-template-columns: minmax(7rem, 1fr) minmax(6rem, 2fr) auto;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--color-border);
+  overflow-wrap: anywhere;
+}
+.directory-actions {
+  grid-column: -2;
+}
+@media (max-width: 640px) {
+  .directory-row {
+    grid-template-columns: 1fr;
+  }
+  .directory-actions {
+    grid-column: auto;
+  }
+}
