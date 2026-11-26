@@ -9,8 +9,6 @@ import { queryKeys } from '@/hooks/queryKeys.js'
 import ScheduleProgress from '@/components/schedule/ScheduleProgress'
 import ScheduleCreateView from './ScheduleCreateView'
 import LessonChangesView from './LessonChangesView'
-import { readAliases, readGenerationOptions } from '@/utils/operationInputs'
-import demoJson from '@/test/fixtures/school42/generate_request.json?raw'
 
 const base = '/api/v2/terms/547001'
 const job = {
@@ -123,6 +121,7 @@ it('학기 등록과 셀 오류 수정 후 후보 한 개를 표시하고 게시
   adapter((config) => {
     const url = config.url
     if (url === '/api/v2/terms') return [201, { termId: 547001 }]
+    if (url === '/api/school-setting/periods') return [200, [{ periodNumber: 1 }]]
     if (url === base + '/load-imports/validate') {
       if (++uploads === 1)
         return failure(config, 422, {
@@ -145,12 +144,17 @@ it('학기 등록과 셀 오류 수정 후 후보 한 개를 표시하고 게시
           sheet: '시수표',
           validatedLoadId: 'load-42',
           totalPeriods: 1,
-          demands: [{}],
+          demands: [{ teacherId: '2', classId: '3', subjectId: '1', weeklyPeriods: 1 }],
         },
       ]
     }
     if (url === base + '/generations') {
-      expect(JSON.parse(config.data)).toEqual({ validatedLoadId: 'load-42' })
+      expect(JSON.parse(config.data)).toEqual({
+        validatedLoadId: 'load-42',
+        preferences: [],
+        objective: 'BALANCED',
+        teachingSlots: ['MON', 'TUE', 'WED', 'THU', 'FRI'].map((day) => ({ day, period: 1 })),
+      })
       return [202, job]
     }
     if (url === job.statusUrl) {
@@ -193,7 +197,11 @@ it('학기 등록과 셀 오류 수정 후 후보 한 개를 표시하고 게시
   expect(alert.textContent).toMatch(/시수표 · C2.*2행.*C열.*INVALID_HOURS/)
   fireEvent.submit(form)
   await screen.findByText(/검증 완료 · 배정 1건/)
-  fireEvent.click(screen.getByRole('button', { name: '후보 생성' }))
+  const generate = screen.getByRole('button', { name: '후보 생성' }) as HTMLButtonElement
+  expect(generate.disabled).toBe(true)
+  fireEvent.click(await screen.findByRole('checkbox', { name: /학급별 공강/ }))
+  expect(generate.disabled).toBe(false)
+  fireEvent.click(generate)
   const candidates = await screen.findAllByRole('radio')
   expect(candidates).toHaveLength(1)
   fireEvent.click(candidates[0])
@@ -250,16 +258,65 @@ it.each([false, true])(
   },
 )
 
-it('School42의 조건 파일은 현재 검증 ID를 보존하고 잘못된 편성 조건과 별칭을 검출한다', () => {
-  const input = JSON.parse(demoJson)
-  expect(readGenerationOptions(demoJson)).toEqual({
-    teachingSlots: input.teachingSlots,
-    preferences: input.preferences,
+it('학교 총합이 같아도 초과 학급을 차단하고, 파일을 교체하면 공강 동의를 다시 받는다', async () => {
+  const loads = [
+    [31, 33],
+    [30, 32],
+    [30, 32],
+  ]
+  let submissions = 0
+  adapter((config) => {
+    if (config.url === '/api/v2/terms') return [201, { termId: 547001 }]
+    if (config.url === '/api/school-setting/periods')
+      return [200, Array.from({ length: 7 }, (_, i) => ({ periodNumber: i + 1 }))]
+    if (config.url === base + '/load-imports/validate') {
+      const hours = loads.shift()!
+      return [
+        200,
+        {
+          sheet: '시수표',
+          validatedLoadId: 'load-' + loads.length,
+          totalPeriods: hours[0] + hours[1],
+          demands: hours.map((weeklyPeriods, i) => ({
+            teacherId: '2',
+            subjectId: '1',
+            classId: String(i + 1),
+            weeklyPeriods,
+          })),
+        },
+      ]
+    }
+    if (config.url === base + '/generations') submissions++
+    return [200, []]
   })
-  expect(readGenerationOptions(demoJson)).not.toHaveProperty('validatedLoadId')
-  expect(() => readGenerationOptions('{"teachingSlots":[{"day":"MON","period":0}]}')).toThrow()
-  expect(readAliases('{"공수":42}')).toEqual({ 공수: 42 })
-  expect(() => readAliases('{"공수":"42"}')).toThrow()
+  mount()
+  register()
+  const file = await screen.findByLabelText('시수표 엑셀 파일')
+  async function upload(name: string) {
+    fireEvent.change(file, { target: { files: [new File(['load'], name)] } })
+    expect(screen.queryByRole('checkbox', { name: /학급별 공강/ })).toBeNull()
+    fireEvent.submit((file as HTMLInputElement).form!)
+    await screen.findByText(/검증 완료 · 배정 2건/)
+    await screen.findByLabelText('월요일 마지막 교시')
+    for (const d of ['화', '수', '금']) {
+      fireEvent.change(screen.getByLabelText(d + '요일 마지막 교시'), { target: { value: '6' } })
+    }
+  }
+  await upload('31+33.xlsx')
+  expect(screen.getByText(/33차시 · 1차시 초과/)).toBeTruthy()
+  expect((screen.getByRole('button', { name: '후보 생성' }) as HTMLButtonElement).disabled).toBe(
+    true,
+  )
+  await upload('30+32.xlsx')
+  const generate = screen.getByRole('button', { name: '후보 생성' }) as HTMLButtonElement
+  expect(generate.disabled).toBe(true)
+  fireEvent.click(screen.getByRole('checkbox', { name: /학급별 공강/ }))
+  expect(generate.disabled).toBe(false)
+  await upload('30+32-copy.xlsx')
+  expect((screen.getByRole('checkbox', { name: /학급별 공강/ }) as HTMLInputElement).checked).toBe(
+    false,
+  )
+  expect(submissions).toBe(0)
 })
 
 it.each(['lost-response', 'conflict'] as const)(
