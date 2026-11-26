@@ -12,7 +12,6 @@ vi.mock('@/api/passkeys', async (load) => ({
   addPasskey: vi.fn(),
   listPasskeys: vi.fn(),
   removePasskey: vi.fn(),
-  rotateRecoveryCode: vi.fn(),
   supportsPasskeys: vi.fn(),
 }))
 
@@ -56,11 +55,6 @@ async function listed() {
 function button(name: string | RegExp) {
   return screen.getByRole<HTMLButtonElement>('button', { name })
 }
-function rotate() {
-  fireEvent.click(button('복구 코드 재발급'))
-  fireEvent.click(button('확인 후 재발급'))
-}
-
 it('does not request credentials without a work session, including after logout', async () => {
   clearTokens()
   display()
@@ -81,7 +75,7 @@ it('lists credentials on unsupported browsers and protects the last credential',
   expect(screen.getByText(/브라우저에서는 패스키를 사용할 수 없습니다/)).toBeTruthy()
   expect(button(/철회/).disabled).toBe(true)
   expect(button('패스키 추가').disabled).toBe(true)
-  expect(button('복구 코드 재발급').disabled).toBe(true)
+  expect(screen.queryByRole('button', { name: /복구 코드/ })).toBeNull()
 })
 
 it('distinguishes list errors from empty accounts and allows a list retry', async () => {
@@ -153,26 +147,6 @@ it('refreshes the list after LAST_PASSKEY without replaying the approval', async
   expect(api.removePasskey).toHaveBeenCalledTimes(1)
 })
 
-it('displays the rotated code once without putting it in any persistent store or cache', async () => {
-  const value = 'a-test-recovery-code'
-  vi.mocked(api.rotateRecoveryCode).mockResolvedValue(value)
-  display()
-  await listed()
-  rotate()
-  await screen.findByText(value)
-  expect(button('복구 코드 재발급').disabled).toBe(true)
-  expect(JSON.stringify(localStorage)).not.toContain(value)
-  expect(JSON.stringify(sessionStorage)).not.toContain(value)
-  expect(JSON.stringify(cache.getQueriesData({}))).not.toContain(value)
-  expect(cache.getMutationCache().getAll()).toHaveLength(0)
-  fireEvent.click(button('저장했어요'))
-  expect(screen.queryByText(value)).toBeNull()
-  cleanup()
-  display()
-  await listed()
-  expect(screen.queryByText(value)).toBeNull()
-})
-
 it('aborts account changes and ignores an old device session delivered after account switch', async () => {
   const result = deferred<WorkSession>()
   vi.mocked(api.addPasskey).mockReturnValue(result.promise)
@@ -186,31 +160,4 @@ it('aborts account changes and ignores an old device session delivered after acc
   await screen.findByText(/첫 패스키를 등록하세요/)
   expect(screen.queryByRole('listitem')).toBeNull()
   expect(getAccessToken()).toBe(other.accessToken)
-})
-
-it('cancels an unfinished rotation when closed and discards a late recovery code', async () => {
-  const result = deferred<string>()
-  vi.mocked(api.rotateRecoveryCode).mockReturnValue(result.promise)
-  const view = display()
-  await listed()
-  rotate()
-  view.unmount()
-  expect(vi.mocked(api.rotateRecoveryCode).mock.calls[0][0]?.aborted).toBe(true)
-  display()
-  await listed()
-  await act(async () => result.resolve('discarded-code'))
-  expect(screen.queryByText('discarded-code')).toBeNull()
-  expect(JSON.stringify(localStorage)).not.toContain('discarded-code')
-})
-
-it('immediately hides a visible recovery code on session replacement, even for the same account', async () => {
-  vi.mocked(api.rotateRecoveryCode).mockResolvedValue('previous-session-code')
-  display()
-  await listed()
-  rotate()
-  await screen.findByText('previous-session-code')
-  act(() => setTokens(fresh))
-  expect(screen.queryByText('previous-session-code')).toBeNull()
-  await listed()
-  expect(button('복구 코드 재발급').disabled).toBe(false)
 })

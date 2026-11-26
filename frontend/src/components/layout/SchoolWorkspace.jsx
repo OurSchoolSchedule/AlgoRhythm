@@ -5,6 +5,7 @@ import { useTermChoice } from '@/hooks/useTermChoice'
 import { getStoredTheme, setThemePreference } from '@/theme'
 import { toISODate } from '@/utils'
 import HomeContent from '@/pages/home/HomeContent'
+import PasskeyMenu from '@/pages/auth/PasskeyMenu'
 import { Dialog, Icon, Profile } from '@/pages/home/HomePanels'
 import '@/pages/home/home.css'
 import TimetableView from '@/pages/schedule/TimetableView'
@@ -21,7 +22,6 @@ import { MobileNavigation, WorkspaceNavigation } from './WorkspaceNavigation'
 
 const ScheduleCreateView = lazy(() => import('@/pages/schedule/ScheduleCreateView'))
 const LessonChangesView = lazy(() => import('@/pages/schedule/LessonChangesView'))
-const PasskeySettings = lazy(() => import('@/pages/auth/PasskeySettings'))
 const phoneQuery = '(max-width: 719px)'
 
 function workspaceMenu(menus) {
@@ -106,7 +106,7 @@ function DetailProfile({ session, openPanel }) {
   )
 }
 
-function Workspace({ session, navigate: onNavigate, onLogout, onOpenPasskeys }) {
+function Workspace({ session, navigate: onNavigate, onLogout, passkeyButton }) {
   const [page, setPage] = useState({ view: 'home' })
   const [panel, openPanel] = useState(null)
   const [theme, setTheme] = useState(getStoredTheme)
@@ -151,17 +151,7 @@ function Workspace({ session, navigate: onNavigate, onLogout, onOpenPasskeys }) 
               setTheme(value)
             }}
           />
-          {session.userId != null && (
-            <button
-              type="button"
-              className="desk-icon"
-              aria-label="패스키 관리"
-              title="패스키 관리"
-              onClick={onOpenPasskeys}
-            >
-              <Icon name="settings" />
-            </button>
-          )}
+          {session.userId != null && passkeyButton}
           {menus.notifications && (
             <button
               className="desk-icon desk-bell"
@@ -224,30 +214,18 @@ function Workspace({ session, navigate: onNavigate, onLogout, onOpenPasskeys }) 
 }
 
 function AccountWorkspace({ session, ...props }) {
-  const [passkeysOpen, setPasskeysOpen] = useState(false)
   const scope = session.scope
   return (
-    <>
-      <Workspace
-        key={[
-          scope.userId,
-          scope.generation,
-          scope.schoolId,
-          scope.position,
-          scope.employment,
-        ].join('/')}
-        session={session}
-        onOpenPasskeys={() => setPasskeysOpen(true)}
-        {...props}
-      />
-      {passkeysOpen && session.userId != null && (
-        <Dialog title="패스키 관리" onClose={() => setPasskeysOpen(false)}>
-          <Suspense fallback={<p role="status">등록 기기를 불러오는 중입니다.</p>}>
-            <PasskeySettings />
-          </Suspense>
-        </Dialog>
+    <PasskeyMenu>
+      {(passkeyButton) => (
+        <Workspace
+          key={[scope.userId, scope.generation, scope.schoolId, scope.position, scope.employment].join('/')}
+          session={session}
+          passkeyButton={passkeyButton}
+          {...props}
+        />
       )}
-    </>
+    </PasskeyMenu>
   )
 }
 
