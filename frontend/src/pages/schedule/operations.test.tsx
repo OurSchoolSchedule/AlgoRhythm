@@ -197,7 +197,7 @@ it('학기 등록과 셀 오류 수정 후 후보 한 개를 표시하고 게시
   expect(alert.textContent).toMatch(/시수표 · C2.*2행.*C열.*INVALID_HOURS/)
   fireEvent.submit(form)
   await screen.findByText(/검증 완료 · 배정 1건/)
-  const generate = screen.getByRole('button', { name: '후보 생성' }) as HTMLButtonElement
+  const generate = (await screen.findByRole('button', { name: '후보 생성' })) as HTMLButtonElement
   expect(generate.disabled).toBe(true)
   fireEvent.click(await screen.findByRole('checkbox', { name: /학급별 공강/ }))
   expect(generate.disabled).toBe(false)
