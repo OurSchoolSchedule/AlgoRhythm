@@ -11,7 +11,7 @@ vi.mock('@/hooks', () => ({
   useConfirmVoiceCommand: () => ({ reset: vi.fn() }),
 }))
 
-const scope = { revision: 4, users: 44, schools: 1 }
+const scope = { schoolId: 540001, termId: 547001, round: 4, jobs: 2, versions: 1 }
 beforeEach(() => { vi.resetAllMocks(); api.get.mockResolvedValue({ data: scope }) })
 afterEach(cleanup)
 function open() {
@@ -36,7 +36,7 @@ it('requires passkey approval and sends scope and secret only to the reset API',
   open()
   const input = await screen.findByLabelText('초기화를 진행하려면 비밀번호를 입력하세요')
   fireEvent.change(input, { target: { value: 'test-pin' } })
-  fireEvent.click(screen.getByRole('button', { name: '전체 시연 데이터 초기화' }))
+  fireEvent.click(screen.getByRole('button', { name: 'School42 시간표만 초기화' }))
   await screen.findByRole('alert')
   expect(api.post).toHaveBeenCalledExactlyOnceWith('/api/demo-reset',
     { scope, password: 'test-pin', approvalToken: 'one-use' }, expect.anything())
@@ -47,6 +47,17 @@ it('does not offer deletion to an unauthorized account', async () => {
   api.get.mockRejectedValue({ response: { status: 403, data: { message: '관리자만 실행할 수 있습니다.' } } })
   open()
   await screen.findByRole('alert')
-  expect(screen.queryByRole('button', { name: '전체 시연 데이터 초기화' })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'School42 시간표만 초기화' })).toBeNull()
+  expect(api.post).not.toHaveBeenCalled()
+})
+
+it('refuses an old global reset server or a different target term', async () => {
+  for (const data of [{ revision: 4, users: 44, schools: 1 }, { ...scope, termId: 999 }]) {
+    api.get.mockResolvedValueOnce({ data })
+    open()
+    await screen.findByRole('alert')
+    expect(screen.queryByRole('button', { name: 'School42 시간표만 초기화' })).toBeNull()
+    cleanup()
+  }
   expect(api.post).not.toHaveBeenCalled()
 })
