@@ -2,11 +2,10 @@ import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { ownRosterKey, readOwnRoster } from '@/api/ownRoster'
 import { getStaffStores, joinStaffStore } from '@/api/mypage'
-import { getSessionVersion } from '@/api/tokenStorage'
+import SchoolJoinForm from '@/pages/auth/SchoolJoinForm'
 import { useScopedRead } from '@/hooks/useHomeSession'
 import { useUpdateActiveStore } from '@/hooks/useMypage'
 import { queryKeys } from '@/hooks/queryKeys'
-import { getApiErrorMessage } from '@/utils/timetableGeneration'
 
 const labels = {
   HIRED: '재직 중',
@@ -39,7 +38,6 @@ export default function Schools({ session }) {
   )
   const activate = useUpdateActiveStore()
   const [message, setMessage] = useState('')
-  const [sending, setSending] = useState(false)
   async function refresh() {
     const latest = await schools.refetch()
     await cache.invalidateQueries({
@@ -52,31 +50,6 @@ export default function Schools({ session }) {
       session.school
     )
       await session.active.refetch()
-  }
-  async function join(event) {
-    event.preventDefault()
-    const form = event.currentTarget
-    const values = new FormData(form)
-    const schoolCode = values.get('schoolCode').trim()
-    const displayName = values.get('displayName').trim()
-    if (!schoolCode || !displayName || sending) return
-    setSending(true)
-    setMessage('')
-    try {
-      const result = await joinStaffStore({ schoolCode, displayName })
-      if (session.identity.generation !== getSessionVersion()) return
-      setMessage(
-        result.employmentStatus === 'PENDING'
-          ? '가입 요청을 접수했습니다. 관리자 승인 대기 중입니다.'
-          : '학교 연결 상태를 확인하세요.',
-      )
-      form.reset()
-      await refresh()
-    } catch (error) {
-      setMessage(getApiErrorMessage(error, '학교 가입 요청에 실패했습니다.'))
-    } finally {
-      setSending(false)
-    }
   }
   return (
     <section className="roster-schools" aria-label="학교 가입과 승인 상태">
@@ -118,31 +91,11 @@ export default function Schools({ session }) {
       <button type="button" className="btn" onClick={refresh}>
         승인 상태 새로고침
       </button>
-      <form onSubmit={join}>
-        <h3>학교 가입 요청</h3>
-        <label>
-          학교 코드
-          <input
-            name="schoolCode"
-            required
-            maxLength={100}
-            pattern={'.*\\S.*'}
-          />
-        </label>
-        <label>
-          학교 표시 이름
-          <input
-            name="displayName"
-            autoComplete="name"
-            required
-            maxLength={100}
-            pattern={'.*\\S.*'}
-          />
-        </label>
-        <button className="btn btn-primary" disabled={sending}>
-          가입 요청
-        </button>
-      </form>
+      <h3>학교 가입 요청</h3>
+      <SchoolJoinForm submit={joinStaffStore} onComplete={async result => {
+        setMessage(result.employmentStatus === 'PENDING' ? '가입 요청을 접수했습니다. 관리자 승인 대기 중입니다.' : '학교 연결 상태를 확인하세요.')
+        await refresh()
+      }} />
       {message && <p role="status">{message}</p>}
     </section>
   )

@@ -1,3 +1,4 @@
+import SchoolJoinForm from '@/pages/auth/SchoolJoinForm'
 import { useContext, useState } from 'react'
 import { RosterReviewContext } from '@/pages/roster/RosterReviewContext'
 import {
@@ -44,8 +45,6 @@ export default function ProfileSchoolDialog({ isAdmin, onClose }) {
   const me = profileQuery.data
   const [draft, setDraft] = useState(null)
   const [schoolDraft, setSchoolDraft] = useState(null)
-  const [joinCode, setJoinCode] = useState('')
-  const [displayName, setDisplayName] = useState('')
   const [hireDate, setHireDate] = useState('')
   const [message, setMessage] = useState('')
 
@@ -108,22 +107,6 @@ export default function ProfileSchoolDialog({ isAdmin, onClose }) {
     }
   }
 
-  const handleJoin = async () => {
-    setMessage('')
-    try {
-      const result = await joinSchool.mutateAsync({
-        displayName: displayName.trim(),
-        schoolCode: joinCode.trim(),
-        hireDate: hireDate || undefined,
-      })
-      setJoinCode('')
-      setDisplayName('')
-      setMessage(result.employmentStatus === 'PENDING' ? '학교 가입 승인 대기 중입니다.' : '학교 연결 상태를 확인하세요.')
-    } catch (error) {
-      setMessage(getApiErrorMessage(error, '학교 가입에 실패했습니다.'))
-    }
-  }
-
   return (
     <div
       role="dialog"
@@ -163,7 +146,7 @@ export default function ProfileSchoolDialog({ isAdmin, onClose }) {
         <section style={{ marginBottom: 16 }}>
           <h3 style={sectionTitle}>계정 정보</h3>
           {!isAdmin && onReviewRoster && <button className="btn" type="button" onClick={onReviewRoster}>학교 명부 다시 확인</button>}
-          <label style={labelStyle}>이름
+          <label style={labelStyle}>계정 이름
             <input
               value={username}
               onChange={(e) => setDraft((prev) => ({ username: e.target.value, email: prev?.email ?? email }))}
@@ -229,23 +212,16 @@ export default function ProfileSchoolDialog({ isAdmin, onClose }) {
           </section>
         )}
 
-        {!isAdmin && (
-          <section style={{ marginBottom: 16 }}>
-            <h3 style={sectionTitle}>학교 가입</h3>
-            <label style={labelStyle}>학교 코드
-              <input value={joinCode} onChange={(e) => setJoinCode(e.target.value)} style={inputStyle} />
-            </label>
-            <label style={labelStyle}>학교 표시 이름
-              <input value={displayName} onChange={e => setDisplayName(e.target.value)} maxLength={100} style={inputStyle} />
-            </label>
-            <label style={labelStyle}>고용일
-              <input type="date" value={hireDate} onChange={(e) => setHireDate(e.target.value)} style={inputStyle} />
-            </label>
-            <button type="button" className="tt-create" disabled={busy || !joinCode.trim() || !displayName.trim()} onClick={handleJoin} style={{ marginTop: 8 }}>
-              가입
-            </button>
-          </section>
-        )}
+        <section style={{ marginBottom: 16 }}>
+          <h3 style={sectionTitle}>기존 학교 가입 · 학교별 이름 확인</h3>
+          <SchoolJoinForm initialCode={active.data?.schoolCode || ''} submit={input => joinSchool.mutateAsync(input)}
+            onComplete={async result => {
+              setMessage(result.employmentStatus === 'PENDING' ? '학교 가입 승인 대기 중입니다.' : '학교별 이름을 확인했습니다.')
+              await profileQuery.refetch()
+            }} >
+            <label style={labelStyle}>고용일 (선택)<input type="date" name="hireDate" /></label>
+          </SchoolJoinForm>
+        </section>
 
         <section>
           <h3 style={sectionTitle}>내 학교 목록</h3>
