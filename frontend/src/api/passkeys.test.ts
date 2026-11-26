@@ -8,7 +8,7 @@ import {
   recoverPasskey,
   registerPasskey,
   removePasskey,
-  rotateRecoveryCode,
+  verifyCurrentPasskey,
   supportsPasskeys,
 } from './passkeys'
 import { clearTokens } from './tokenStorage.js'
@@ -28,6 +28,7 @@ const registration = {
 }
 
 class BrowserCredential {
+  static signalCurrentUserDetails = vi.fn()
   static parseCreationOptionsFromJSON = vi.fn(() => ({
     challenge: new Uint8Array([1]),
     authenticatorSelection: { residentKey: 'required' },
@@ -62,13 +63,13 @@ afterEach(() => {
 })
 
 describe('로그인 및 분실 복구', () => {
-  it('최초 등록 옵션을 WebAuthn으로 변환하고 완료 때 세션과 복구 코드를 전달한다', async () => {
+  it('최초 등록 옵션을 WebAuthn으로 변환하고 완료 때 세션만 전달한다', async () => {
     const signal = new AbortController().signal
     responses(envelope('register'), recovered)
-    await expect(registerPasskey('email-grant', signal)).resolves.toEqual(recovered)
+    await expect(registerPasskey('email-grant', signal)).resolves.toEqual(work)
     expect(requests()).toEqual([
       ['post', '/registration/options', { flowToken: 'email-grant' }],
-      ['post', '/registration/finish', { ceremonyId: 'register', credential: registration }],
+      ['post', '/registration/finish', { ceremonyId: 'register', credential: registration, includeRecoveryCode: false }],
     ])
     expect(BrowserCredential.parseCreationOptionsFromJSON).toHaveBeenCalledWith(publicKey)
     expect(create).toHaveBeenCalledWith({
@@ -100,12 +101,12 @@ describe('로그인 및 분실 복구', () => {
     })
   })
 
-  it('복구에는 이메일 제한 토큰과 기존 복구 코드를 함께 보내고 새 복구 코드를 돌려준다', async () => {
+  it('복구에는 이메일 제한 토큰과 기존 복구 코드를 함께 보내고 세션만 돌려준다', async () => {
     responses(envelope('recover'), recovered)
-    await expect(recoverPasskey('verified-email', 'previous-code')).resolves.toEqual(recovered)
+    await expect(recoverPasskey('verified-email', 'previous-code')).resolves.toEqual(work)
     expect(requests()).toEqual([
       ['post', '/recovery/options', { flowToken: 'verified-email', recoveryCode: 'previous-code' }],
-      ['post', '/registration/finish', { ceremonyId: 'recover', credential: registration }],
+      ['post', '/registration/finish', { ceremonyId: 'recover', credential: registration, includeRecoveryCode: false }],
     ])
   })
 
@@ -134,13 +135,13 @@ describe('로그인 및 분실 복구', () => {
     expect(requests().every(([, path]) => path === '/authentication/options')).toBe(true)
   })
 
-  it('잘못된 옵션, 불완전한 업무 세션, 복구 코드가 누락된 복구 응답을 거부한다', async () => {
+  it('잘못된 옵션, 불완전한 업무 세션, 세션이 누락된 복구 응답을 거부한다', async () => {
     responses(
       { publicKey },
       envelope('login'),
       { approvalToken: 'wrong-kind' },
       envelope('recover'),
-      work,
+      {},
     )
     await expect(loginWithPasskey()).rejects.toMatchObject({ code: 'PASSKEY_RESPONSE_INVALID' })
     expect(get).not.toHaveBeenCalled()
@@ -173,28 +174,30 @@ describe('기기 관리 재인증', () => {
       ['post', '/reauthentication/options', { operation: 'ADD' }],
       ['post', '/authentication/finish', { ceremonyId: 'reauth', credential: assertion }],
       ['post', '/credentials/options', { approvalToken: 'add-grant' }],
-      ['post', '/registration/finish', { ceremonyId: 'additional', credential: registration }],
+      ['post', '/registration/finish', { ceremonyId: 'additional', credential: registration, includeRecoveryCode: false }],
     ])
   })
 
-  it('선택한 기기에 한정한 승인으로 철회하고 별도의 승인으로 복구 코드를 회전한다', async () => {
-    responses(
-      envelope('delete'),
-      { approvalToken: 'delete-grant' },
-      undefined,
-      envelope('rotate'),
-      { approvalToken: 'rotate-grant' },
-      { recoveryCode: 'rotated' },
-    )
+  it('철회 승인은 선택한 기기에만 사용한다', async () => {
+    responses(envelope('delete'), { approvalToken: 'delete-grant' }, undefined)
     await expect(removePasskey('key_01-')).resolves.toBeUndefined()
-    await expect(rotateRecoveryCode()).resolves.toBe('rotated')
     expect(requests()).toEqual([
       ['post', '/reauthentication/options', { operation: 'DELETE', credentialId: 'key_01-' }],
       ['post', '/authentication/finish', { ceremonyId: 'delete', credential: assertion }],
       ['delete', '/credentials/key_01-', { approvalToken: 'delete-grant' }],
-      ['post', '/reauthentication/options', { operation: 'ROTATE' }],
-      ['post', '/authentication/finish', { ceremonyId: 'rotate', credential: assertion }],
-      ['post', '/recovery-code', { approvalToken: 'rotate-grant' }],
+    ])
+  })
+
+  it('열쇠 확인은 매번 새 옵션을 받고 관리 승인이나 업무 세션을 성공으로 처리하지 않는다', async () => {
+    const details = { rpId: location.hostname, userId: 'b3BhcXVl', name: 'teacher@example.org', displayName: 'teacher@example.org' }
+    BrowserCredential.signalCurrentUserDetails.mockRejectedValueOnce(new Error('unavailable'))
+    responses(envelope('first'), { verified: true, passkeyUser: details }, envelope('second'), { approvalToken: 'not-verify' })
+    await expect(verifyCurrentPasskey()).resolves.toBeUndefined()
+    expect(BrowserCredential.signalCurrentUserDetails).toHaveBeenCalledWith(details)
+    await expect(verifyCurrentPasskey()).rejects.toMatchObject({ code: 'PASSKEY_RESPONSE_INVALID' })
+    expect(requests().map(row => row[2])).toEqual([
+      { operation: 'VERIFY' }, { ceremonyId: 'first', credential: assertion },
+      { operation: 'VERIFY' }, { ceremonyId: 'second', credential: assertion },
     ])
   })
 

@@ -3,7 +3,6 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
-  getAccessToken,
   markPendingSchool,
   hasPendingSchool,
   clearTokens,
@@ -28,7 +27,6 @@ const verified: VerifiedEmail = {
   schoolMembership: null,
 }
 const work = { userId: 42, accessToken: 'unit-access', refreshToken: 'unit-refresh' }
-const issued = { ...work, recoveryCode: 'unit-recovery' }
 const click = (name: string) => fireEvent.click(screen.getByRole('button', { name }))
 
 beforeEach(() => {
@@ -41,29 +39,14 @@ afterEach(() => {
   sessionStorage.clear()
 })
 
-it('holds registration tokens and the single recovery code until the user acknowledges it', async () => {
+it('continues directly after registration without displaying or storing a recovery code', async () => {
   const enter = vi.fn()
-  const notified = vi.fn()
-  vi.mocked(api.registerPasskey).mockResolvedValueOnce(issued)
-  render(
-    <VerifiedPasskeyStep
-      verification={verified}
-      onAuthenticated={enter}
-      onRecoveryIssued={notified}
-      onRestart={vi.fn()}
-    />,
-  )
+  vi.mocked(api.registerPasskey).mockResolvedValueOnce(work)
+  render(<VerifiedPasskeyStep verification={verified} onAuthenticated={enter} onRestart={vi.fn()} />)
   click('패스키 등록')
-  await screen.findByText(issued.recoveryCode)
-  expect(notified).toHaveBeenCalledWith(42)
-  expect(enter).not.toHaveBeenCalled()
-  expect(getAccessToken()).toBeNull()
-  expect(
-    JSON.stringify(localStorage) + JSON.stringify(sessionStorage) + location.href,
-  ).not.toContain(issued.recoveryCode)
-  click('복구 코드를 보관했습니다')
-  expect(enter).toHaveBeenCalledExactlyOnceWith(work)
-  expect(screen.queryByText(issued.recoveryCode)).toBeNull()
+  await waitFor(() => expect(enter).toHaveBeenCalledExactlyOnceWith(work))
+  expect(screen.queryByText(/복구 코드 보관/)).toBeNull()
+  expect(screen.queryByRole('button', { name: /보관했습니다/ })).toBeNull()
 })
 
 it('explains a rejected registration origin without sending the user through email again', async () => {
@@ -91,7 +74,7 @@ it('requires fresh email verification after a bad recovery code instead of reusi
       onRestart={restart}
     />,
   )
-  click('복구 코드로 복구')
+  click('이전에 발급받은 복구 코드 사용')
   fireEvent.change(screen.getByLabelText('기존 복구 코드'), { target: { value: 'wrong-fixture' } })
   click('새 패스키로 복구')
   await screen.findByRole('alert')
@@ -146,7 +129,7 @@ it('rejects an authenticator for a different email account and allows a fresh ac
   await waitFor(() => expect(enter).toHaveBeenCalledExactlyOnceWith(work))
 })
 
-it('returns to pending school setup after registration was interrupted before acknowledgement', async () => {
+it('returns to pending school setup when a returning user still needs a school', async () => {
   markPendingSchool(42)
   vi.mocked(api.loginWithPasskey).mockResolvedValueOnce(work)
   const enter = vi.fn()

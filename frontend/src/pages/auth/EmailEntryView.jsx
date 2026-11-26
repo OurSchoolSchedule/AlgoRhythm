@@ -130,10 +130,6 @@ export default function EmailEntryView({ onSuccess, PasskeyStep }) {
           <Continuation
             verification={verification}
             onRestart={reset}
-            onRecoveryIssued={(userId) => {
-              if (verification.nextStep === 'REGISTER' && !verification.schoolMembership)
-                markPendingSchool(userId)
-            }}
             onAuthenticated={(session) => {
               if (!isWorkSession(session) || session.userId !== verification.userId) {
                 setError('인증한 계정의 업무 세션을 확인할 수 없습니다.')
