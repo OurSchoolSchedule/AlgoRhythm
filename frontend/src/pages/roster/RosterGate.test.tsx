@@ -66,7 +66,11 @@ beforeEach(() => {
     if (url === '/api/mypage/active-school') {
       if (!active) throw error(config, 403)
       data = active
-    } else if (url === '/api/mypage/teacher/schools') data = list
+    } else if (url === '/api/v2/terms') data = [
+      { termId: 11, academicYear: 2026, semester: 2, startDate: '2026-08-01', endDate: '2026-12-31' },
+      { termId: 999, academicYear: 2026, semester: 1, startDate: '2026-03-01', endDate: '2026-07-01' },
+    ]
+    else if (url === '/api/mypage/teacher/schools') data = list
     else if (url === '/api/schools/7/roster/me') {
       if (status !== 200 || (failTerm && config.params?.termId))
         throw error(config, failTerm ? 404 : status)
@@ -136,10 +140,10 @@ it('allows an existing hired teacher without a roster, but never treats an inval
   status = 200
   failTerm = true
   fireEvent.click(screen.getByText('학기 설정'))
-  fireEvent.change(screen.getByLabelText('학기 ID (선택)'), {
+  fireEvent.change(screen.getByLabelText('등록된 학기'), {
     target: { value: '999' },
   })
-  fireEvent.click(screen.getByText('적용'))
+  fireEvent.click(screen.getByText('선택한 학기 적용'))
   await screen.findByRole('alert')
   await waitFor(() =>
     expect(

@@ -1,56 +1,67 @@
-import { useEffect, useState } from 'react'
-import type { HomeTerm } from '@/types/datedLesson'
-import type { HomeSession } from './useHomeSession'
+import { skipToken, useQuery, useQueryClient } from '@tanstack/react-query'
+import { listTerms, termsKey, type RegisteredTerm } from '@/api/terms'
+import { getSchoolSwitchStamp } from '@/api/tokenStorage.js'
 import { schoolDate } from '@/utils/homeContract'
+import { useScopedRead, type HomeSession } from './useHomeSession'
 
-type Choice = Pick<HomeTerm, 'academicYear' | 'semester'> & { termId: number | null }
-
-// Callers key their subtree by account and active school, including during school switches.
-export function useTermChoice(session: HomeSession) {
-  const [year, month] = schoolDate(new Date()).split('-').map(Number)
-  const fallback: Choice = {
+export function useTermChoice(session: HomeSession, enabled = true) {
+  const cache = useQueryClient()
+  const allowed = enabled && session.access.queries.datedLessons
+  const list = useScopedRead(session, termsKey, allowed, listTerms, { retry: false })
+  const today = schoolDate(new Date())
+  const [year, month] = today.split('-').map(Number)
+  const calendar = {
     academicYear: month < 3 ? year - 1 : year,
     semester: month >= 3 && month <= 7 ? 1 : 2,
-    termId: null,
   }
-  const key = `school-home-term/${session.userId}/${session.school?.schoolId}/${fallback.academicYear}/${fallback.semester}`
-  const [choice, setChoice] = useState<Choice>(() => {
-    try {
-      const v = JSON.parse(sessionStorage.getItem(key) ?? 'null')
-      if (
-        v &&
-        Number.isSafeInteger(v.academicYear) &&
-        v.academicYear >= 1900 &&
-        v.academicYear <= 9999 &&
-        [1, 2].includes(v.semester) &&
-        (v.termId === null || (Number.isSafeInteger(v.termId) && v.termId > 0))
-      ) {
-        return { academicYear: v.academicYear, semester: v.semester, termId: v.termId }
+  const storageKey = `school-home-term/${session.userId}/${session.scope.schoolId}/${calendar.academicYear}/${calendar.semester}`
+  const selectedKey = ['selected-school-term', storageKey, session.scope]
+  const { data: selectedId } = useQuery<number | null>({
+    queryKey: selectedKey,
+    queryFn: skipToken,
+    initialData: () => {
+      try {
+        const saved = JSON.parse(sessionStorage.getItem(storageKey) ?? 'null')
+        return saved && (saved.switchStamp ?? null) === getSchoolSwitchStamp() ? saved.termId : null
+      } catch {
+        return null
       }
-    } catch {
-      /* Storage is optional. */
-    }
-    return fallback
+    },
   })
-  useEffect(() => {
-    // The confirmation screen, profile and workspace share the same selected school term.
-    const sync = (event: Event) => {
-      const change = (event as CustomEvent<{key: string; choice: Choice}>).detail
-      if (change?.key === key) setChoice(change.choice)
-    }
-    window.addEventListener('school-term-selected', sync)
-    return () => window.removeEventListener('school-term-selected', sync)
-  }, [key])
-  function saveChoice(next: Choice) {
-    window.dispatchEvent(new CustomEvent('school-term-selected', { detail: { key, choice: next } }))
+
+  const terms = allowed && list.isSuccess ? list.data : []
+  // The API orders by descending startDate, then descending termId.
+  const selected =
+    terms.find((t) => t.termId === selectedId) ??
+    terms.find((t) => t.startDate <= today && today <= t.endDate) ??
+    terms[0]
+  const term =
+    selected && session.school
+      ? {
+          schoolId: session.school.schoolId,
+          termId: selected.termId,
+          academicYear: selected.academicYear,
+          semester: selected.semester,
+        }
+      : null
+  const choice = term ?? { ...calendar, termId: null }
+  // Existing schools may have a legacy weekly timetable before registering their first v2 term.
+  const weeklyTerm =
+    term ??
+    (session.school && list.isSuccess ? { ...calendar, schoolId: session.school.schoolId } : null)
+
+  function saveChoice(next: RegisteredTerm) {
+    cache.setQueryData(selectedKey, next.termId)
     try {
-      sessionStorage.setItem(key, JSON.stringify(next))
+      sessionStorage.setItem(
+        storageKey,
+        JSON.stringify({ termId: next.termId, switchStamp: getSchoolSwitchStamp() }),
+      )
     } catch {
-      /* Keep this selection in memory. */
+      // In-memory selection still works when storage is disabled.
     }
   }
-  const weeklyTerm = session.school ? { ...choice, schoolId: session.school.schoolId } : null
-  const term =
-    weeklyTerm && choice.termId !== null ? { ...weeklyTerm, termId: choice.termId } : null
-  return { choice, saveChoice, weeklyTerm, term }
+  return { choice, term, weeklyTerm, terms, list, saveChoice }
 }
+
+export type TermChoice = ReturnType<typeof useTermChoice>
