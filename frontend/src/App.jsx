@@ -19,8 +19,8 @@ export default function App() {
   const [authed, setAuthed] = useState(() => Boolean((getAccessToken() && !hasPendingSchool()) || getPreviewUserRole()))
   const [entryVersion, setEntryVersion] = useState(0)
   const logoutMutation = useLogout()
-  const [resetNotice] = useState(() => sessionStorage.getItem('demoResetNotice'))
-  useEffect(() => { sessionStorage.removeItem('demoResetNotice') }, [])
+  const [resetRound, setResetRound] = useState(() => sessionStorage.getItem('school42TimetableResetRound'))
+  useEffect(() => { sessionStorage.removeItem('school42TimetableResetRound') }, [])
 
   useEffect(() => {
     setOnAuthError(() => {
@@ -52,15 +52,20 @@ export default function App() {
   if (!authed) {
     return (
       <div className="auth-layout">
-        {resetNotice && <p role="status">{resetNotice}</p>}
         <EmailEntryView key={entryVersion} onSuccess={() => setAuthed(true)} />
         <ServiceFooter />
       </div>
     )
   }
-  return <RosterGate onLogout={handleLogout}>
+  return <>
+    {resetRound && <div role="status">
+      School42 시간표 초기화 완료 · {resetRound}회차입니다. 기존 계정으로 시연을 계속하세요.
+      <button type="button" onClick={() => setResetRound(null)}>닫기</button>
+    </div>}
+    <RosterGate onLogout={handleLogout}>
     {review => <RosterReviewContext.Provider value={review}>
       <SchoolWorkspace onLogout={handleLogout} />
     </RosterReviewContext.Provider>}
-  </RosterGate>
+    </RosterGate>
+  </>
 }
