@@ -3,8 +3,8 @@ import { useState, type ReactNode } from 'react'
 import { useHomeSession, type HomeSession } from '@/hooks/useHomeSession'
 import { useTermChoice } from '@/hooks/useTermChoice'
 import type { HomeTerm } from '@/types/datedLesson'
-import { Dialog, TermForm } from '@/pages/home/HomePanels'
-import RegisterTerm from './RegisterTerm'
+import { Dialog } from '@/pages/home/HomePanels'
+import TermForm, { TermStatus } from './TermForm'
 import './operations.css'
 
 interface Props {
@@ -18,15 +18,16 @@ function ScopedWorkspace({
   children,
   session,
 }: Props & { session: HomeSession }) {
-  const { choice, term, saveChoice } = useTermChoice(session)
   const [editing, setEditing] = useState(false)
   const allowed = adminOnly ? session.access.actions.generate : session.access.queries.datedLessons
+  const state = useTermChoice(session, allowed)
+  const { term } = state
   return (
     <section className="detail-page schedule-work">
       <DetailHeading title={title} context={session.school?.name}>
         {allowed && (
           <button className="desk-term-button" onClick={() => setEditing(true)}>
-            {choice.academicYear}학년도 {choice.semester}학기 · 학기 설정
+            {term ? `${term.academicYear}학년도 ${term.semester}학기 · 학기 설정` : '학기 설정'}
           </button>
         )}
       </DetailHeading>
@@ -44,25 +45,15 @@ function ScopedWorkspace({
         </div>
       ) : (
         <section className="work-card">
-          <h2>업무 학기 연결</h2>
-          <p>학교에서 발급한 학기 ID를 입력하세요. 홈과 같은 학기를 사용합니다.</p>
-          <button className="work-primary" onClick={() => setEditing(true)}>
-            학기 연결
-          </button>
-          {adminOnly && (
-            <RegisterTerm session={session} choice={choice} onRegistered={saveChoice} />
-          )}
+          <TermStatus
+            state={state}
+            onRegister={session.access.actions.generate ? () => setEditing(true) : undefined}
+          />
         </section>
       )}
       {editing && allowed && (
         <Dialog title="업무 학기 설정" onClose={() => setEditing(false)}>
-          <TermForm
-            current={choice}
-            onApply={(v: typeof choice) => {
-              saveChoice(v)
-              setEditing(false)
-            }}
-          />
+          <TermForm session={session} state={state} onClose={() => setEditing(false)} />
         </Dialog>
       )}
     </section>

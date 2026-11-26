@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { useSchoolHome } from '@/hooks/useSchoolHome'
 import { useTermChoice } from '@/hooks/useTermChoice'
 import AIFloatingChat from '@/components/common/AIFloatingChat'
-import { Actions, Dialog, Icon, Notices, Profile, TermForm } from './HomePanels'
+import { Actions, Dialog, Icon, Notices, Profile } from './HomePanels'
+import TermForm, { TermStatus } from '@/pages/schedule/TermForm'
 import HomeTimetable from './HomeTimetable'
 
 export default function HomeContent({ session, navigate, panel, openPanel }) {
-  const { choice, saveChoice, term, weeklyTerm } = useTermChoice(session)
+  const state = useTermChoice(session)
+  const { term, weeklyTerm } = state
   const [date, setDate] = useState()
   const [classId, setClassId] = useState(null)
   const [editingTerm, setEditingTerm] = useState(false)
@@ -68,26 +70,26 @@ export default function HomeContent({ session, navigate, panel, openPanel }) {
             </p>
             <h1>업무 홈</h1>
           </div>
-          {menus.timetable && (
+          {session.access.queries.datedLessons && (
             <button
               className="desk-term-button"
               aria-label="조회 학기 설정"
               onClick={() => setEditingTerm(true)}
             >
               <Icon name="settings" />
-              {choice.academicYear}학년도 {choice.semester}학기
+              {term ? `${term.academicYear}학년도 ${term.semester}학기` : '학기 설정'}
             </button>
           )}
         </div>
         {menus.timetable ? (
           <>
             <HomeTimetable
-              key={choice.academicYear + '-' + choice.semester + '-' + choice.termId}
+              key={term?.termId ?? 'legacy'}
               term={term}
               home={home}
               setDate={setDate}
               setRoom={setClassId}
-              onSettings={() => setEditingTerm(true)}
+              termStatus={<TermStatus state={state} onRegister={session.access.actions.generate ? () => setEditingTerm(true) : undefined} />}
             />
             <div className="desk-lower">
               <Notices home={home} onOpen={() => openPanel('notices')} />
@@ -126,12 +128,12 @@ export default function HomeContent({ session, navigate, panel, openPanel }) {
       {editingTerm && menus.timetable && (
         <Dialog title="조회 학기 설정" onClose={() => setEditingTerm(false)}>
           <TermForm
-            current={choice}
-            onApply={(v) => {
-              saveChoice(v)
+            session={session}
+            state={state}
+            onClose={() => setEditingTerm(false)}
+            onApplied={() => {
               setClassId(null)
               setDate(undefined)
-              setEditingTerm(false)
             }}
           />
         </Dialog>

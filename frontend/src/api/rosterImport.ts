@@ -37,7 +37,7 @@ export function rosterProblem(error: unknown) {
         (status === 403
           ? '현재 학교의 재직 관리자만 명부를 관리할 수 있습니다.'
           : status === 404
-            ? '학교와 학기 ID를 확인해 주세요.'
+            ? '학교와 선택한 학기를 확인해 주세요.'
             : '요청 결과를 받지 못했습니다. 다시 시도해 주세요.'),
       status,
     }
