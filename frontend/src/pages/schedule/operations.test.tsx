@@ -41,7 +41,7 @@ const candidate = {
 const oldAdapter = client.defaults.adapter
 let cache: QueryClient
 const identity = () => ({ userId: 541000, generation: getSessionVersion() })
-function mount(role = 'ADMIN') {
+function mount(role = 'ADMIN', view = <ScheduleCreateView />) {
   cache.setQueryData(queryKeys.home.active(identity()), {
     schoolId: 540001,
     position: role,
@@ -49,7 +49,7 @@ function mount(role = 'ADMIN') {
   })
   return render(
     <QueryClientProvider client={cache}>
-      <ScheduleCreateView />
+      {view}
     </QueryClientProvider>,
   )
 }
@@ -252,18 +252,17 @@ it('등록된 학기를 선택하고 파일 오류를 수정해 선택한 조건
   fireEvent.submit(form)
   await screen.findByText(/검증 완료 · 배정 1건/)
   const generate = (await screen.findByRole('button', { name: '후보 생성' })) as HTMLButtonElement
-  fireEvent.change(screen.getByLabelText('금요일 마지막 교시'), { target: { value: '1' } })
-  expect(screen.queryByLabelText('토요일 마지막 교시')).toBeNull()
-  expect(screen.queryByLabelText('일요일 마지막 교시')).toBeNull()
-  const grade = screen.getByLabelText('편성 학년')
-  fireEvent.change(grade, { target: { value: '2' } })
-  fireEvent.change(screen.getByLabelText('월요일 마지막 교시'), { target: { value: '1' } })
-  fireEvent.change(grade, { target: { value: '3' } })
-  fireEvent.change(screen.getByLabelText('수요일 마지막 교시'), { target: { value: '0' } })
-  expect(screen.getByText('3학년 · 주간 배치 가능 교시 8칸')).toBeTruthy()
-  fireEvent.change(grade, { target: { value: '1' } })
-  expect((screen.getByLabelText('금요일 마지막 교시') as HTMLSelectElement).value).toBe('1')
-  expect(screen.getByText('1학년 · 주간 배치 가능 교시 9칸')).toBeTruthy()
+  const matrix = within(screen.getByRole('table', { name: '학년별 요일별 마지막 교시' }))
+  expect(matrix.getAllByRole('combobox')).toHaveLength(15)
+  expect(matrix.queryByLabelText(/토요일|일요일/)).toBeNull()
+  fireEvent.change(matrix.getByLabelText('1학년 금요일 마지막 교시'), { target: { value: '1' } })
+  fireEvent.change(matrix.getByLabelText('2학년 월요일 마지막 교시'), { target: { value: '1' } })
+  fireEvent.change(matrix.getByLabelText('3학년 수요일 마지막 교시'), { target: { value: '0' } })
+  expect((matrix.getByLabelText('1학년 금요일 마지막 교시') as HTMLSelectElement).value).toBe('1')
+  const grade1 = within(matrix.getByRole('rowheader', { name: '1학년' }).closest('tr')!)
+  const grade3 = within(matrix.getByRole('rowheader', { name: '3학년' }).closest('tr')!)
+  expect(grade1.getByText('9칸 / 1차시')).toBeTruthy()
+  expect(grade3.getByText('8칸 / 0차시')).toBeTruthy()
   fireEvent.click(screen.getByText('교사별 시간 선호 (선택)'))
   fireEvent.click(screen.getByRole('button', { name: '선호 추가' }))
   fireEvent.change(screen.getByLabelText('후보 평가 기준 (선택)'), { target: { value: 'PREFER_WANTS' } })
@@ -375,7 +374,7 @@ it('학교 총합이 같아도 초과 학급을 차단하고, 파일을 교체�
       return [201, { termId: registered.termId }]
     }
     if (config.url === '/api/school-setting/periods')
-      return [200, Array.from({ length: 7 }, (_, i) => ({ periodNumber: i + 1 }))]
+      return [200, [1, 2, 3, 5, 6, 7, 8].map((periodNumber) => ({ periodNumber }))]
     if (config.url === '/api/school/classes')
       return [200, [{ id: 1, grade: 1, classNumber: 1 }, { id: 2, grade: 1, classNumber: 2 }]]
     if (config.url === base + '/load-imports/validate') {
@@ -406,17 +405,25 @@ it('학교 총합이 같아도 초과 학급을 차단하고, 파일을 교체�
     expect(screen.queryByRole('checkbox', { name: /학급별 공강/ })).toBeNull()
     fireEvent.submit((file as HTMLInputElement).form!)
     await screen.findByText(/검증 완료 · 배정 2건/)
-    await screen.findByLabelText('월요일 마지막 교시')
+    const monday = await screen.findByLabelText('1학년 월요일 마지막 교시')
+    expect(within(monday).queryByRole('option', { name: '4' })).toBeNull()
     for (const d of ['화', '수', '금']) {
-      fireEvent.change(screen.getByLabelText(d + '요일 마지막 교시'), { target: { value: '6' } })
+      fireEvent.change(screen.getByLabelText('1학년 ' + d + '요일 마지막 교시'), { target: { value: '7' } })
     }
   }
   await upload('31+33.xlsx')
+  const gradeLoads = () => within(screen.getByRole('table', { name: '학년별 요일별 마지막 교시' }))
+  expect(gradeLoads().getByText('32칸 / 31차시')).toBeTruthy()
+  expect(gradeLoads().getByText('-1 공강')).toBeTruthy()
+  expect(gradeLoads().getByText('32칸 / 33차시')).toBeTruthy()
+  expect(gradeLoads().getByText('+1 초과')).toBeTruthy()
   expect(screen.getByText(/33차시 · 1차시 초과/)).toBeTruthy()
   expect((screen.getByRole('button', { name: '후보 생성' }) as HTMLButtonElement).disabled).toBe(
     true,
   )
   await upload('30+32.xlsx')
+  expect(gradeLoads().getByText('-2 공강')).toBeTruthy()
+  expect(gradeLoads().getByText('일치')).toBeTruthy()
   const generate = screen.getByRole('button', { name: '후보 생성' }) as HTMLButtonElement
   expect(generate.disabled).toBe(true)
   fireEvent.click(screen.getByRole('checkbox', { name: /학급별 공강/ }))
@@ -508,3 +515,68 @@ it.each(['lost-response', 'conflict'] as const)(
     expect(reads).toBeGreaterThan(1)
   },
 )
+
+it('교환 후보가 없는 날에도 다른 날짜를 열고 그날 교환 가능한 교사와 수업만 선택한다', async () => {
+  const sourceDate = '2026-11-23'
+  const targetDate = '2026-11-24'
+  const members = [
+    { userId: 541000, schoolUserId: 10, displayName: '신청 교사' },
+    { userId: 541001, schoolUserId: 11, displayName: '교환 가능 교사' },
+    { userId: 541002, schoolUserId: 12, displayName: '교환 불가 교사' },
+  ].map((member) => ({ ...member, position: 'TEACHER', employmentStatus: 'HIRED' }))
+  function lesson(id: number, date: string, teacherId: number, periodId: number) {
+    const assignment = { teacherId, periodId }
+    return {
+      id, termId: registered.termId, versionId: 1, rev: 2, date,
+      originId: id + 100, originDate: date, classId: 4, subjectId: 15,
+      planned: assignment, actual: assignment,
+    }
+  }
+  const rows = [
+    lesson(51, sourceDate, 10, 1),
+    lesson(52, targetDate, 11, 2),
+    lesson(53, targetDate, 11, 3),
+    lesson(54, targetDate, 12, 4),
+  ]
+  adapter((config) => {
+    if (config.url === '/api/v2/terms') return [200, [registered]]
+    if (config.url === '/api/school/teachers') return [200, members]
+    if (config.url === base + '/lessons')
+      return [200, rows.filter((row) => row.date === config.params.date)]
+    if (config.url === base + '/lesson-changes/51/candidates' && config.params.kind === 'SWAP')
+      return [200, config.params.firstRev === 2 && config.params.date === targetDate ? [52] : []]
+    return [200, []]
+  })
+  mount('TEACHER', <LessonChangesView initialDate={sourceDate} />)
+  const source = await screen.findByRole('combobox', { name: '내가 담당하는 수업' })
+  await within(source).findByRole('option', { name: /신청 교사/ })
+  fireEvent.change(source, { target: { value: '51/2' } })
+
+  const swap = within(screen.getByRole('form', { name: '교환 신청' }))
+  const teacher = swap.getByRole<HTMLSelectElement>('combobox', { name: '상대 교사' })
+  const submit = swap.getByRole<HTMLButtonElement>('button', { name: '교환 신청' })
+  await swap.findByText(/이 날짜에 교환 가능한 수업이 없습니다/)
+  expect(teacher.options).toHaveLength(1)
+  fireEvent.click(swap.getByLabelText('다른 날짜의 수업 선택'))
+  const date = swap.getByLabelText('교환 상대 수업 날짜')
+  fireEvent.change(date, { target: { value: targetDate } })
+  await within(teacher).findByRole('option', { name: '교환 가능 교사' })
+  expect(within(teacher).queryByRole('option', { name: '교환 불가 교사' })).toBeNull()
+  fireEvent.change(teacher, { target: { value: '11' } })
+  const target = swap.getByRole<HTMLSelectElement>('combobox', { name: /교환할 상대 수업/ })
+  expect(Array.from(target.options, (option) => option.value)).toEqual(['', '52/2'])
+  fireEvent.change(target, { target: { value: '52/2' } })
+  expect(submit.disabled).toBe(false)
+  expect(swap.getByLabelText('교환 미리보기').textContent).toContain(targetDate)
+
+  fireEvent.change(date, { target: { value: sourceDate } })
+  await swap.findByText(/이 날짜에 교환 가능한 수업이 없습니다/)
+  expect(teacher.value).toBe('')
+  expect(target.options).toHaveLength(1)
+  expect(submit.disabled).toBe(true)
+  fireEvent.change(date, { target: { value: targetDate } })
+  await within(teacher).findByRole('option', { name: '교환 가능 교사' })
+  expect(teacher.value).toBe('')
+  expect(target.value).toBe('')
+  expect(swap.queryByLabelText('교환 미리보기')).toBeNull()
+})
