@@ -2,7 +2,7 @@ import CandidateGrid from './CandidateGrid'
 import { objectives } from './generationOptions'
 import { useState } from 'react'
 import type { HomeTerm } from '@/types/datedLesson'
-import type { ScheduleCandidate, TeachingSlot, GenerationObjective } from '@/types/generationJob'
+import type { ScheduleCandidate, GenerationJob } from '@/types/generationJob'
 import type { useCandidatePublication } from '@/hooks/useCandidatePublication'
 import { useHomeDirectory } from '@/hooks/homeReads'
 import { useHomeSession } from '@/hooks/useHomeSession'
@@ -21,8 +21,7 @@ const recoveryText = {
 interface Props {
   term: HomeTerm
   publication: ReturnType<typeof useCandidatePublication>
-  slots?: TeachingSlot[]
-  objective?: GenerationObjective
+  job?: GenerationJob
   candidates: ScheduleCandidate[]
   onRestart: (revalidate: boolean) => void
 }
@@ -30,8 +29,7 @@ export default function CandidatePublication({
   term,
   publication,
   candidates,
-  slots,
-  objective,
+  job,
   onRestart,
 }: Props) {
   const [id, setId] = useState('')
@@ -41,19 +39,26 @@ export default function CandidatePublication({
   const subjects = useSubjects(),
     classes = useSchoolClasses(term.academicYear)
   const members = useHomeDirectory(useHomeSession(), true, term.termId)
+  const { teachingSlots: slots, objective, gradeLastPeriods, classGrades } = job ?? {}
   const candidate = candidates.find((c) => c.candidateId === id)
   const className = (id: string) => {
     const r = classes.data?.find((c) => String(c.id) === id)
-    return r ? `${r.grade}학년 ${r.classNumber}반` : '학급 #' + id
+    const grade = classGrades?.[id]
+    if (r && (grade === undefined || r.grade === grade)) return `${r.grade}학년 ${r.classNumber}반`
+    return grade === undefined ? '학급 #' + id : `${grade}학년 · 학급 #${id}`
   }
   const state = publication.state
   const mustRestart =
     state.phase === 'conflict' &&
     (state.recovery === 'regenerate' || state.recovery === 'revalidate-load')
-  const rooms = [...new Set(candidate?.placements.map((p) => p.classId) ?? [])].sort((a, b) =>
-    a.localeCompare(b, 'ko', { numeric: true }),
-  )
+  const rooms = [
+    ...new Set([
+      ...Object.keys(classGrades ?? {}),
+      ...(candidate?.placements.map((p) => p.classId) ?? []),
+    ]),
+  ].sort((a, b) => className(a).localeCompare(className(b), 'ko', { numeric: true }))
   const selectedRoom = rooms.includes(room) ? room : rooms[0]
+  const limits = gradeLastPeriods?.find((g) => g.grade === classGrades?.[selectedRoom])?.lastPeriods
   return (
     <section className="work-card">
       <h2>후보 비교 및 게시</h2>
@@ -109,10 +114,14 @@ export default function CandidatePublication({
               ))}
             </select>
           </label>
-          {slots?.length ? (
+          {gradeLastPeriods && !limits ? (
+            <p role="alert">이 작업에서 선택한 학급의 학년별 편성 조건을 확인할 수 없습니다.</p>
+          ) : slots?.length ? (
             <CandidateGrid
               key={candidate.candidateId + '/' + selectedRoom}
               slots={slots}
+              limits={limits}
+              registeredPeriods={job?.registeredPeriods}
               placements={candidate.placements}
               room={selectedRoom}
               subjectName={(id) =>

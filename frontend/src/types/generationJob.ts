@@ -5,12 +5,19 @@ export interface TeachingSlot {
   period: number
 }
 
+export type SchoolWeekday = Exclude<DayOfWeek, 'SAT' | 'SUN'>
+export interface GradeLastPeriods {
+  grade: number
+  lastPeriods: Record<SchoolWeekday, number>
+}
+
 export type GenerationObjective = 'BALANCED' | 'MIN_TEACHER_GAPS' | 'PREFER_WANTS'
 
 export interface GenerationRequest {
   objective?: GenerationObjective
   validatedLoadId: string
   teachingSlots?: TeachingSlot[]
+  gradeLastPeriods?: GradeLastPeriods[]
   preferences?: {
     teacherId: string
     kind: 'WANT' | 'AVOID'
@@ -57,6 +64,9 @@ interface GenerationResult {
 export type GenerationJob = Pick<AcceptedGeneration, 'jobId' | 'expectedPublishRev'> & {
   objective?: GenerationObjective
   teachingSlots?: TeachingSlot[]
+  gradeLastPeriods?: GradeLastPeriods[] | null
+  classGrades?: Record<string, number> | null
+  registeredPeriods?: number[]
 } & (
     | { state: 'QUEUED' | 'RUNNING' | 'FAILED'; result: null }
     | { state: 'READY'; result: GenerationResult & { status: 'READY' } }

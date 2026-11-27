@@ -55,7 +55,7 @@ export function Actions({ items, compact = false }) {
   )
 }
 
-export function Dialog({ title, onClose, children, drawer = false }) {
+export function Dialog({ title, onClose, children, drawer = false, className = '' }) {
   const ref = useRef(null)
   useLayoutEffect(() => {
     const el = ref.current
@@ -70,7 +70,7 @@ export function Dialog({ title, onClose, children, drawer = false }) {
   return (
     <dialog
       ref={ref}
-      className={drawer ? 'desk-dialog desk-drawer' : 'desk-dialog'}
+      className={`desk-dialog ${drawer ? 'desk-drawer' : ''} ${className}`}
       aria-label={title}
       onCancel={(event) => {
         event.preventDefault()
@@ -83,7 +83,7 @@ export function Dialog({ title, onClose, children, drawer = false }) {
       <div className="desk-dialog-inner">
         <header>
           <h2>{title}</h2>
-          <button className="desk-icon" onClick={onClose} aria-label="닫기">
+          <button className="desk-icon" onClick={onClose} aria-label={drawer ? '업무 메뉴 닫기' : '닫기'}>
             <Icon name="close" />
           </button>
         </header>
@@ -122,6 +122,10 @@ export function Profile({ home, onSettings, onPreferences }) {
       </div>
       <dl className="desk-fields">
         <div>
+          <dt>계정 이름</dt>
+          <dd>{fieldText(profile.accountName)}</dd>
+        </div>
+        <div>
           <dt>담당 과목</dt>
           <dd>{fieldText(profile.subjects, (xs) => xs.map((x) => x.subjectName).join(', '))}</dd>
         </div>
@@ -139,7 +143,7 @@ export function Profile({ home, onSettings, onPreferences }) {
         <dl className="desk-fields">
           <div>
             <dt>부담임</dt>
-            <dd>{fieldText(profile.deputyHomeroom)}</dd>
+            <dd>{fieldText(profile.deputyHomeroom, (rooms) => rooms.map((room) => `${room.grade}학년 ${room.classNumber}반`).join(', '))}</dd>
           </div>
           <div>
             <dt>보직</dt>

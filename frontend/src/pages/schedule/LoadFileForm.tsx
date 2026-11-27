@@ -51,6 +51,7 @@ export default function LoadFileForm({ locked, status, onEdit, onValidate, child
           </div>
           <details>
             <summary>시트·과목 별칭 설정</summary>
+            <p>‘학급담당’ 시트가 있으면 관리자 도구의 ‘명부 일괄 등록’에서 같은 파일로 담임·부담임을 적용하세요.</p>
             <label>
               시트 이름
               <input

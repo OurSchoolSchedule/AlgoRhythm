@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Actions, Dialog, Icon } from '@/pages/home/HomePanels'
 
-export function WorkspaceNavigation({ items, currentView, navigate, onLogout }) {
+export function WorkspaceNavigation({ items, currentView, navigate, onLogout, id }) {
   return (
     <>
-      <nav aria-label="업무 메뉴">
+      <nav id={id} aria-label="업무 메뉴">
         <Actions
           items={items.map((item) => ({
             ...item,
@@ -21,22 +21,33 @@ export function WorkspaceNavigation({ items, currentView, navigate, onLogout }) 
   )
 }
 
+export function MenuToggle({ expanded, onToggle, drawer = false }) {
+  const label = expanded ? '업무 메뉴 닫기' : '업무 메뉴 열기'
+  return (
+    <button
+      type="button"
+      className="desk-icon"
+      aria-label={label}
+      title={label}
+      aria-expanded={expanded}
+      aria-controls={drawer && !expanded ? undefined : 'desk-work-menu'}
+      aria-haspopup={drawer ? 'dialog' : undefined}
+      onClick={onToggle}
+    >
+      <Icon name="menu" />
+    </button>
+  )
+}
+
 export function MobileNavigation({ navigate, ...props }) {
   const [open, setOpen] = useState(false)
   return (
     <>
-      <button
-        className="desk-icon desk-menu-trigger"
-        aria-label="업무 메뉴 열기"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        onClick={() => setOpen(true)}
-      >
-        <Icon name="menu" />
-      </button>
+      <MenuToggle expanded={open} onToggle={() => setOpen((visible) => !visible)} drawer />
       {open && (
         <Dialog title="업무 메뉴" drawer onClose={() => setOpen(false)}>
           <WorkspaceNavigation
+            id="desk-work-menu"
             {...props}
             navigate={(view) => {
               setOpen(false)
