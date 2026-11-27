@@ -189,3 +189,17 @@
   color: var(--color-text);
   background: var(--color-surface-hover);
 }
+
+.ri-class-roles {
+  grid-template-columns: minmax(0, 1fr);
+}
+.ri-class-roles details {
+  min-width: 0;
+}
+.ri-class-roles table {
+  min-width: 0;
+  table-layout: fixed;
+}
+.ri-class-roles :is(td, th) {
+  overflow-wrap: anywhere;
+}

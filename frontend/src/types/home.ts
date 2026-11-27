@@ -24,6 +24,8 @@ export interface HomeroomDto {
 
 export interface HomeMemberDto {
   displayName?: string | null
+  termHomeroomsApplied?: boolean
+  deputyHomeroomClasses?: readonly HomeroomDto[]
   rosterLinked?: boolean
   rosterAssignmentTermId?: number | null
   rosterSubjects?: readonly SubjectInfoDto[]
@@ -57,10 +59,11 @@ export type HomeField<T> =
 
 export interface HomeProfile {
   name: HomeField<string>
+  accountName: HomeField<string>
   schoolUserId: HomeField<number>
   subjects: HomeField<readonly SubjectInfoDto[]>
   homerooms: HomeField<readonly HomeroomDto[]>
-  deputyHomeroom: { state: 'unsupported' }
+  deputyHomeroom: HomeField<readonly HomeroomDto[]>
   positionTitle: { state: 'unsupported' }
 }
 

@@ -21,6 +21,7 @@
  * @property {number} userId
  * @property {string} username
  * @property {string} email
+ * @property {string | null} verifiedEmail
  * @property {string} [profileImageUrl]
  * @property {string} position
  * @property {string} employmentStatus
@@ -28,8 +29,7 @@
 
 /**
  * @typedef {Object} OwnerProfileUpdateRequest
- * @property {string} [username]
- * @property {string} [email]
+ * @property {string} username
  */
 
 /**
@@ -44,6 +44,7 @@
  * @property {number} userId
  * @property {string} username
  * @property {string} email
+ * @property {string | null} verifiedEmail
  * @property {string} [profileImageUrl]
  * @property {string} position
  * @property {string} employmentStatus
@@ -52,8 +53,7 @@
 
 /**
  * @typedef {Object} StaffProfileUpdateRequest
- * @property {string} [username]
- * @property {string} [email]
+ * @property {string} username
  */
 
 /**

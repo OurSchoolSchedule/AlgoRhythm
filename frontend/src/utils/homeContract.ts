@@ -38,16 +38,20 @@ export function toHomeProfile(
   // userId identifies the account; schoolUserId identifies its school membership.
   const member =
     directory.state === 'success' ? directory.data.find((row) => row.userId === userId) : undefined
+  const accountName = readField(profile, (row) => {
+    if (row.userId !== userId) return undefined
+    return row.username === '' ? null : row.username
+  })
   return {
-    name: member?.displayName ? { state: 'value', value: member.displayName } : readField(profile, (row) => {
-      if (row.userId !== userId) return undefined
-      return row.username === '' ? null : row.username
-    }),
+    name: member?.displayName ? { state: 'value', value: member.displayName } : accountName,
+    accountName,
     schoolUserId: readField(directory, () => member?.schoolUserId),
     subjects: readField(directory, () => member?.rosterSubjects === undefined ? member?.subjects :
       termId === null ? undefined : member.rosterSubjects),
     homerooms: readField(directory, () => directoryHomerooms(member, academicYear, termId)),
-    deputyHomeroom: { state: 'unsupported' },
+    deputyHomeroom: member?.termHomeroomsApplied && termId !== null
+      ? readField(directory, () => member.deputyHomeroomClasses?.filter(room => room.academicYear === academicYear))
+      : { state: 'unsupported' },
     positionTitle: { state: 'unsupported' },
   }
 }

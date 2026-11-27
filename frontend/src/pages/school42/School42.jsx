@@ -8,6 +8,8 @@ import './school42.css'
 const term = 547001
 const week = '2026-11-23'
 const files = '/school42-files/'
+const sampleName = 'teaching_load_42_homeroom_demo.xlsx'
+const settingsName = 'generate_request_42_grade_demo.json'
 const days = ['MON', 'TUE', 'WED', 'THU', 'FRI']
 const dayNames = ['월', '화', '수', '목', '금']
 
@@ -180,9 +182,9 @@ export default function School42() {
     clearFile()
     let selected = file
     if (useSample) {
-      const r = await fetch(files + 'teaching_load_42.xlsx')
+      const r = await fetch(files + sampleName)
       if (!r.ok) throw new Error('샘플 시수표를 불러오지 못했습니다.')
-      selected = new File([await r.blob()], 'teaching_load_42.xlsx')
+      selected = new File([await r.blob()], sampleName)
     }
     if (!selected) throw new Error('검증할 엑셀 파일을 선택하세요.')
     const receipt = await validateTeachingLoad(
@@ -205,12 +207,35 @@ export default function School42() {
     setCandidates([])
     setTicket(null)
     setChoice(0)
-    const r = await fetch(files + 'generate_request.json')
+    const r = await fetch(files + settingsName)
     if (!r.ok) throw new Error('편성 조건을 불러오지 못했습니다.')
-    const { teachingSlots, preferences } = await r.json()
+    const { gradeLastPeriods, preferences } = await r.json()
+    const hours = new Map()
+    for (const row of load.demands) {
+      const id = Number(row.classId)
+      hours.set(id, (hours.get(id) || 0) + row.weeklyPeriods)
+    }
+    const gaps = []
+    // This fixed rehearsal has 7 classes per grade, IDs 544001 through 544021.
+    for (const { grade, lastPeriods } of gradeLastPeriods) {
+      const capacity = Object.values(lastPeriods).reduce((sum, n) => sum + n, 0)
+      for (let number = 1; number <= 7; number++) {
+        const classId = 544000 + (grade - 1) * 7 + number
+        const needed = hours.get(classId) || 0
+        const label = `${grade}학년 ${number}반`
+        if (needed > capacity)
+          throw new Error(`${label}은 ${needed - capacity}차시 초과입니다.`)
+        if (needed < capacity) gaps.push(`${label} ${capacity - needed}차시`)
+      }
+    }
+    if (
+      gaps.length &&
+      !window.confirm(`${gaps.join(', ')}를 공강으로 두고 생성할까요?`)
+    )
+      return
     const job = await submitGeneration(
       term,
-      { validatedLoadId: load.validatedLoadId, teachingSlots, preferences },
+      { validatedLoadId: load.validatedLoadId, gradeLastPeriods, preferences },
       undefined,
       http,
     )
@@ -270,9 +295,16 @@ export default function School42() {
       </header>
       <section>
         <h2>시연용 시수표</h2>
+        <p>
+          주 671차시 · 2학년 7반 공강 1차시. 담임·부담임은 관리자 계정의 관리자
+          도구 → 명부 일괄 등록 → 학급 담당에서 같은 파일을 적용하세요.
+        </p>
         <div className="s42-actions">
-          <a download href={files + 'teaching_load_42.xlsx'}>
-            정상 시수표 다운로드
+          <a download href={files + sampleName}>
+            담임·부담임 포함 시수표 다운로드
+          </a>
+          <a download href={files + settingsName}>
+            학년별 편성 조건 다운로드
           </a>
           <a download href={files + 'wrong_total_42.xlsx'}>
             합계 오류 시수표 다운로드

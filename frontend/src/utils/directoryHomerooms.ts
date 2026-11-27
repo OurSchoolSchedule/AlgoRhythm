@@ -9,6 +9,9 @@ export function directoryHomerooms(
 ): readonly HomeroomDto[] | undefined {
   if (!member || academicYear === null) return undefined
 
+  if (termId !== null && member.termHomeroomsApplied)
+    return member.homeroomClasses?.filter((room) => room.academicYear === academicYear)
+
   if (member.rosterLinked === false ||
       (member.rosterLinked === undefined && !('rosterHomeroomClass' in member))) {
     return member.homeroomClasses?.filter((room) => room.academicYear === academicYear)

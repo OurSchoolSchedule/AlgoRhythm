@@ -1,7 +1,8 @@
 import type { DayOfWeek } from '@/types/common.js'
-import type { GenerationObjective } from '@/types/generationJob'
+import type { GenerationObjective, SchoolWeekday } from '@/types/generationJob'
 
-export const days: DayOfWeek[] = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
+export const schoolWeekdays: SchoolWeekday[] = ['MON', 'TUE', 'WED', 'THU', 'FRI']
+export const days: DayOfWeek[] = [...schoolWeekdays, 'SAT', 'SUN']
 export const weekday: Record<DayOfWeek, string> = {
   MON: '월',
   TUE: '화',

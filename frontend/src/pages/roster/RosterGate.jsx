@@ -7,8 +7,7 @@ import { useTermChoice } from '@/hooks/useTermChoice'
 import TermForm, { TermStatus } from '@/pages/schedule/TermForm'
 import ServiceFooter from '@/components/layout/ServiceFooter'
 import Schools from './Schools'
-import SchoolJoinForm from '@/pages/auth/SchoolJoinForm'
-import { joinStaffStore } from '@/api/mypage'
+import ProfileSchoolDialog from '@/components/layout/ProfileSchoolDialog'
 import './roster.css'
 
 function Frame({ children, logout }) {
@@ -96,6 +95,7 @@ function TeacherReview({ session, logout, children }) {
   const [review, setReview] = useState(false)
   const [correcting, setCorrecting] = useState(false)
   const [editingTerm, setEditingTerm] = useState(false)
+  const [editingName, setEditingName] = useState(false)
   useEffect(() => {
     if ((!linked && !legacy) || !globalThis.crypto?.subtle) return
     let active = true
@@ -181,11 +181,12 @@ function TeacherReview({ session, logout, children }) {
           코드와 표시 이름으로 연결을 요청할 수 있습니다.
         </p>
       )}
-      {(legacy || linked) && <details>
-        <summary>이 학교의 본인 이름 확인·수정</summary>
-        <SchoolJoinForm showSubjectHint={false} initialCode={school.schoolCode} initialName={entry?.baseName || entry?.displayName || ''}
-          submit={joinStaffStore} label="학교별 이름 확정" onComplete={() => query.refetch()} />
-      </details>}
+      {(legacy || linked) && <button className="btn" type="button" onClick={() => setEditingName(true)}>
+        이 학교의 본인 이름 확인·수정
+      </button>}
+      {editingName && <ProfileSchoolDialog isAdmin={false} initialTab="join"
+        initialSchoolName={entry?.baseName || entry?.displayName || ''}
+        onSchoolConfirmed={() => query.refetch()} onClose={() => setEditingName(false)} />}
       {query.isError && !legacy && (
         <p role="alert">
           명부를 확인하지 못했습니다. 학교와 선택한 학기를 확인하고 다시 조회해

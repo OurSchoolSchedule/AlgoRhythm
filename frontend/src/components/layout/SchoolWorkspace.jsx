@@ -18,7 +18,7 @@ import { ThemeSwitch } from './HeaderUserMenu'
 import NotificationSidebar from './NotificationSidebar'
 import ProfileSchoolDialog from './ProfileSchoolDialog'
 import ServiceFooter from './ServiceFooter'
-import { MobileNavigation, WorkspaceNavigation } from './WorkspaceNavigation'
+import { MenuToggle, MobileNavigation, WorkspaceNavigation } from './WorkspaceNavigation'
 
 const ScheduleCreateView = lazy(() => import('@/pages/schedule/ScheduleCreateView'))
 const LessonChangesView = lazy(() => import('@/pages/schedule/LessonChangesView'))
@@ -114,6 +114,15 @@ function DetailProfile({ session, openPanel }) {
 }
 
 function Workspace({ session, navigate: onNavigate, onLogout, passkeyButton }) {
+  const menuPreference = `workspace-menu-collapsed/${session.userId ?? 'preview'}`
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => sessionStorage.getItem(menuPreference) === 'true',
+  )
+  function toggleSidebar() {
+    const collapsed = !sidebarCollapsed
+    sessionStorage.setItem(menuPreference, String(collapsed))
+    setSidebarCollapsed(collapsed)
+  }
   const [page, setPage] = useState({ view: 'home' })
   const [panel, openPanel] = useState(null)
   const [theme, setTheme] = useState(getStoredTheme)
@@ -134,7 +143,10 @@ function Workspace({ session, navigate: onNavigate, onLogout, passkeyButton }) {
   const role = queries.adminProfile ? 'admin' : 'worker'
   const nav = { items, currentView: page.view, navigate, onLogout }
   return (
-    <div className={home ? 'school-desk' : 'school-desk desk-detail'}>
+    <div
+      className={home ? 'school-desk' : 'school-desk desk-detail'}
+      data-menu-collapsed={sidebarCollapsed}
+    >
       <a className="desk-skip" href="#desk-main">
         본문으로 건너뛰기
       </a>
@@ -145,7 +157,11 @@ function Workspace({ session, navigate: onNavigate, onLogout, passkeyButton }) {
         <strong>우리학교시간표</strong>
       </header>
       <header className="desk-top">
-        {phone && <MobileNavigation {...nav} />}
+        {phone ? (
+          <MobileNavigation {...nav} />
+        ) : (
+          <MenuToggle expanded={!sidebarCollapsed} onToggle={toggleSidebar} />
+        )}
         <div className="desk-school">
           <Icon name="school" />
           <span>{session.school?.name || '우리학교시간표'}</span>
@@ -181,7 +197,7 @@ function Workspace({ session, navigate: onNavigate, onLogout, passkeyButton }) {
         </div>
       </header>
       {!phone && (
-        <aside className="desk-sidebar">
+        <aside id="desk-work-menu" className="desk-sidebar" hidden={sidebarCollapsed}>
           <p className="desk-group-label">업무 메뉴</p>
           <WorkspaceNavigation {...nav} />
         </aside>

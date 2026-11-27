@@ -8,6 +8,7 @@ import { clearTokens, getSessionVersion, setTokens } from '@/api/tokenStorage.js
 import { queryKeys } from '@/hooks/queryKeys.js'
 import ScheduleProgress from '@/components/schedule/ScheduleProgress'
 import ScheduleCreateView from './ScheduleCreateView'
+import CandidateGrid from './CandidateGrid'
 import LessonChangesView from './LessonChangesView'
 
 const base = '/api/v2/terms/547001'
@@ -112,6 +113,7 @@ it('재직 교사는 직접 진입해도 편성·학기 등록 요청을 보낼 
 it('학기 중복이면 기간을 보존하고 새로 조회된 목록에서 적용할 수 있다', async () => {
   let reads = 0
   adapter(config => {
+    if (config.url !== '/api/v2/terms') return [200, []]
     if (config.method === 'get') return [200, ++reads === 1 ? [] : [registered]]
     return failure(config, 409, { code: 'TERM_EXISTS' })
   })
@@ -134,8 +136,13 @@ it('등록된 학기를 선택하고 파일 오류를 수정해 선택한 조건
   const selectedBase = `/api/v2/terms/${selected.termId}`
   const accepted = { ...job, statusUrl: selectedBase + '/generations/' + job.jobId }
   const slots = ['MON', 'TUE', 'WED', 'THU', 'FRI'].flatMap((day) =>
-    (day === 'FRI' ? [1] : [1, 2]).map((period) => ({ day, period })),
+    [1, 2].map((period) => ({ day, period })),
   )
+  const gradeLastPeriods = [
+    { grade: 1, lastPeriods: { MON: 2, TUE: 2, WED: 2, THU: 2, FRI: 1 } },
+    { grade: 2, lastPeriods: { MON: 1, TUE: 2, WED: 2, THU: 2, FRI: 2 } },
+    { grade: 3, lastPeriods: { MON: 2, TUE: 2, WED: 0, THU: 2, FRI: 2 } },
+  ]
   let uploads = 0,
     publications = 0,
     jobReads = 0,
@@ -148,6 +155,14 @@ it('등록된 학기를 선택하고 파일 오류를 수정해 선택한 조건
     }
     if (url === '/api/school-setting/periods')
       return [200, [{ periodNumber: 1 }, { periodNumber: 2 }]]
+    if (url === '/api/school/classes') {
+      expect(config.params.academicYear).toBe(2025)
+      return [200, [
+        { id: 3, grade: 1, classNumber: 1 },
+        { id: 4, grade: 2, classNumber: 1 },
+        { id: 5, grade: 3, classNumber: 1 },
+      ]]
+    }
     if (url === '/api/school/subjects') return [200, [{ id: 1, name: '수학' }]]
     if (url === '/api/school/members') return [200, [{ schoolUserId: 2, username: '김민지A' }]]
     if (url === selectedBase + '/load-imports/validate') {
@@ -181,6 +196,7 @@ it('등록된 학기를 선택하고 파일 오류를 수정해 선택한 조건
         validatedLoadId: 'load-42',
         preferences: [{ teacherId: '2', kind: 'WANT', anyOf: [{ day: 'MON', period: 1 }] }],
         objective: 'PREFER_WANTS',
+        gradeLastPeriods,
         teachingSlots: slots,
       })
       return [202, accepted]
@@ -193,6 +209,9 @@ it('등록된 학기를 선택하고 파일 오류를 수정해 선택한 조건
           ...accepted,
           state: 'READY',
           teachingSlots: slots,
+          gradeLastPeriods,
+          classGrades: { 3: 1, 4: 2, 5: 3 },
+          registeredPeriods: [1, 2],
           objective: 'PREFER_WANTS',
           result: { status: 'READY', candidates: [candidate] },
         },
@@ -234,6 +253,17 @@ it('등록된 학기를 선택하고 파일 오류를 수정해 선택한 조건
   await screen.findByText(/검증 완료 · 배정 1건/)
   const generate = (await screen.findByRole('button', { name: '후보 생성' })) as HTMLButtonElement
   fireEvent.change(screen.getByLabelText('금요일 마지막 교시'), { target: { value: '1' } })
+  expect(screen.queryByLabelText('토요일 마지막 교시')).toBeNull()
+  expect(screen.queryByLabelText('일요일 마지막 교시')).toBeNull()
+  const grade = screen.getByLabelText('편성 학년')
+  fireEvent.change(grade, { target: { value: '2' } })
+  fireEvent.change(screen.getByLabelText('월요일 마지막 교시'), { target: { value: '1' } })
+  fireEvent.change(grade, { target: { value: '3' } })
+  fireEvent.change(screen.getByLabelText('수요일 마지막 교시'), { target: { value: '0' } })
+  expect(screen.getByText('3학년 · 주간 배치 가능 교시 8칸')).toBeTruthy()
+  fireEvent.change(grade, { target: { value: '1' } })
+  expect((screen.getByLabelText('금요일 마지막 교시') as HTMLSelectElement).value).toBe('1')
+  expect(screen.getByText('1학년 · 주간 배치 가능 교시 9칸')).toBeTruthy()
   fireEvent.click(screen.getByText('교사별 시간 선호 (선택)'))
   fireEvent.click(screen.getByRole('button', { name: '선호 추가' }))
   fireEvent.change(screen.getByLabelText('후보 평가 기준 (선택)'), { target: { value: 'PREFER_WANTS' } })
@@ -252,6 +282,11 @@ it('등록된 학기를 선택하고 파일 오류를 수정해 선택한 조건
   expect(within(secondRow).getAllByRole('cell').map((cell) => cell.textContent)).toEqual([
     '공강', '공강', '공강', '공강', '수업 없음',
   ])
+  fireEvent.change(screen.getByLabelText('학급'), { target: { value: '4' } })
+  const secondGradeRow = screen.getByRole('rowheader', { name: '2교시' }).closest('tr')!
+  expect(within(secondGradeRow).getAllByRole('cell').map((cell) => cell.textContent)).toEqual([
+    '수업 없음', '공강', '공강', '공강', '공강',
+  ])
   fireEvent.change(screen.getByLabelText('게시 적용일'), {
     target: { value: '2025-11-24' },
   })
@@ -269,6 +304,27 @@ it('등록된 학기를 선택하고 파일 오류를 수정해 선택한 조건
   fireEvent.click(screen.getByRole('button', { name: '후보 다시 생성 준비' }))
   await waitFor(() => expect(screen.queryByRole('radio')).toBeNull())
   expect(publications).toBe(1)
+})
+
+it('학년 설정이 없는 과거 작업은 공통 슬롯과 주말을 보존하고 등록된 교시만 표시한다', () => {
+  render(<CandidateGrid
+    slots={[{ day: 'MON', period: 1 }, { day: 'SAT', period: 3 }]}
+    registeredPeriods={[1, 3, 5]}
+    placements={[]}
+    room="3"
+    subjectName={String}
+    teacherName={String}
+  />)
+  const table = within(screen.getByRole('table', { name: '선택한 학급의 주간 배치' }))
+  expect(table.getByRole('columnheader', { name: '토요일' })).toBeTruthy()
+  expect(table.queryByRole('columnheader', { name: '일요일' })).toBeNull()
+  expect(table.queryByRole('rowheader', { name: '2교시' })).toBeNull()
+  const third = table.getByRole('rowheader', { name: '3교시' }).closest('tr')!
+  expect(within(third).getAllByRole('cell').map(cell => cell.textContent)).toEqual([
+    '수업 없음', '수업 없음', '수업 없음', '수업 없음', '수업 없음', '공강',
+  ])
+  const fifth = table.getByRole('rowheader', { name: '5교시' }).closest('tr')!
+  expect(within(fifth).getAllByText('수업 없음')).toHaveLength(6)
 })
 
 it.each([false, true])(
@@ -320,6 +376,8 @@ it('학교 총합이 같아도 초과 학급을 차단하고, 파일을 교체�
     }
     if (config.url === '/api/school-setting/periods')
       return [200, Array.from({ length: 7 }, (_, i) => ({ periodNumber: i + 1 }))]
+    if (config.url === '/api/school/classes')
+      return [200, [{ id: 1, grade: 1, classNumber: 1 }, { id: 2, grade: 1, classNumber: 2 }]]
     if (config.url === base + '/load-imports/validate') {
       const hours = loads.shift()!
       return [

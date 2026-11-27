@@ -54,6 +54,9 @@ beforeEach(() => {
     let data: unknown
     if (config.method === 'post') posts.push(config.url!)
     switch (config.url) {
+      case '/api/v2/terms/11/homerooms':
+        data = []
+        break
       case '/api/v2/terms':
         data = [{ termId: 11, academicYear: 2026, semester: 2, startDate: '2026-08-01', endDate: '2026-12-31' }]
         break

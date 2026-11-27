@@ -76,14 +76,31 @@ export function useOwnerProfile(options = {}) {
     signal => getOwnerProfile({ signal }), options)
 }
 
-export function useUpdateOwnerProfile() {
-  const queryClient = useQueryClient()
+function useSaveAccountName(update, prefix) {
+  const cache = useQueryClient()
+  const { scope } = useHomeSession()
   return useMutation({
-    mutationFn: (payload) => updateOwnerProfile(payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.mypage.ownerProfile() })
+    mutationFn: update,
+    onSuccess: async (saved) => {
+      if (saved.userId !== scope.userId || scope.generation !== getSessionVersion()) return
+      const key = [...prefix, scope]
+      await cache.cancelQueries({ queryKey: key, exact: true })
+      if (scope.generation !== getSessionVersion()) return
+      cache.setQueryData(key, saved)
+      // A legacy directory can display the account name when there is no roster name.
+      void cache.invalidateQueries({ queryKey: queryKeys.home.directory() })
+      for (const profileKey of [queryKeys.mypage.ownerProfile(), queryKeys.mypage.staffProfile()]) {
+        void cache.invalidateQueries({
+          queryKey: profileKey,
+          predicate: (query) => query.queryKey.at(-1)?.userId === saved.userId,
+        })
+      }
     },
   })
+}
+
+export function useUpdateOwnerProfile() {
+  return useSaveAccountName(updateOwnerProfile, queryKeys.mypage.ownerProfile())
 }
 
 export function useOwnerStore(options = {}) {
@@ -141,13 +158,7 @@ export function useStaffProfile(options = {}) {
 }
 
 export function useUpdateStaffProfile() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (payload) => updateStaffProfile(payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.mypage.staffProfile() })
-    },
-  })
+  return useSaveAccountName(updateStaffProfile, queryKeys.mypage.staffProfile())
 }
 
 export function useStaffStores(options = {}) {

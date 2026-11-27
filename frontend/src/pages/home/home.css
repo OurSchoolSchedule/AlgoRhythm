@@ -1,7 +1,7 @@
 .school-desk {
   --desk-canvas: color-mix(in srgb, var(--surface-1) 75%, var(--color-primary-subtle));
   display: grid;
-  grid-template-columns: 204px minmax(0, 1fr) 256px;
+  grid-template-columns: var(--desk-menu-width, 204px) minmax(0, 1fr) 256px;
   grid-template-rows: 64px 1fr auto;
   grid-template-areas: 'brand top top' 'menu main profile' 'menu footer footer';
   min-height: 100dvh;
@@ -11,13 +11,20 @@
   font-size: 14px;
   line-height: 1.5;
 }
+.school-desk[data-menu-collapsed='true'] {
+  --desk-menu-width: 0px;
+}
+.school-desk[data-menu-collapsed='true'] .desk-brand,
+.desk-sidebar[hidden] {
+  display: none;
+}
 .school-desk > .service-footer {
   grid-area: footer;
 }
 @media (min-width: 720px) {
   /* Leave the fixed AI button its own space beside the footer. */
   .school-desk > .service-footer {
-    margin-inline-end: calc(var(--space-6) + 10em);
+    padding-inline-end: calc(var(--space-6) + 10em);
   }
 }
 .school-desk *,
@@ -168,7 +175,6 @@
   height: 6px;
   border-radius: 50%;
 }
-.school-desk .desk-menu-trigger,
 .school-desk .desk-profile-trigger {
   display: none;
 }
@@ -694,7 +700,7 @@
 }
 @media (max-width: 1199px) {
   .school-desk {
-    grid-template-columns: 180px minmax(0, 1fr);
+    grid-template-columns: var(--desk-menu-width, 180px) minmax(0, 1fr);
     grid-template-areas: 'brand top' 'menu main' 'menu footer';
   }
   .desk-profile {
@@ -716,9 +722,6 @@
   .desk-brand,
   .desk-sidebar {
     display: none;
-  }
-  .school-desk .desk-menu-trigger {
-    display: grid;
   }
   .desk-top {
     padding: 0 10px;
@@ -823,7 +826,7 @@
 }
 @media (min-width: 1200px) {
   .desk-detail {
-    grid-template-columns: 204px minmax(0, 1fr);
+    grid-template-columns: var(--desk-menu-width, 204px) minmax(0, 1fr);
     grid-template-areas: 'brand top' 'menu main' 'menu footer';
   }
 }
