@@ -64,3 +64,13 @@ export async function approveApplicant(
     throw new Error('승인 결과를 확인하지 못했습니다. 신청 목록을 새로고침해 주세요.')
   }
 }
+
+export async function rejectApplicant(
+  schoolId: number,
+  rosterId: number,
+  requestedAt: string | null,
+  signal: AbortSignal,
+) {
+  const response = await client.post(`${path(schoolId)}/${rosterId}/reject`, { requestedAt }, { signal })
+  if (response.status !== 204) throw new Error('거절 결과를 확인하지 못했습니다. 신청 목록을 새로고침해 주세요.')
+}
