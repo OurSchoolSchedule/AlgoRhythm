@@ -12,7 +12,7 @@ vi.mock('@/hooks', () => ({
 }))
 
 const scope = { schoolId: 540001, termId: 547001, round: 4, jobs: 2, versions: 1 }
-beforeEach(() => { vi.resetAllMocks(); api.get.mockResolvedValue({ data: scope }) })
+beforeEach(() => { vi.resetAllMocks(); api.get.mockResolvedValue({ data: { scope, schoolCode: 'TESTCODE' } }) })
 afterEach(cleanup)
 function open() {
   render(<AIFloatingChat />)
@@ -60,4 +60,15 @@ it('refuses an old global reset server or a different target term', async () => 
     cleanup()
   }
   expect(api.post).not.toHaveBeenCalled()
+})
+
+it('prepares a missing school then shows the join code and reset form', async () => {
+  api.get.mockResolvedValue({ data: { scope: null, schoolCode: null } })
+  api.post.mockResolvedValue({ data: { scope, schoolCode: 'NEWCODE' } })
+  open()
+  fireEvent.click(await screen.findByRole('button', { name: '시연 학교 준비하기' }))
+  await screen.findByText('NEWCODE')
+  expect(api.post).toHaveBeenCalledExactlyOnceWith('/api/demo-reset/setup', {}, expect.anything())
+  expect(api.approve).not.toHaveBeenCalled()
+  expect(screen.getByRole('button', { name: 'School42 시간표만 초기화' })).toBeTruthy()
 })
