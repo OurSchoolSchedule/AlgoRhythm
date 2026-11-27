@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { approveApplicant, getMatchOptions, listApprovalEntries } from '@/api/rosterApproval'
+import { approveApplicant, rejectApplicant, getMatchOptions, listApprovalEntries } from '@/api/rosterApproval'
 import { rosterProblem } from '@/api/rosterImport'
 import { type HomeSession, useHomeSession, useScopedRead } from '@/hooks/useHomeSession'
 import { schoolRosterKey } from '@/hooks/useRosterImport'
@@ -16,11 +16,11 @@ function ApplicantReview({
   termId,
   rosterId,
   backfill,
-  onApproved,
+  onReviewed,
 }: Scope & {
   rosterId: number
   backfill: boolean
-  onApproved: (message: string) => void
+  onReviewed: (message: string) => void
 }) {
   const [selection, setSelection] = useState('')
   const [problem, setProblem] = useState('')
@@ -42,13 +42,22 @@ function ApplicantReview({
   const needsChoice = backfill || data?.requiresSelection || !!data?.candidates.length
   const canApprove = !!data?.verifiedEmail && (!needsChoice || !!selected)
 
-  async function approve() {
-    if (!data || !canApprove || request.current) return
+  async function review(action: 'approve' | 'reject') {
+    if (!data || request.current) return
+    if (action === 'approve' && !canApprove) return
+    if (action === 'reject' && (backfill || !window.confirm(
+      `${data.applicantName} (${data.verifiedEmail || '이메일 미확인'})님의 가입 신청을 거절할까요? 거절 후 다시 신청할 수 있습니다.`,
+    ))) return
     const controller = new AbortController()
     request.current = controller
     setBusy(true)
     setProblem('')
     try {
+      if (action === 'reject') {
+        await rejectApplicant(schoolId, rosterId, data.requestedAt, controller.signal)
+        if (!controller.signal.aborted) onReviewed(`${data.applicantName} 가입 거절 완료`)
+        return
+      }
       await approveApplicant(
         schoolId,
         rosterId,
@@ -58,7 +67,7 @@ function ApplicantReview({
       if (!controller.signal.aborted) {
         const message = backfill ? '재직 교사 확인 완료' : '가입 승인 완료'
         const link = selected ? ` · ${selected.displayName} 명부 연결` : ''
-        onApproved(`${data.applicantName} ${message}${link}`)
+        onReviewed(`${data.applicantName} ${message}${link}`)
       }
     } catch (err) {
       if (!controller.signal.aborted) {
@@ -134,16 +143,22 @@ function ApplicantReview({
         className="btn btn-primary"
         type="button"
         disabled={!canApprove || busy || options.isFetching}
-        onClick={approve}
+        onClick={() => review('approve')}
       >
         {busy
-          ? '승인 중…'
+          ? '처리 중…'
           : backfill
             ? '기존 교사 명부 연결'
             : needsChoice
               ? '명부 연결 및 가입 승인'
               : '가입 승인'}
       </button>
+      {!backfill && (
+        <button type="button" className="btn" disabled={busy || options.isFetching}
+          onClick={() => review('reject')}>
+          가입 거절
+        </button>
+      )}
     </div>
   )
 }
@@ -238,7 +253,7 @@ function SchoolRequests({ session, schoolId, termId }: Scope) {
           {...{ session, schoolId, termId }}
           rosterId={selected.rosterId}
           backfill={backfill}
-          onApproved={(msg) => {
+          onReviewed={(msg) => {
             setApplicant('')
             setMessage(msg)
           }}

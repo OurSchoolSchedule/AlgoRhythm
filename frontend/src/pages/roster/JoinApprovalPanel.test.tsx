@@ -149,6 +149,8 @@ it('opens an approved School42 teacher separately for a missing timetable identi
   await screen.findByText('승인 대기 중인 교사가 없습니다.')
   fireEvent.click(screen.getByRole('checkbox', { name: '이미 승인된 교사의 명부 연결' }))
   fireEvent.change(screen.getByLabelText('재직 교사'), { target: { value: '15' } })
+  await screen.findByRole('button', { name: '기존 교사 명부 연결' })
+  expect(screen.queryByRole('button', { name: '가입 거절' })).toBeNull()
   expect(
     ((await screen.findByRole('button', { name: '기존 교사 명부 연결' })) as HTMLButtonElement).disabled,
   ).toBe(true)
@@ -164,4 +166,21 @@ it('blocks approval when the verified email record is missing', async () => {
   verifiedEmail = null
   await review()
   expect((screen.getByRole('button', { name: '가입 승인' }) as HTMLButtonElement).disabled).toBe(true)
+})
+
+it('rejects only after confirmation, without selecting a teaching identity', async () => {
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true)
+  const post = vi.spyOn(client, 'post').mockImplementation(async () => {
+    approved = true
+    return { status: 204 }
+  })
+  await review()
+  const button = screen.getByRole('button', { name: '가입 거절' })
+  fireEvent.click(button)
+  expect(post).not.toHaveBeenCalled()
+  fireEvent.click(button)
+  expect(confirm).toHaveBeenCalledWith(expect.stringContaining(row.authEmail))
+  expect(post).toHaveBeenCalledWith(path + '/15/reject', { requestedAt: '2026-11-27T10:30:00' }, expect.anything())
+  await screen.findByText('박교사 가입 거절 완료')
+  await screen.findByText('승인 대기 중인 교사가 없습니다.')
 })
