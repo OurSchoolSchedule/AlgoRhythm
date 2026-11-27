@@ -48,10 +48,14 @@ export function useDeleteSubject() {
   })
 }
 
-/** @param {number} [academicYear] */
-export function useSchoolClasses(academicYear, options = {}) {
+/**
+ * @param {number} [academicYear]
+ * @param {{ enabled?: boolean, termId?: number | null }} [options]
+ */
+export function useSchoolClasses(academicYear, { termId = null, ...options } = {}) {
   const session = useHomeSession()
-  return useScopedRead(session, queryKeys.schoolCatalog.classes(academicYear), session.access.queries.catalog,
+  const key = queryKeys.schoolCatalog.classes(academicYear)
+  return useScopedRead(session, termId === null ? key : [...key, termId], session.access.queries.catalog,
     signal => getSchoolClasses(academicYear, { signal }), options)
 }
 

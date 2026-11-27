@@ -1,19 +1,24 @@
 import { useState } from 'react'
 import { useSchoolHome } from '@/hooks/useSchoolHome'
-import { useTimetableDate } from '@/hooks/useTimetableDate'
+import { useTimetableSelection } from '@/hooks/useTimetableSelection'
 import { useTermChoice } from '@/hooks/useTermChoice'
 import AIFloatingChat from '@/components/common/AIFloatingChat'
 import { Actions, Dialog, Icon, Notices, Profile } from './HomePanels'
 import TermForm, { TermStatus } from '@/pages/schedule/TermForm'
 import HomeTimetable from './HomeTimetable'
 
-export default function HomeContent({ session, navigate, panel, openPanel }) {
+export default function HomeContent({
+  session,
+  navigate,
+  panel,
+  openPanel,
+  timetableOnly = false,
+}) {
   const state = useTermChoice(session)
   const { term, weeklyTerm } = state
-  const { date, setDate } = useTimetableDate(session, term)
-  const [classId, setClassId] = useState(null)
+  const board = useTimetableSelection(session, term)
   const [editingTerm, setEditingTerm] = useState(false)
-  const home = useSchoolHome({ term, weeklyTerm, classId, date })
+  const home = useSchoolHome({ term, weeklyTerm, ...board.selection })
   const { menus } = home.access
   const shortcuts = [
     ...(menus.generate
@@ -64,46 +69,63 @@ export default function HomeContent({ session, navigate, panel, openPanel }) {
         <div className="desk-title">
           <div>
             <p>
+              {timetableOnly ? '조회 날짜 · ' : '오늘 · '}
               {new Intl.DateTimeFormat('ko-KR', {
                 dateStyle: 'full',
                 timeZone: 'UTC',
-              }).format(new Date(home.today + 'T12:00:00Z'))}
+              }).format(new Date((timetableOnly ? home.date : home.today) + 'T12:00:00Z'))}
             </p>
-            <h1>업무 홈</h1>
+            <h1>{timetableOnly ? '시간표' : '업무 홈'}</h1>
           </div>
-          {session.access.queries.datedLessons && (
-            <button
-              className="desk-term-button"
-              aria-label="조회 학기 설정"
-              onClick={() => setEditingTerm(true)}
-            >
-              <Icon name="settings" />
-              {term ? `${term.academicYear}학년도 ${term.semester}학기` : '학기 설정'}
-            </button>
-          )}
+          <div className="desk-week-tools">
+            {timetableOnly && menus.generate && (
+              <button className="desk-term-button" onClick={() => navigate('schedule-create')}>
+                시간표 생성
+              </button>
+            )}
+            {session.access.queries.datedLessons && (
+              <button
+                className="desk-term-button"
+                aria-label="조회 학기 설정"
+                onClick={() => setEditingTerm(true)}
+              >
+                <Icon name="settings" />
+                {term ? `${term.academicYear}학년도 ${term.semester}학기` : '학기 설정'}
+              </button>
+            )}
+          </div>
         </div>
-        {menus.timetable ? (
+        {session.access.queries.datedLessons ? (
           <>
             <HomeTimetable
               key={term?.termId ?? 'legacy'}
               term={term}
-              session={session}
               home={home}
               onRequest={(selection) => navigate('lesson-changes', selection.date, selection)}
-              setDate={setDate}
-              setRoom={setClassId}
-              termStatus={<TermStatus state={state} onRegister={session.access.actions.generate ? () => setEditingTerm(true) : undefined} />}
+              board={board}
+              termStatus={
+                <TermStatus
+                  state={state}
+                  onRegister={
+                    session.access.actions.generate ? () => setEditingTerm(true) : undefined
+                  }
+                />
+              }
             />
-            <div className="desk-lower">
-              <Notices home={home} onOpen={() => openPanel('notices')} />
-              <section className="desk-card desk-section">
-                <header>
-                  <h2>자주 쓰는 기능</h2>
-                </header>
-                <Actions compact items={shortcuts} />
-                <AIFloatingChat />
-              </section>
-            </div>
+            {timetableOnly ? (
+              <AIFloatingChat />
+            ) : (
+              <div className="desk-lower">
+                <Notices home={home} onOpen={() => openPanel('notices')} />
+                <section className="desk-card desk-section">
+                  <header>
+                    <h2>자주 쓰는 기능</h2>
+                  </header>
+                  <Actions compact items={shortcuts} />
+                  <AIFloatingChat />
+                </section>
+              </div>
+            )}
           </>
         ) : (
           <section className="desk-card desk-section" role="status">
@@ -112,7 +134,7 @@ export default function HomeContent({ session, navigate, panel, openPanel }) {
           </section>
         )}
       </main>
-      {menus.profile && (
+      {!timetableOnly && menus.profile && (
         <aside className="desk-profile">
           <section className="desk-card desk-section">
             <header>
@@ -123,19 +145,14 @@ export default function HomeContent({ session, navigate, panel, openPanel }) {
           </section>
         </aside>
       )}
-      {panel === 'profile' && menus.profile && (
+      {!timetableOnly && panel === 'profile' && menus.profile && (
         <Dialog title="내 프로필" onClose={() => openPanel(null)}>
           {profile}
         </Dialog>
       )}
       {editingTerm && menus.timetable && (
         <Dialog title="조회 학기 설정" onClose={() => setEditingTerm(false)}>
-          <TermForm
-            session={session}
-            state={state}
-            onClose={() => setEditingTerm(false)}
-            onApplied={() => setClassId(null)}
-          />
+          <TermForm session={session} state={state} onClose={() => setEditingTerm(false)} />
         </Dialog>
       )}
     </>

@@ -1,8 +1,8 @@
 import type { DatedLessonDto } from './datedLesson'
 
-export type NewLessonChange = { firstId: number; firstRev: number } & (
+export type NewLessonChange = { firstId: number; firstRev: number; firstDate?: string } & (
   | { kind: 'SUBSTITUTE'; substituteTeacherId: number }
-  | { kind: 'SWAP'; secondId: number; secondRev: number }
+  | { kind: 'SWAP'; secondId: number; secondRev: number; secondDate?: string }
 )
 
 export type LessonChange = {
