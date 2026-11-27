@@ -3,7 +3,6 @@ import {
   loginWithPasskey,
   passkeyErrorCode,
   passkeyErrorMessage,
-  recoverPasskey,
   registerPasskey,
   supportsPasskeys,
 } from '@/api/passkeys'
@@ -144,12 +143,9 @@ export function VerifiedPasskeyStep({
   onAuthenticated,
 }: VerifiedProps) {
   const action = usePasskeyAction()
-  const [recovering, setRecovering] = useState(false)
-  const [code, setCode] = useState('')
   const [usedGrant, setUsedGrant] = useState(false)
   const sessionVersion = useSyncExternalStore(subscribeSession, getSessionVersion)
   const [initialVersion] = useState(getSessionVersion)
-  const register = verification.nextStep === 'REGISTER'
   const restart = (
     <button type="button" className="entry-secondary" onClick={onRestart}>
       이메일 입력으로 돌아가기
@@ -165,15 +161,10 @@ export function VerifiedPasskeyStep({
   }
   function enroll() {
     if (usedGrant || action.pending) return
-    // BE consumes the email grant when it issues options, including failed recovery attempts.
+    // Registration options consume the one-use email grant, even if the device prompt is cancelled.
     setUsedGrant(true)
-    const oldCode = code.trim()
-    setCode('')
     void action.run(
-      (signal) =>
-        recovering
-          ? recoverPasskey(verification.flowToken, oldCode, signal)
-          : registerPasskey(verification.flowToken, signal),
+      (signal) => registerPasskey(verification.flowToken, signal),
       (session) => {
         if (matchesAccount(session)) onAuthenticated(session)
       },
@@ -189,94 +180,41 @@ export function VerifiedPasskeyStep({
   const supported = supportsPasskeys()
   return (
     <>
-      <h2 className="entry-auth-title">
-        {register ? '패스키 등록 필요' : recovering ? '분실한 패스키 복구' : '패스키 인증 필요'}
-      </h2>
+      <h2 className="entry-auth-title">이메일 인증 완료</h2>
       <div className="entry-form">
-        {!supported ? (
-          <p role="status">{unsupported}</p>
-        ) : (
-          <>
-            {usedGrant && !action.pending ? (
-              !action.originRejected && (
-                <p>
-                  다시 진행하려면 이메일 인증 코드를 새로 받아 주세요. 이미 등록을 마쳤다면 첫
-                  화면에서 패스키로 로그인할 수 있습니다.
-                </p>
-              )
-            ) : recovering ? (
-              <>
-                <p>
-                  기존 복구 코드를 입력하고 새 패스키를 등록하세요. 등록이 끝나면 기존 패스키가 모두
-                  해제되고 이 코드는 만료됩니다.
-                </p>
-                <form
-                  className="entry-form"
-                  onSubmit={(event) => {
-                    event.preventDefault()
-                    if (code.trim()) enroll()
-                  }}
-                >
-                  <label>
-                    기존 복구 코드
-                    <input
-                      type="password"
-                      autoComplete="off"
-                      spellCheck={false}
-                      value={code}
-                      onChange={(e) => setCode(e.target.value)}
-                      disabled={action.pending}
-                      required
-                    />
-                  </label>
-                  <button className="entry-primary" disabled={action.pending || !code.trim()}>
-                    새 패스키로 복구
-                  </button>
-                </form>
-                <p>
-                  복구 코드가 없다면 패스키가 동기화된 기기나 다른 등록 기기로 로그인하세요. 등록
-                  기기와 코드가 모두 없으면 이 화면에서 계정을 복구할 수 없습니다.
-                </p>
-              </>
-            ) : (
-              <>
-                <p>
-                  {register
-                    ? '이메일을 확인했습니다. 기기의 화면 잠금 또는 보안 키로 패스키를 등록하세요.'
-                    : '이 이메일 계정에 등록한 패스키를 선택하세요.'}
-                </p>
-                <button
-                  type="button"
-                  className="entry-primary"
-                  disabled={action.pending}
-                  onClick={() =>
-                    register
-                      ? enroll()
-                      : void action.run(loginWithPasskey, (session) => {
-                          if (matchesAccount(session)) onAuthenticated(session)
-                        })
-                  }
-                >
-                  <Icon name="key" /> {register ? '패스키 등록' : '등록한 패스키로 인증'}
-                </button>
-                {!register && (
-                  <button
-                    type="button"
-                    className="entry-secondary"
-                    disabled={action.pending}
-                    onClick={() => {
-                      setRecovering(true)
-                      action.setError('')
-                    }}
-                  >
-                    이전에 발급받은 복구 코드 사용
-                  </button>
-                )}
-              </>
-            )}
-            <ActionStatus {...action} />
-          </>
+        <p>
+          이 기기나 브라우저에 패스키가 없거나 기존 패스키를 분실했다면 새 패스키를
+          발급받으세요. 별도의 복구 코드를 보관하거나 입력할 필요가 없습니다.
+        </p>
+        {!supported && <p role="status">{unsupported}</p>}
+        <button
+          type="button"
+          className="entry-primary"
+          disabled={!supported || action.pending || usedGrant}
+          onClick={enroll}
+        >
+          <Icon name="key" /> 새 패스키 발급
+        </button>
+        <p>기존 패스키는 유지됩니다. 분실한 패스키는 로그인 후 패스키 관리에서 삭제할 수 있습니다.</p>
+        {usedGrant && !action.pending && !action.originRejected && (
+          <p>
+            새 패스키 발급을 다시 진행하려면 이메일 인증 코드를 새로 받아 주세요. 이미
+            등록을 마쳤다면 등록한 패스키로 로그인할 수 있습니다.
+          </p>
         )}
+        <button
+          type="button"
+          className="entry-secondary"
+          disabled={!supported || action.pending}
+          onClick={() =>
+            void action.run(loginWithPasskey, (session) => {
+              if (matchesAccount(session)) onAuthenticated(session)
+            })
+          }
+        >
+          등록한 패스키로 인증
+        </button>
+        <ActionStatus {...action} />
         {!action.pending && restart}
       </div>
     </>
