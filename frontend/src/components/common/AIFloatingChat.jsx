@@ -3,10 +3,11 @@ import { useConfirmVoiceCommand, usePreviewVoiceCommand } from '@/hooks'
 import { getApiErrorMessage } from '@/utils/timetableGeneration.js'
 import { VOICE_INTENT_LABEL, canConfirmVoicePreview, previewLines } from '@/utils/voicePreview.js'
 
+import LessonAssistant from './LessonAssistant'
 import DemoResetForm from './DemoResetForm'
 import './demo-reset.css'
 
-const EXAMPLES = ['내일 3교시 보결 부탁해', '월요일 1교시 근무 불가']
+const EXAMPLES = ['이번 주 내 시간표를 알려줘', '공강 교사를 찾아줘', '교환 가능한 수업을 찾아줘', '내 보결 요청 상태를 알려줘', '월요일 1교시 근무 불가']
 
 function speechRecognition() {
   const Ctor = window.SpeechRecognition || window.webkitSpeechRecognition
@@ -22,10 +23,12 @@ export default function AIFloatingChat() {
   const [speechError, setSpeechError] = useState('')
   const [sentText, setSentText] = useState('')
   const recognitionRef = useRef(null)
+  const reviewButton = useRef(null)
   const preview = usePreviewVoiceCommand()
   const confirm = useConfirmVoiceCommand()
   const draft = preview.data
-  const lines = previewLines(draft?.preview)
+  const lessonCommand = ['MY_WEEK', 'COVER_OPTIONS', 'SWAP_OPTIONS', 'CHANGE_STATUS'].includes(draft?.intentType)
+  const lines = lessonCommand ? [] : previewLines(draft?.preview)
   const readyToConfirm = canConfirmVoicePreview(draft)
 
   useEffect(() => () => recognitionRef.current?.abort?.(), [])
@@ -77,6 +80,17 @@ export default function AIFloatingChat() {
       setResetOpen(true)
       return
     }
+    if (draft?.intentType === 'COVER_OPTIONS' && /선택한.*보결.*보내/.test(trimmed)) {
+      setSentText(trimmed)
+      if (reviewButton.current && !reviewButton.current.disabled) {
+        reviewButton.current.click()
+        setSpeechError('')
+      } else {
+        setSpeechError('수업과 공강 교사를 선택하고 요청 내용을 확인하세요.')
+      }
+      return
+    }
+    setSpeechError('')
     confirm.reset()
     setSentText(trimmed)
     preview.mutate(trimmed)
@@ -100,7 +114,7 @@ export default function AIFloatingChat() {
             background: 'var(--color-surface)',
           }}>
             <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--color-text)', flex: 1 }}>AI 도우미</p>
-            <button type="button" className="panel-close" disabled={resetBusy} onClick={() => { stopListening(); setResetOpen(false); setSentText(''); setOpen(false) }} aria-label="질문 닫기">
+            <button type="button" className="panel-close" disabled={resetBusy} onClick={() => { stopListening(); preview.reset(); confirm.reset(); setResetOpen(false); setSentText(''); setSpeechError(''); setOpen(false) }} aria-label="질문 닫기">
               <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
               </svg>
@@ -109,7 +123,7 @@ export default function AIFloatingChat() {
 
           <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
-              말은 이 브라우저에서 글자로 바뀐 뒤 서버에 전달됩니다. 보결과 근무 불가 명령만 실행할 수 있습니다.
+              말은 이 브라우저에서 글자로 바뀐 뒤 서버에 전달됩니다. 개인 시간표, 보결·교환 후보와 요청 상태를 조회할 수 있습니다.
             </p>
             {sentText && <Bubble role="user">{sentText}</Bubble>}
             {preview.isPending && <Bubble>명령을 확인하고 있습니다.</Bubble>}
@@ -128,16 +142,14 @@ export default function AIFloatingChat() {
                     {lines.map((line) => `${line.key}: ${line.value}`).join(' · ')}
                   </span>
                 )}
-                {readyToConfirm ? (
+                {lessonCommand ? <LessonAssistant command={draft} reviewButton={reviewButton} /> : readyToConfirm && !confirm.isSuccess ? (
                   <span style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                     <button type="button" disabled={confirm.isPending} onClick={runConfirm} style={confirmButton}>
                       {confirm.isPending ? '실행 중...' : '실행'}
                     </button>
                     <button type="button" disabled={confirm.isPending} onClick={() => preview.reset()} style={ghostButton}>취소</button>
                   </span>
-                ) : (
-                  <span style={{ display: 'block', marginTop: 6, fontSize: 12 }}>실행할 수 있는 명령이 아닙니다.</span>
-                )}
+                ) : !confirm.isSuccess && <span>실행할 수 있는 명령이 아닙니다.</span>}
               </Bubble>
             )}
             {confirm.isError && (

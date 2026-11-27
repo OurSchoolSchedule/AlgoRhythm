@@ -456,7 +456,8 @@ describe('FE9 업무 홈', () => {
     routes.set(mine, () => [displayRow])
     routes.set('/api/notifications', httpError(500))
     const ui = render(<HomeView navigate={vi.fn()} onLogout={vi.fn()} />, { wrapper })
-    const cell = await ui.findByRole('button', { name: '월요일 1교시 · 미술' })
+    // The home waits for the active school, roster and weekly lessons in sequence.
+    const cell = await ui.findByLabelText('월요일 1교시 · 미술', { selector: 'button' }, { timeout: 3000 })
     fireEvent.click(cell)
     expect(cell.getAttribute('aria-pressed')).toBe('true')
     expect(cell.closest('td')?.getAttribute('data-today')).toBe('true')

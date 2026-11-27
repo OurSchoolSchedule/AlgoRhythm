@@ -1,4 +1,5 @@
 import client from './client.js'
+import { loginEmailNotice } from '@/pages/auth/loginEmail'
 import { getSessionVersion } from './tokenStorage.js'
 import { isWorkSession, type WorkSession } from '@/pages/auth/emailSession'
 
@@ -6,6 +7,7 @@ export type PasskeyDevice = { id: string; createdAt: string }
 const base = '/api/auth/passkeys'
 
 const messages = {
+  EMAIL_DOMAIN_DENIED: loginEmailNotice,
   PASSKEY_UNSUPPORTED:
     '이 환경에서는 패스키를 사용할 수 없습니다. 최신 브라우저에서 서비스 주소를 직접 열어 주세요.',
   PASSKEY_CANCELLED: '패스키 요청이 취소되었거나 시간이 지났습니다. 준비되면 다시 시도해 주세요.',
@@ -51,6 +53,7 @@ export function passkeyErrorCode(error: unknown): ErrorCode | undefined {
   if (error.name === 'NotSupportedError') return 'PASSKEY_UNSUPPORTED'
   const response = error.response
   if (!record(response)) return undefined
+  if (record(response.data) && response.data.error === 'EMAIL_DOMAIN_DENIED') return 'EMAIL_DOMAIN_DENIED'
   if (response.status === 403 && response.data === 'Invalid CORS request') return 'PASSKEY_ORIGIN'
   if (
     record(response.data) &&

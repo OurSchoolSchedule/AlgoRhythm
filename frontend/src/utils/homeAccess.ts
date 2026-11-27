@@ -11,7 +11,7 @@ export function homeAccess(authenticated: boolean, school: ActiveSchoolDto | nul
     generate: hired && admin,
     publish: hired && admin,
     approve: hired && admin,
-    requestSubstitute: hired && admin,
+    requestSubstitute: hired,
     respondToChange: hired && teacher,
     requestSwap: hired && teacher,
   }

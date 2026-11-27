@@ -130,7 +130,11 @@ beforeEach(() => {
     let status = 200
     if (cfg.method === 'post') {
       posts.push(cfg)
-      status = cfg.url === base + '/lesson-changes' ? 201 : 200
+      status = [base + '/lesson-changes', base + '/lesson-changes/substitutes'].includes(
+        cfg.url ?? '',
+      )
+        ? 201
+        : 200
       data = await write(cfg)
     } else {
       reads.push(cfg)
@@ -235,6 +239,25 @@ describe('날짜별 수업 변경', () => {
     },
   )
 
+  it('담당 교사가 한 번의 요청으로 두 공강 교사를 초대한다', async () => {
+    login('TEACHER', first.actual.teacherId)
+    const invitations = [cover, { ...cover, id: 105, responder: 25 }]
+    write = () => {
+      list = invitations
+      return invitations
+    }
+    const { result } = mount()
+    await loaded(result)
+    await act(async () => {
+      const outcome = await result.current.requestSubstitute(first, [19, 25])
+      expect(outcome).toMatchObject({ phase: 'created', count: 2 })
+    })
+    expect(posts.map((p) => p.url)).toEqual([base + '/lesson-changes/substitutes'])
+    expect(bodies()).toEqual([
+      { firstId: first.id, firstRev: first.rev, substituteTeacherIds: [19, 25] },
+    ])
+  })
+
   it('지정 교사는 거절할 수 있고 거절한 신청은 승인할 수 없다', async () => {
     login('TEACHER', cover.responder)
     list = [cover]
@@ -263,7 +286,7 @@ describe('날짜별 수업 변경', () => {
     expect(result.current.canRespond(wrong)).toBe(false)
     await expect(result.current.respond(wrong, true)).rejects.toThrow('지정된')
     await expect(result.current.requestSwap(first, second)).rejects.toThrow('내가 담당')
-    await expect(result.current.requestSubstitute(first, 19)).rejects.toThrow('관리자')
+    await expect(result.current.requestSubstitute(first, 19)).rejects.toThrow('내가 담당')
     expect(() => result.current.prepareApproval(accepted(wrong))).toThrow('관리자')
     expect(posts).toHaveLength(0)
   })

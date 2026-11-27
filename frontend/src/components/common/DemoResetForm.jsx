@@ -3,8 +3,8 @@ import client from '@/api/client.js'
 import { approveDemoReset, passkeyErrorMessage } from '@/api/passkeys'
 
 function isScope(value) {
-  return value?.schoolId === 540001 && value.termId === 547001 && Number.isSafeInteger(value.round) && value.round > 0 &&
-    ['jobs', 'versions'].every(key => Number.isSafeInteger(value?.[key]) && value[key] >= 0)
+  return ['TIMETABLE', 'FULL'].includes(value?.mode) && value?.schoolId === 540001 && value.termId === 547001 && Number.isSafeInteger(value.round) && value.round > 0 &&
+    ['jobs', 'versions', 'candidates', 'weeklyLessons', 'datedLessons', 'receipts', 'requests', 'notifications'].every(key => Number.isSafeInteger(value?.[key]) && value[key] >= 0)
 }
 
 export default function DemoResetForm({ onCancel, onBusy }) {
@@ -31,6 +31,28 @@ export default function DemoResetForm({ onCancel, onBusy }) {
     })
     return () => controller.abort()
   }, [])
+
+  async function changeMode(mode) {
+    if (running.current) return
+    running.current = true
+    setBusy(true)
+    onBusy(true)
+    setScope(null)
+    setPassword('')
+    setError('')
+    try {
+      const { data } = await client.get('/api/demo-reset', { params: { mode }, signal: signal.current })
+      if (!isScope(data) || data.mode !== mode || (mode === 'FULL' && !data.applicant?.userId)) {
+        throw new Error('초기화 대상을 확인하지 못했습니다.')
+      }
+      setScope(data)
+    } catch (cause) {
+      if (!signal.current?.aborted) setError(cause.response?.data?.message || '선택한 범위를 확인하지 못했습니다. 창을 다시 열어 주세요.')
+    } finally {
+      running.current = false
+      if (!signal.current?.aborted) { setBusy(false); onBusy(false) }
+    }
+  }
 
   async function prepare() {
     if (running.current) return
@@ -93,9 +115,20 @@ export default function DemoResetForm({ onCancel, onBusy }) {
       </>}
       {setup?.schoolCode && <p>시연한들고등학교 가입 코드 <strong>{setup.schoolCode}</strong><br />발표용 교사에게 전달하세요. 발표용 관리자는 별도 관리자 소속 연결이 필요합니다.</p>}
       {scope && <>
+        <label>초기화 범위
+          <select value={scope.mode} disabled={busy} onChange={e => changeMode(e.target.value)}>
+            <option value="TIMETABLE">A · 시간표 초기화</option>
+            <option value="FULL">B · 전체 시연 초기화</option>
+          </select>
+        </label>
         <label htmlFor="demo-reset-password">초기화를 진행하려면 비밀번호를 입력하세요</label>
-        <p>시연한들고등학교 · 2026학년도 2학기 · {scope.round}회차<br />편성 작업 {scope.jobs}건과 게시 시간표 {scope.versions}개를 삭제합니다. 주간·날짜별 수업도 함께 삭제됩니다.</p>
-        <p>모든 계정과 패스키, 학교 소속, 교사 명부, 시수표는 유지됩니다.</p>
+        <p>시연한들고등학교 · 2026학년도 2학기 · {scope.round}회차<br />편성 작업 {scope.jobs}건(후보 {scope.candidates}개), 게시 시간표 {scope.versions}개, 게시 기록 {scope.receipts}건,
+          주간 수업 {scope.weeklyLessons}건, 날짜 수업 {scope.datedLessons}건, 보결·교환 신청 {scope.requests}건, 연결된 알림 {scope.notifications}건을 삭제합니다.</p>
+        {scope.mode === 'FULL' && scope.applicant && <p>교사 1 (reslc0307@gmail.com)의 가입 신청 {scope.applicant.pending ? 1 : 0}건,
+          소속 {scope.applicant.memberId ? 1 : 0}건, 신청 명부 {scope.applicant.rosterId ? 1 : 0}건,
+          신청 상세 {scope.applicant.requestDetails ? 1 : 0}건, 수업 담당 연결 {scope.applicant.teachingId ? 1 : 0}건을 해제합니다.
+          {scope.applicant.activeSchool && ' 현재 선택된 시연 학교도 해제합니다.'}</p>}
+        <p>모든 계정과 패스키, 원본 교사 명부·시수표, 관리자와 교사 2의 소속, 승인 및 초기화 감사 기록은 유지됩니다.</p>
         <input id="demo-reset-password" type="password" inputMode="numeric" autoComplete="off"
           value={password} maxLength={16} onChange={e => setPassword(e.target.value)} disabled={busy} />
       </>}
@@ -103,7 +136,7 @@ export default function DemoResetForm({ onCancel, onBusy }) {
       {error && <p role="alert">{error}</p>}
       <div>
         {scope && <button className="demo-reset-submit" type="submit" disabled={!password || busy}>
-          {busy ? '본인 확인 및 초기화 중…' : 'School42 시간표만 초기화'}
+          {busy ? '본인 확인 및 초기화 중…' : (scope.mode === 'FULL' ? '전체 시연 초기화' : 'School42 시간표만 초기화')}
         </button>}
         <button type="button" disabled={busy} onClick={onCancel}>취소</button>
       </div>
