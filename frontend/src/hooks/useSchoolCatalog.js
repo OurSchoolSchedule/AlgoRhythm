@@ -10,6 +10,7 @@ import {
   updateSubject,
 } from '@/api'
 import { useHomeSession, useScopedRead } from './useHomeSession'
+import { schoolClassRolesKey } from './useClassRoles'
 import { queryKeys } from './queryKeys.js'
 
 export function useSubjects(options = {}) {
@@ -54,32 +55,37 @@ export function useSchoolClasses(academicYear, options = {}) {
     signal => getSchoolClasses(academicYear, { signal }), options)
 }
 
+function useInvalidateClasses() {
+  const cache = useQueryClient()
+  const session = useHomeSession()
+  return () => Promise.all([
+    cache.invalidateQueries({ queryKey: ['school', 'classes'] }),
+    cache.invalidateQueries({ queryKey: schoolClassRolesKey(session.scope.schoolId) }),
+    cache.invalidateQueries({ queryKey: queryKeys.store.staffSummary() }),
+    cache.invalidateQueries({ queryKey: queryKeys.home.directory() }),
+  ])
+}
+
 export function useCreateSchoolClass() {
-  const queryClient = useQueryClient()
+  const invalidate = useInvalidateClasses()
   return useMutation({
     mutationFn: (payload) => createSchoolClass(payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['school', 'classes'] })
-    },
+    onSuccess: invalidate,
   })
 }
 
 export function useUpdateSchoolClass() {
-  const queryClient = useQueryClient()
+  const invalidate = useInvalidateClasses()
   return useMutation({
     mutationFn: ({ classId, payload }) => updateSchoolClass(classId, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['school', 'classes'] })
-    },
+    onSuccess: invalidate,
   })
 }
 
 export function useDeleteSchoolClass() {
-  const queryClient = useQueryClient()
+  const invalidate = useInvalidateClasses()
   return useMutation({
     mutationFn: (classId) => deleteSchoolClass(classId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['school', 'classes'] })
-    },
+    onSuccess: invalidate,
   })
 }

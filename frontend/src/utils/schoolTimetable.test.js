@@ -111,4 +111,15 @@ describe('buildSchoolTimetable', () => {
     expect(result.currentPeriod).toBe(3)
     expect(result.currentClass.subject).toBe('과학')
   })
+
+  it('수업이 없어도 설정한 교시와 시각을 사용하고 쉬는 시간에는 현재 교시가 없다', () => {
+    const bells = [
+      { periodNumber: 1, startTime: '08:40', endTime: '09:30' },
+      { periodNumber: 9, startTime: '17:20', endTime: '18:10' },
+    ]
+    const result = buildSchoolTimetable([], MON(8, 35), bells)
+    expect(result.periods).toEqual([1, 9])
+    expect(result.currentPeriod).toBeNull()
+    expect(result.periodSlots.map((slot) => slot.start)).toEqual(['08:40', '17:20'])
+  })
 })

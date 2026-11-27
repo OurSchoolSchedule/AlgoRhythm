@@ -1,6 +1,6 @@
 import { SCHOOL_PERIOD_SLOTS } from '@/constants/schoolTimetable.js'
-import { formatClassName } from '@/utils/homeFocus.js'
-import { getPeriodFromDatetime, lessonsOf } from '@/utils/schoolTimetable.js'
+import { formatClassName, formatClock } from '@/utils/homeFocus.js'
+import { getPeriodFromSlots, lessonsOf } from '@/utils/schoolTimetable.js'
 import { resolveSubjectColor } from '@/utils/subjectColor.js'
 import {
   boardPeriods,
@@ -16,18 +16,6 @@ const STATUS_META = {
   변경: { label: '변경', className: 'is-change' },
   conflict: { label: '충돌', className: 'is-conflict' },
   충돌: { label: '충돌', className: 'is-conflict' },
-}
-
-function clockOf(period) {
-  const slot = SCHOOL_PERIOD_SLOTS.find((item) => item.period === period)
-  return shortClock(slot?.start)
-}
-
-function shortClock(value) {
-  if (!value) return ''
-  const [hour, minute] = String(value).split(':')
-  if (hour == null || minute == null) return ''
-  return `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`
 }
 
 const CROWD_PREVIEW = 3
@@ -52,7 +40,7 @@ function statusMeta(cell) {
 /**
  * @param {Object} props
  * @param {ReturnType<import('@/utils/schoolTimetable.js').buildSchoolTimetable>} props.timetable
- * @param {{ key: string, dayNum: number, holiday: string, isToday: boolean, isPast: boolean }[]} props.days
+ * @param {{ key: string, dayNum: number, holiday: string, excluded?: boolean, isToday: boolean, isPast: boolean }[]} props.days
  */
 export default function WeeklyTimetableGrid({
   timetable,
@@ -71,9 +59,12 @@ export default function WeeklyTimetableGrid({
   onDrop,
   onDragEnd,
 }) {
-  const periods = boardPeriods(timetable.periods, timetable.byDay)
+  const periods = timetable.hasRegisteredPeriods ? timetable.periods : boardPeriods(timetable.periods, timetable.byDay)
   const rows = periodsWithLunch(periods)
-  const currentPeriod = timetable.currentPeriod ?? getPeriodFromDatetime(now || new Date())
+  const periodSlots = timetable.periodSlots ?? SCHOOL_PERIOD_SLOTS
+  const currentPeriod = timetable.currentPeriod === undefined
+    ? getPeriodFromSlots(now || new Date(), periodSlots)
+    : timetable.currentPeriod
 
   return (
     <div className="tt-board show-scrollbar" role="region" aria-label="주간 시간표 격자" tabIndex={0}>
@@ -106,9 +97,22 @@ export default function WeeklyTimetableGrid({
           <div key={row.period} className={`tt-period-row${isCurrentPeriod ? ' is-now-row' : ''}`}>
             <div className="tt-time">
               <span className="tt-period-num">{row.period}교시</span>
-              <span className="tt-period-clock">{clockOf(row.period)}</span>
+              <span className="tt-period-clock">{formatClock(periodSlots.find((slot) => slot.period === row.period)?.start)}</span>
             </div>
             {days.map((day) => {
+              if (day.excluded) {
+                return (
+                  <button
+                    key={day.key}
+                    type="button"
+                    className="tt-slot is-off"
+                    aria-label={`${day.key}요일 ${row.period}교시 · 수업 제외일`}
+                    disabled
+                  >
+                    <span className="tt-free">수업 없음</span>
+                  </button>
+                )
+              }
               const cell = timetable.byDay?.[day.key]?.[row.period] ?? null
               const lessons = lessonsOf(cell)
               const crowded = lessons.length > 1

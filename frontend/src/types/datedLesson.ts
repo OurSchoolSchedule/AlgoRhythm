@@ -3,6 +3,9 @@ export interface HomeTerm {
   termId: number
   academicYear: number
   semester: number
+  startDate?: string
+  endDate?: string
+  excludedDates?: string[]
 }
 
 export interface LessonAssignmentDto {

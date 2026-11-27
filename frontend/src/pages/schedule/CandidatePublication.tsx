@@ -34,7 +34,12 @@ export default function CandidatePublication({
 }: Props) {
   const [id, setId] = useState('')
   const [room, setRoom] = useState('')
-  const [date, setDate] = useState(schoolDate(new Date()))
+  const [date, setDate] = useState(() => {
+    const today = schoolDate(new Date())
+    if (term.startDate && term.endDate && (today < term.startDate || today > term.endDate))
+      return term.startDate
+    return today
+  })
   const [error, setError] = useState('')
   const subjects = useSubjects(),
     classes = useSchoolClasses(term.academicYear)
@@ -157,6 +162,8 @@ export default function CandidatePublication({
           게시 적용일
           <input
             type="date"
+            min={term.startDate}
+            max={term.endDate}
             value={date}
             required
             disabled={publication.isPublishing || state.phase === 'published'}

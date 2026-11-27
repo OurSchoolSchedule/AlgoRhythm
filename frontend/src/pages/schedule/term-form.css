@@ -45,3 +45,18 @@
   outline: 2px solid var(--keyboard-focus-ring);
   outline-offset: 2px;
 }
+
+.generation-term-fields {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px 12px;
+}
+.generation-term-fields :is(input, select) {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+}
+.generation-term .term-actions { margin-block-start: 12px; }
+@media (max-width: 800px) {
+  .generation-term-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
