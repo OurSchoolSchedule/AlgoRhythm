@@ -561,6 +561,12 @@ export default function TodoPage({ date, userRole }) {
                     )
                   mutation()
                 }
+                const closeRecruitment = () => {
+                  setRowFault(null)
+                  withdraw.mutate(item.id, { onError: (error) => setRowFault({
+                    id: rowKey, message: getApiErrorMessage(error, '모집을 마감하지 못했습니다.'), retry: closeRecruitment,
+                  }) })
+                }
                 return (
                   <div key={rowKey}>
                     <div className="todo-row">
@@ -575,10 +581,10 @@ export default function TodoPage({ date, userRole }) {
                         )}
                       </div>
                       {item.canWithdraw && (
-                        <button type="button" className="is-secondary" disabled={withdraw.isPending}
-                          onClick={() => withdraw.mutate(item.id, { onError: (error) => setRowFault({
-                            id: rowKey, message: getApiErrorMessage(error, '모집을 마감하지 못했습니다.'),
-                          }) })}>모집 마감</button>
+                        <div className="todo-inline-actions">
+                          <button type="button" className="is-secondary" disabled={withdraw.isPending}
+                            onClick={closeRecruitment}>모집 마감</button>
+                        </div>
                       )}
                       {position === 'TEACHER' && (
                         <div className="todo-inline-actions">
