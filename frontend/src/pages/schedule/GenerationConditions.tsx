@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { usePeriodSettings } from '@/hooks/useSchoolSetting'
 import TeacherPreferences from './TeacherPreferences'
+import GradePeriodMatrix from './GradePeriodMatrix'
 import { useSchoolClasses } from '@/hooks/useSchoolCatalog'
 import type { HomeTerm } from '@/types/datedLesson'
 import type {
@@ -9,7 +10,7 @@ import type {
   GradeLastPeriods,
 } from '@/types/generationJob'
 import type { ValidatedLoad } from '@/types/loadValidation'
-import { schoolWeekdays, objectives, weekday } from './generationOptions'
+import { schoolWeekdays, objectives } from './generationOptions'
 
 interface Props {
   term: HomeTerm
@@ -34,7 +35,6 @@ export default function GenerationConditions({
   const [overrides, setOverrides] = useState<
     Record<number, Partial<GradeLastPeriods['lastPeriods']>>
   >({})
-  const [selectedGrade, setSelectedGrade] = useState<number>()
   const [preferences, setPreferences] = useState<Preference[]>([])
   const [objective, setObjective] = useState<GenerationObjective>('BALANCED')
   const [confirmed, setConfirmed] = useState('')
@@ -80,8 +80,6 @@ export default function GenerationConditions({
   }
 
   const grades = [...new Set(rooms.map((r) => r.grade))].sort((a, b) => a - b)
-  const grade =
-    selectedGrade !== undefined && grades.includes(selectedGrade) ? selectedGrade : grades[0]
   const max = numbers[numbers.length - 1]
   const gradeLastPeriods = grades.map((grade) => ({
     grade,
@@ -94,7 +92,6 @@ export default function GenerationConditions({
       ...overrides[grade],
     },
   }))
-  const limits = gradeLastPeriods.find((g) => g.grade === grade)!.lastPeriods
   const capacities = new Map(
     gradeLastPeriods.map(({ grade, lastPeriods }) => [
       grade,
@@ -122,6 +119,8 @@ export default function GenerationConditions({
       const capacity = capacities.get(room.grade)!
       return {
         id,
+        grade: room.grade,
+        classNumber: room.classNumber,
         hours,
         capacity,
         label: `${room.grade}학년 ${room.classNumber}반`,
@@ -142,54 +141,20 @@ export default function GenerationConditions({
 
   return (
     <fieldset disabled={locked} className="generation-conditions">
-      <legend>요일별 마지막 교시</legend>
-      <div className="work-row">
-        <label>
-          편성 학년
-          <select value={grade} onChange={(e) => setSelectedGrade(Number(e.target.value))}>
-            {grades.map((n) => (
-              <option key={n} value={n}>
-                {n}학년
-              </option>
-            ))}
-          </select>
-        </label>
-        <strong>
-          {grade}학년 · 주간 배치 가능 교시 {capacities.get(grade)}칸
-        </strong>
-      </div>
-      <div className="generation-days">
-        {schoolWeekdays.map((d) => (
-          <label key={d}>
-            {weekday[d]}요일
-            <select
-              aria-label={weekday[d] + '요일 마지막 교시'}
-              value={limits[d]}
-              onChange={(e) => {
-                const value = Number(e.target.value)
-                setOverrides((prev) => ({
-                  ...prev,
-                  [grade]: { ...prev[grade], [d]: value },
-                }))
-                setConfirmed('')
-                onEdit()
-              }}
-            >
-              {limits[d] !== 0 && !numbers.includes(limits[d]) && (
-                <option value={limits[d]} disabled>
-                  {limits[d]}교시 (삭제됨)
-                </option>
-              )}
-              <option value={0}>운영 안 함</option>
-              {numbers.map((n) => (
-                <option key={n} value={n}>
-                  {n}교시
-                </option>
-              ))}
-            </select>
-          </label>
-        ))}
-      </div>
+      <legend>학년별 마지막 교시</legend>
+      <GradePeriodMatrix
+        gradeLastPeriods={gradeLastPeriods}
+        periods={numbers}
+        rooms={rows}
+        onChange={(grade, day, period) => {
+          setOverrides((prev) => ({
+            ...prev,
+            [grade]: { ...prev[grade], [day]: period },
+          }))
+          setConfirmed('')
+          onEdit()
+        }}
+      />
       <p>
         학교 전체 필요 시수 {rows.reduce((sum, r) => sum + r.hours, 0)}
         차시

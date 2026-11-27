@@ -442,10 +442,12 @@ export default function TodoPage({ date, userRole }) {
           <div className="todo-col todo-col-mine">
             <div className="todo-col-head">
               <SectionHeader
-                title="내 할 일"
+                title={view === 'all' ? '전체 할 일' : '내 할 일'}
                 meta={listFailed ? '—' : `${openItems.length}건`}
               />
-              <p className="todo-col-hint">직접 등록한 할 일</p>
+              <p className="todo-col-hint">
+                {view === 'all' ? '학교 공지 · 인수인계 · 내 할 일' : '직접 등록한 할 일'}
+              </p>
             </div>
 
             <div className="todo-col-body">
@@ -713,33 +715,31 @@ function TodoStats({ loading, failed, need, open, done, onJump }) {
     ['todo-group-done', '완료', done],
   ]
   return (
-    <div className="home-stats todo-stats" aria-label="오늘 요약">
-      {cells.map(([id, label, value], index) => {
+    <div className="todo-stats" role="group" aria-label="오늘 요약">
+      {cells.map(([id, label, value]) => {
         const known = !loading && !failed && value != null
+        const canJump = known && value > 0
         return (
-          <div key={id} className="home-stat-cell">
-            {index > 0 && <span className="home-stat-rule" aria-hidden="true" />}
-            <button
-              type="button"
-              className="home-stat todo-stat"
-              data-live={known && value > 0 ? 'true' : 'false'}
-              onClick={() => {
-                if (known && value > 0) onJump(id)
-              }}
-            >
-              <span className="home-stat-label">{label}</span>
-              <span className="home-stat-value-row">
-                {loading ? (
-                  <span className="home-skeleton todo-stat-skeleton" />
-                ) : (
-                  <>
-                    <span className="home-stat-value">{known ? value : '—'}</span>
-                    {known && <span className="home-stat-unit">건</span>}
-                  </>
-                )}
-              </span>
-            </button>
-          </div>
+          <button
+            key={id}
+            type="button"
+            className="todo-stat"
+            disabled={!canJump}
+            aria-controls={canJump ? id : undefined}
+            onClick={() => onJump(id)}
+          >
+            <span className="todo-stat-label">{label}</span>
+            <span className="todo-stat-count">
+              {loading ? (
+                <span className="home-skeleton todo-stat-skeleton" />
+              ) : (
+                <>
+                  {known ? value : '—'}
+                  {known && <span className="todo-stat-unit">건</span>}
+                </>
+              )}
+            </span>
+          </button>
         )
       })}
     </div>

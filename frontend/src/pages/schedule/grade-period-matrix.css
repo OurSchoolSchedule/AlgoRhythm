@@ -1,0 +1,116 @@
+.grade-period-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.grade-period-matrix {
+  width: 100%;
+  min-width: 18rem;
+  table-layout: fixed;
+  border-collapse: collapse;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.grade-period-matrix :is(th, td) {
+  padding: 8px 4px;
+}
+
+.grade-period-matrix thead {
+  background: var(--surface-1);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.grade-period-matrix thead th:first-child {
+  width: 10%;
+}
+.grade-period-matrix thead th:last-child {
+  width: 28%;
+}
+
+.grade-period-matrix tbody tr {
+  border-top: 1px solid var(--color-border);
+}
+.grade-period-matrix tbody tr:focus-within {
+  background: var(--color-primary-subtle);
+}
+
+.schedule-work .generation-conditions .grade-period-matrix select {
+  width: 100%;
+  max-width: 5.25rem;
+  min-height: 36px;
+  padding: 4px 2px;
+  text-align: center;
+}
+
+.grade-balance {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 2px 8px;
+  font-size: 0.875rem;
+}
+
+.grade-balance + .grade-balance {
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.grade-balance small {
+  flex-basis: 100%;
+}
+.grade-load,
+.grade-match,
+.grade-gap,
+.grade-excess {
+  white-space: nowrap;
+}
+.grade-excess {
+  color: var(--color-danger-text);
+}
+.grade-match {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+  color: var(--color-success-text);
+}
+.grade-gap {
+  color: var(--color-text-secondary);
+}
+
+.grade-check {
+  width: 1em;
+  height: 1em;
+}
+
+.grade-check path {
+  fill: none;
+  stroke: var(--color-surface);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (max-width: 600px) {
+  .grade-period-matrix :is(th, td) {
+    padding: 6px 1px;
+  }
+  .grade-period-matrix {
+    font-size: 0.875rem;
+  }
+  .grade-period-matrix thead {
+    font-size: 0.75rem;
+    word-break: keep-all;
+  }
+  .grade-period-matrix thead th:last-child {
+    width: 26%;
+  }
+  .grade-period-matrix .grade-balance {
+    font-size: 0.75rem;
+  }
+}

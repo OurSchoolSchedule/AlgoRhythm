@@ -101,7 +101,7 @@ export function useLessonChanges(term: SchoolTerm | null, date: string, secondDa
     (signal) => getLessonChanges(termId!, signal),
     { retry: false, networkMode: 'always' },
   )
-  const directory = useHomeDirectory(session, enabled)
+  const directory = useHomeDirectory(session, enabled, termId)
   const memberId =
     enabled && !directory.isError
       ? directory.data?.find((m) => m.userId === session.userId)?.schoolUserId
@@ -131,6 +131,7 @@ export function useLessonChanges(term: SchoolTerm | null, date: string, secondDa
   function myMembership() {
     const members = cache.getQueryState<DirectoryMember[]>([
       ...queryKeys.home.directory(),
+      termId,
       session.scope,
     ])
     return members?.status === 'success'
