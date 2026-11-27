@@ -1,4 +1,4 @@
-import { directoryHomerooms } from './directoryHomerooms'
+import { directoryHomerooms, hasTermHomerooms } from './directoryHomerooms'
 import type {
   HomeField,
   HomeMemberDto,
@@ -49,7 +49,7 @@ export function toHomeProfile(
     subjects: readField(directory, () => member?.rosterSubjects === undefined ? member?.subjects :
       termId === null ? undefined : member.rosterSubjects),
     homerooms: readField(directory, () => directoryHomerooms(member, academicYear, termId)),
-    deputyHomeroom: member?.termHomeroomsApplied && termId !== null
+    deputyHomeroom: member && hasTermHomerooms(member, termId)
       ? readField(directory, () => member.deputyHomeroomClasses?.filter(room => room.academicYear === academicYear))
       : { state: 'unsupported' },
     positionTitle: { state: 'unsupported' },

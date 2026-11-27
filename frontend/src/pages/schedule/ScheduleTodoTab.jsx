@@ -1,3 +1,4 @@
+import { canModifyTodo } from '@/utils/todoAccess'
 import { useState } from 'react'
 import {
   useTodos,
@@ -25,15 +26,6 @@ const CREATE_TYPE_OPTIONS = [
   { value: 'HANDOVER', label: '인수인계' },
   { value: 'SCHOOL', label: '전체 공지', ownerOnly: true },
 ]
-
-function canModifyTodo(todo, isAdmin, userId) {
-  if (todo.todoType === 'SCHOOL') return isAdmin
-  if (isAdmin) return true
-  if (userId == null) return todo.todoType !== 'SCHOOL'
-  if (todo.todoType === 'HANDOVER') return todo.authorId === userId
-  if (todo.todoType === 'PERSONAL') return todo.authorId === userId
-  return false
-}
 
 function TodoRow({ todo, isAdmin, userId, toggleTodo, updateTodo, deleteTodo }) {
   const [editing, setEditing] = useState(false)
@@ -223,7 +215,7 @@ function TodoEmbed({ date, userRole, quietError = false, limit = 3, onMore }) {
         todoType={todoType}
         onTodoTypeChange={setTodoType}
         typeOptions={availableTypes}
-        showTypeOptions={isAdmin}
+        showTypeOptions
         disabled={isError}
         pending={createTodo.isPending}
         error={createTodo.isError}

@@ -4,14 +4,14 @@ import { getApiErrorMessage } from '@/utils/timetableGeneration.js'
 
 /**
  * 보결 요청. 교시는 선택한 시간표에 이미 들어 있어 보여 주기만 한다.
- * @param {{ timetableId?: number, defaultDate: string, periodLabel: string }} props
+ * @param {{ timetableId?: number, datedTarget?: { termId: number, datedLessonId: number, expectedLessonRev: number }, defaultDate: string, periodLabel: string }} props
  */
-export default function CreateSubstituteForm({ timetableId, defaultDate, periodLabel }) {
+export default function CreateSubstituteForm({ timetableId, datedTarget, defaultDate, periodLabel }) {
   const create = useCreateExtraShiftRequest()
   const [date, setDate] = useState(defaultDate)
   const [note, setNote] = useState('')
 
-  if (timetableId == null) {
+  if (timetableId == null && !datedTarget) {
     return (
       <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--color-text-muted)' }}>
         이 수업은 시간표 번호가 없어 보결을 요청할 수 없습니다.
@@ -21,9 +21,9 @@ export default function CreateSubstituteForm({ timetableId, defaultDate, periodL
 
   const handleSubmit = (event) => {
     event.preventDefault()
-    if (!date) return
+    if (!date || create.isPending || create.isSuccess) return
     create.mutate({
-      timetableId,
+      ...(datedTarget ?? { timetableId }),
       substituteDate: date,
       note: note.trim() || undefined,
     })
@@ -31,10 +31,13 @@ export default function CreateSubstituteForm({ timetableId, defaultDate, periodL
 
   return (
     <form onSubmit={handleSubmit} style={{ marginTop: 10 }}>
-      <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 600, color: 'var(--color-text)' }}>보결 요청</p>
+      <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 600, color: 'var(--color-text)' }}>공개 보결 모집</p>
+      <p>해당 교시에 보결 가능한 교사들에게 모집 알림을 보냅니다. 지원한 교사 중 한 명을 최종 승인하세요.</p>
       <label style={{ display: 'block', fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 4 }}>날짜</label>
       <input
         type="date"
+        aria-label="보결 모집 날짜"
+        readOnly={!!datedTarget}
         value={date}
         onChange={(event) => setDate(event.target.value)}
         required
@@ -50,7 +53,7 @@ export default function CreateSubstituteForm({ timetableId, defaultDate, periodL
       />
       <button
         type="submit"
-        disabled={create.isPending || !date}
+        disabled={create.isPending || create.isSuccess || !date}
         style={{
           width: '100%',
           padding: '8px 0',

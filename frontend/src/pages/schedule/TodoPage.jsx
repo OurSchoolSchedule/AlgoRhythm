@@ -1,3 +1,4 @@
+import { canModifyTodo, visibleTodos } from '@/utils/todoAccess'
 import { DetailHeading } from '@/components/ui/DetailPage'
 import { useEffect, useRef, useState } from 'react'
 import {
@@ -16,6 +17,7 @@ import {
   useRespondShiftSwap,
   useApproveShiftSwap,
 } from '@/hooks'
+import { useWithdrawPublicCover } from '@/hooks/useExtraShift.js'
 import LoadError from '@/components/LoadError.jsx'
 import TodoCompose from '@/components/schedule/TodoCompose.jsx'
 import SectionHeader from '@/components/ui/SectionHeader.jsx'
@@ -39,15 +41,6 @@ const TYPE_LABEL = {
 }
 
 const WEEKDAY = ['일', '월', '화', '수', '목', '금', '토']
-
-function canModifyTodo(todo, isAdmin, userId) {
-  if (todo.todoType === 'SCHOOL') return isAdmin
-  if (isAdmin) return true
-  if (userId == null) return todo.todoType !== 'SCHOOL'
-  if (todo.todoType === 'HANDOVER') return todo.authorId === userId
-  if (todo.todoType === 'PERSONAL') return todo.authorId === userId
-  return false
-}
 
 function formatListDate(iso) {
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? '')
@@ -84,16 +77,6 @@ function todoMeta(todo) {
   return parts.join(' · ')
 }
 
-function visibleTodos(todoData, scope, userId) {
-  if (!todoData) return []
-  const personal = todoData.personalTodos ?? []
-  const handover = todoData.handoverTodos ?? []
-  const school = todoData.schoolTodos ?? []
-  if (scope === 'all') return [...school, ...handover, ...personal]
-  if (userId == null) return personal
-  return [...personal, ...handover, ...school].filter((todo) => todo.authorId === userId)
-}
-
 function responseIdFor(request, notifications) {
   const match = (notifications ?? []).find(
     (item) => item.substituteRequestId === request.id && item.substituteResponseId,
@@ -120,7 +103,7 @@ function TrashIcon() {
 export default function TodoPage({ date, userRole }) {
   const [content, setContent] = useState('')
   const [todoType, setTodoType] = useState('PERSONAL')
-  const [scope, setScope] = useState('mine')
+  const [scope, setScope] = useState(null)
   const [completedOpen, setCompletedOpen] = useState(false)
   const [pendingDone, setPendingDone] = useState(() => new Set())
   const [pendingOpen, setPendingOpen] = useState(() => new Set())
@@ -140,13 +123,14 @@ export default function TodoPage({ date, userRole }) {
     enabled: Boolean(activeStore) && !isAdmin,
   })
   const userId = isAdmin ? ownerProfile?.userId : staffProfile?.userId
-  const view = isAdmin && scope === 'all' ? 'all' : 'mine'
+  const view = scope ?? (isAdmin ? 'mine' : 'all')
 
   const { data: todoData, isLoading, isError, refetch } = useTodos(date)
   const { data: notifications = [] } = useNotifications()
   const substitutes = useSubstituteRequests('OPEN')
   const respond = useRespondExtraShift()
   const approve = useApproveExtraShift()
+  const withdraw = useWithdrawPublicCover()
   const respondSwap = useRespondShiftSwap()
   const approveSwap = useApproveShiftSwap()
   const createTodo = useCreateTodo()
@@ -185,11 +169,18 @@ export default function TodoPage({ date, userRole }) {
   const openItems = items.filter((todo) => !isCompleted(todo))
   const doneItems = items.filter((todo) => isCompleted(todo))
 
-  const actionRows = (substitutes.data ?? []).map((item) => ({
-    ...item,
-    responseId: position === 'ADMIN' ? responseIdFor(item, notifications) : null,
-  }))
-  const coveredSubIds = new Set(actionRows.map((item) => item.id))
+  const requests = substitutes.data ?? []
+  const actionRows = requests.flatMap((item) => {
+    if (!Array.isArray(item.responses)) {
+      return [{ ...item, responseId: position === 'ADMIN' ? responseIdFor(item, notifications) : null }]
+    }
+    if (position !== 'ADMIN') return item.responses.length ? [] : [item]
+    const volunteers = item.responses.filter(r => r.teacherAction === 'ACCEPT' && r.managerApproval === 'PENDING')
+    return volunteers.length
+      ? volunteers.map((r, index) => ({ ...item, responseId: r.responseId, applicant: r.teacherName, canWithdraw: item.canWithdraw && index === 0 }))
+      : [item]
+  })
+  const coveredSubIds = new Set(requests.map((item) => item.id))
   const actionableExtras = filterActionableNotifications(notifications, position).filter((item) => {
     const action = getNotificationAction(item, position)
     if (!action) return false
@@ -211,7 +202,7 @@ export default function TodoPage({ date, userRole }) {
     const trimmed = content.trim()
     if (!trimmed || createTodo.isPending) return
     createTodo.mutate(
-      { date, todoType: isAdmin ? todoType : 'PERSONAL', content: trimmed },
+      { date, todoType, content: trimmed },
       {
         onSuccess: () => {
           setContent('')
@@ -382,16 +373,14 @@ export default function TodoPage({ date, userRole }) {
   return (
     <div className="detail-page todo-page">
       <DetailHeading title="할 일" context={formatListDate(date)}>
-        {isAdmin && (
-          <div className="todo-scope" role="group" aria-label="할 일 범위">
-            <button type="button" aria-pressed={view === 'mine'} onClick={() => setScope('mine')}>
-              내 할 일
-            </button>
-            <button type="button" aria-pressed={view === 'all'} onClick={() => setScope('all')}>
-              전체
-            </button>
-          </div>
-        )}
+        <div className="todo-scope" role="group" aria-label="할 일 범위">
+          <button type="button" aria-pressed={view === 'mine'} onClick={() => setScope('mine')}>
+            내가 작성
+          </button>
+          <button type="button" aria-pressed={view === 'all'} onClick={() => setScope('all')}>
+            전체
+          </button>
+        </div>
       </DetailHeading>
       <TodoStats
         loading={showSkeleton}
@@ -457,7 +446,7 @@ export default function TodoPage({ date, userRole }) {
                 todoType={todoType}
                 onTodoTypeChange={setTodoType}
                 typeOptions={typeOptions}
-                showTypeOptions={isAdmin}
+                showTypeOptions
                 disabled={listFailed}
                 pending={createTodo.isPending}
                 error={createTodo.isError}
@@ -557,33 +546,46 @@ export default function TodoPage({ date, userRole }) {
                   formatShortDate(item.substituteDate),
                   item.periodNumber != null ? `${item.periodNumber}교시` : '',
                 ].filter(Boolean).join(' ')
-                const fault = rowFault?.id === `sub-${item.id}` ? rowFault : null
+                const rowKey = `sub-${item.id}-${item.responseId ?? ''}`
+                const fault = rowFault?.id === rowKey ? rowFault : null
                 const run = (action) => {
                   setRowFault(null)
                   const mutation = position === 'ADMIN'
                     ? () => approve.mutate(
                       { responseId: item.responseId, payload: { action } },
-                      { onError: (error) => setRowFault({ id: `sub-${item.id}`, message: getApiErrorMessage(error, '처리하지 못했습니다.'), retry: () => run(action) }) },
+                      { onError: (error) => setRowFault({ id: rowKey, message: getApiErrorMessage(error, '처리하지 못했습니다.'), retry: () => run(action) }) },
                     )
                     : () => respond.mutate(
                       { requestId: item.id, payload: { action } },
-                      { onError: (error) => setRowFault({ id: `sub-${item.id}`, message: getApiErrorMessage(error, '처리하지 못했습니다.'), retry: () => run(action) }) },
+                      { onError: (error) => setRowFault({ id: rowKey, message: getApiErrorMessage(error, '처리하지 못했습니다.'), retry: () => run(action) }) },
                     )
                   mutation()
                 }
+                const closeRecruitment = () => {
+                  setRowFault(null)
+                  withdraw.mutate(item.id, { onError: (error) => setRowFault({
+                    id: rowKey, message: getApiErrorMessage(error, '모집을 마감하지 못했습니다.'), retry: closeRecruitment,
+                  }) })
+                }
                 return (
-                  <div key={item.id}>
+                  <div key={rowKey}>
                     <div className="todo-row">
                       <div className="todo-row-main">
-                        <p className="todo-row-title is-static">{title}</p>
+                        <p className="todo-row-title is-static">{title}{item.applicant && ` · 지원 교사 ${item.applicant}`}</p>
                         <p className="todo-row-meta">
                           {meta && <span>{meta}</span>}
                           <span className="day-badge day-badge-now">보결</span>
                         </p>
                         {position === 'ADMIN' && item.responseId == null && (
-                          <p className="todo-row-meta">승인에 필요한 응답 번호가 알림에 없습니다.</p>
+                          <p className="todo-row-meta">교사 지원 대기 중</p>
                         )}
                       </div>
+                      {item.canWithdraw && (
+                        <div className="todo-inline-actions">
+                          <button type="button" className="is-secondary" disabled={withdraw.isPending}
+                            onClick={closeRecruitment}>모집 마감</button>
+                        </div>
+                      )}
                       {position === 'TEACHER' && (
                         <div className="todo-inline-actions">
                           <button type="button" className="is-primary" disabled={respond.isPending} onClick={() => run('ACCEPT')}>수락</button>

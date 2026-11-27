@@ -103,6 +103,31 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+it('학년도에서 크게 벗어난 기간은 저장 전 확인하고 취소하면 입력을 보존한다', async () => {
+  let writes = 0
+  adapter((config) => {
+    if (config.method === 'post' && config.url === '/api/v2/terms') {
+      writes++
+      return [201, { termId: 72 }]
+    }
+    return [200, []]
+  })
+  const ask = vi.spyOn(window, 'confirm').mockReturnValue(false)
+  mount()
+  await screen.findByRole('heading', { name: '생성할 학기 설정' })
+  fireEvent.change(screen.getByLabelText('학년도'), { target: { value: '2035' } })
+  fireEvent.change(screen.getByLabelText('시작일자'), { target: { value: '2039-03-07' } })
+  fireEvent.change(screen.getByLabelText('마감일자'), { target: { value: '2039-07-15' } })
+  fireEvent.click(screen.getByRole('button', { name: '새 학기 등록 및 적용' }))
+  expect(ask).toHaveBeenCalledWith(expect.stringContaining('2035학년도'))
+  expect(writes).toBe(0)
+  expect((screen.getByLabelText('시작일자') as HTMLInputElement).value).toBe('2039-03-07')
+  ask.mockReturnValue(true)
+  fireEvent.click(screen.getByRole('button', { name: '새 학기 등록 및 적용' }))
+  await waitFor(() => expect(writes).toBe(1))
+  ask.mockRestore()
+})
+
 it('재직 교사는 직접 진입해도 편성·학기 등록 요청을 보낼 수 없다', () => {
   const request = vi.fn()
   client.defaults.adapter = request

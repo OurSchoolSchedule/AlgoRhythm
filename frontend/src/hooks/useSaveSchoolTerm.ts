@@ -16,6 +16,16 @@ export function useSaveSchoolTerm(session: HomeSession, onSaved: (term: Register
 
   async function save(input: NewTerm, original?: RegisteredTerm) {
     if (flight.current || !session.access.actions.generate) return
+    const startsBeforeYear = input.startDate.slice(0, 4) < String(input.academicYear)
+    const endsAfterFebruary = input.endDate.slice(0, 7) > `${input.academicYear + 1}-02`
+    const datesChanged = !original || original.startDate !== input.startDate || original.endDate !== input.endDate
+    if (
+      datesChanged &&
+      (startsBeforeYear || endsAfterFebruary) &&
+      !window.confirm(
+        `${input.academicYear}학년도 ${input.semester}학기와 입력한 기간(${input.startDate} ~ ${input.endDate})의 연도가 다릅니다. 이 설정으로 저장할까요?`,
+      )
+    ) return
     const controller = new AbortController()
     flight.current = controller
     setBusy(true)

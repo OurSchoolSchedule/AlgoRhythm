@@ -157,7 +157,7 @@ export function Profile({ home, onSettings, onPreferences }) {
       </button>
       {access.queries.teacherProfile && (
         <button className="desk-text-button" onClick={onPreferences}>
-          시간대 선호도 제출
+          근무 불가 시간 제출
         </button>
       )}
     </>

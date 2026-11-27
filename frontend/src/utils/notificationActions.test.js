@@ -56,3 +56,14 @@ describe('normalizeNotification', () => {
     expect(notification.substituteResponseId).toBe(1400)
   })
 })
+
+it('hides public invites after a teacher reply and approvals after rejection or closure', () => {
+  const invite = { type: 'SUBSTITUTE_REQUEST_INVITE', substituteRequestId: 17, substituteStatus: 'OPEN' }
+  for (const action of ['ACCEPT', 'REJECT']) {
+    expect(getNotificationAction({ ...invite, substituteWorkerAction: action }, 'TEACHER')).toBeNull()
+  }
+  const admin = { ...invite, type: 'SUBSTITUTE_NOTIFY_ADMIN', substituteResponseId: 81 }
+  expect(getNotificationAction({ ...admin, substituteWorkerAction: 'REJECT' }, 'ADMIN')).toBeNull()
+  expect(getNotificationAction({ ...admin, substituteManagerApproval: 'REJECTED' }, 'ADMIN')).toBeNull()
+  expect(getNotificationAction({ ...admin, substituteStatus: 'FILLED' }, 'ADMIN')).toBeNull()
+})
