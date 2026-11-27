@@ -103,7 +103,7 @@ it.each(['REGISTER', 'AUTHENTICATE'])(
     display(done)
     await emailAndCode()
     await screen.findByRole('heading', {
-      name: nextStep === 'REGISTER' ? '패스키 등록 필요' : '패스키 인증 필요',
+      name: '이메일 인증 완료',
     })
     expect(done).not.toHaveBeenCalled()
     expect(getAccessToken()).toBeNull()
@@ -169,6 +169,25 @@ it('continues a repeated first registration without a linked school after a matc
   await screen.findByRole('heading', { name: '학교 연결' })
   expect(hasPendingSchool()).toBe(true)
   expect(done).not.toHaveBeenCalled()
+})
+
+it('preserves a returning account’s school routing after issuing a new passkey', async () => {
+  const done = vi.fn()
+  vi.spyOn(client, 'post')
+    .mockResolvedValueOnce({ data: { success: true } })
+    .mockResolvedValueOnce({
+      data: { ...limited, nextStep: 'AUTHENTICATE', newUser: false, schoolMembership: null },
+    })
+  const Finish: PasskeyContinuation = ({ onAuthenticated }) => (
+    <button onClick={() => onAuthenticated(session)}>새 패스키 발급 완료 예시</button>
+  )
+  display(done, Finish)
+  await emailAndCode()
+  fireEvent.click(await screen.findByRole('button', { name: '새 패스키 발급 완료 예시' }))
+  await waitFor(() => expect(done).toHaveBeenCalledOnce())
+  expect(hasPendingSchool()).toBe(false)
+  expect(screen.queryByRole('heading', { name: '학교 연결' })).toBeNull()
+  expect(getAccessToken()).toBe(session.accessToken)
 })
 
 it('rejects incomplete or unknown verification responses and distinguishes confirmed membership', () => {

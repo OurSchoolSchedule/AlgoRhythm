@@ -6,7 +6,6 @@ import {
   listPasskeys,
   loginWithPasskey,
   passkeyErrorMessage,
-  recoverPasskey,
   registerPasskey,
   removePasskey,
   verifyCurrentPasskey,
@@ -102,15 +101,6 @@ describe('로그인 및 분실 복구', () => {
     })
   })
 
-  it('복구에는 이메일 제한 토큰과 기존 복구 코드를 함께 보내고 세션만 돌려준다', async () => {
-    responses(envelope('recover'), recovered)
-    await expect(recoverPasskey('verified-email', 'previous-code')).resolves.toEqual(work)
-    expect(requests()).toEqual([
-      ['post', '/recovery/options', { flowToken: 'verified-email', recoveryCode: 'previous-code' }],
-      ['post', '/registration/finish', { ceremonyId: 'recover', credential: registration, includeRecoveryCode: false }],
-    ])
-  })
-
   it('지원하지 않는 컨텍스트에서는 등록 토큰을 소비하지 않는다', async () => {
     vi.stubGlobal('isSecureContext', false)
     expect(supportsPasskeys()).toBe(false)
@@ -136,7 +126,7 @@ describe('로그인 및 분실 복구', () => {
     expect(requests().every(([, path]) => path === '/authentication/options')).toBe(true)
   })
 
-  it('잘못된 옵션, 불완전한 업무 세션, 세션이 누락된 복구 응답을 거부한다', async () => {
+  it('잘못된 옵션, 불완전한 업무 세션, 세션이 누락된 새 패스키 발급 응답을 거부한다', async () => {
     responses(
       { publicKey },
       envelope('login'),
@@ -147,7 +137,7 @@ describe('로그인 및 분실 복구', () => {
     await expect(loginWithPasskey()).rejects.toMatchObject({ code: 'PASSKEY_RESPONSE_INVALID' })
     expect(get).not.toHaveBeenCalled()
     await expect(loginWithPasskey()).rejects.toMatchObject({ code: 'PASSKEY_RESPONSE_INVALID' })
-    await expect(recoverPasskey('grant', 'code')).rejects.toMatchObject({
+    await expect(registerPasskey('grant')).rejects.toMatchObject({
       code: 'PASSKEY_RESPONSE_INVALID',
     })
   })
