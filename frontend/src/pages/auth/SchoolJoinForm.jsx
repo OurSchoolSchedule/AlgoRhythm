@@ -3,6 +3,7 @@ import './entry.css'
 import client from '@/api/client'
 import { useQueryClient } from '@tanstack/react-query'
 import { getSessionVersion } from '@/api/tokenStorage'
+import { queryKeys } from '@/hooks/queryKeys'
 import { getApiErrorMessage } from '@/utils/timetableGeneration'
 
 export default function SchoolJoinForm({ submit, onComplete, label = '학교 가입 요청', initialCode = '', initialName = '', children = null }) {
@@ -41,7 +42,11 @@ export default function SchoolJoinForm({ submit, onComplete, label = '학교 가
         const result = await submit({ ...input, nameConfirmation: proposal.confirmation })
         if (current()) {
           // Membership names appear across terms in the directory, timetable, and review.
-          for (const prefix of [['school-roster', proposal.schoolId], ['store'], ['timetable'], ['school', 'classes'], ['mypage']])
+          const affected = [
+            ['school-roster', proposal.schoolId], ['store'], ['timetable'], ['school', 'classes'],
+            [...queryKeys.schoolCatalog.subjects(), 'directory'], ['mypage'],
+          ]
+          for (const prefix of affected)
             void cache.invalidateQueries({ queryKey: prefix })
           form.reset()
           setProposal(null)
