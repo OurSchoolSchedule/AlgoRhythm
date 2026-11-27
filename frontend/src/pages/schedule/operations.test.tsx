@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
@@ -122,7 +122,20 @@ it('학기 중복이면 기간을 보존하고 새로 조회된 목록에서 적
   expect(await screen.findByRole('option', { name: '2026학년도 2학기' })).toBeTruthy()
 })
 
-it('학기 등록과 셀 오류 수정 후 후보 한 개를 표시하고 게시 충돌에서 재선택 없이 재전송하지 않는다', async () => {
+it('등록된 학기를 선택하고 파일 오류를 수정해 선택한 조건의 후보 표를 검토한 뒤 게시 충돌을 처리한다', async () => {
+  const selected = {
+    termId: 204,
+    academicYear: 2025,
+    semester: 2,
+    startDate: '2025-08-20',
+    endDate: '2026-02-20',
+  }
+  terms = [registered, selected]
+  const selectedBase = `/api/v2/terms/${selected.termId}`
+  const accepted = { ...job, statusUrl: selectedBase + '/generations/' + job.jobId }
+  const slots = ['MON', 'TUE', 'WED', 'THU', 'FRI'].flatMap((day) =>
+    (day === 'FRI' ? [1] : [1, 2]).map((period) => ({ day, period })),
+  )
   let uploads = 0,
     publications = 0,
     jobReads = 0,
@@ -130,12 +143,14 @@ it('학기 등록과 셀 오류 수정 후 후보 한 개를 표시하고 게시
   adapter((config) => {
     const url = config.url
     if (url === '/api/v2/terms') {
-      if (config.method === 'get') return [200, terms]
-      terms = [registered]
-      return [201, { termId: 547001 }]
+      expect(config.method).toBe('get')
+      return [200, terms]
     }
-    if (url === "/api/school-setting/periods") return [200, [{ periodNumber: 1 }]]
-    if (url === base + '/load-imports/validate') {
+    if (url === '/api/school-setting/periods')
+      return [200, [{ periodNumber: 1 }, { periodNumber: 2 }]]
+    if (url === '/api/school/subjects') return [200, [{ id: 1, name: '수학' }]]
+    if (url === '/api/school/members') return [200, [{ schoolUserId: 2, username: '김민지A' }]]
+    if (url === selectedBase + '/load-imports/validate') {
       if (++uploads === 1)
         return failure(config, 422, {
           code: 'INVALID_LOAD',
@@ -161,33 +176,35 @@ it('학기 등록과 셀 오류 수정 후 후보 한 개를 표시하고 게시
         },
       ]
     }
-    if (url === base + '/generations') {
+    if (url === selectedBase + '/generations') {
       expect(JSON.parse(config.data)).toEqual({
         validatedLoadId: 'load-42',
-        preferences: [],
-        objective: 'BALANCED',
-        teachingSlots: ['MON', 'TUE', 'WED', 'THU', 'FRI'].map((day) => ({ day, period: 1 })),
+        preferences: [{ teacherId: '2', kind: 'WANT', anyOf: [{ day: 'MON', period: 1 }] }],
+        objective: 'PREFER_WANTS',
+        teachingSlots: slots,
       })
-      return [202, job]
+      return [202, accepted]
     }
-    if (url === job.statusUrl) {
+    if (url === accepted.statusUrl) {
       jobReads++
       return [
         200,
         {
-          ...job,
+          ...accepted,
           state: 'READY',
+          teachingSlots: slots,
+          objective: 'PREFER_WANTS',
           result: { status: 'READY', candidates: [candidate] },
         },
       ]
     }
-    if (url === base + '/publications') {
+    if (url === selectedBase + '/publications') {
       publications++
       expect(JSON.parse(config.data)).toEqual({
         jobId: job.jobId,
         candidateId: 'c1',
         expectedPublishRev: 0,
-        effectiveFrom: '2026-11-23',
+        effectiveFrom: '2025-11-24',
       })
       return failure(config, 409, {
         code: 'STALE_PUBLICATION',
@@ -195,11 +212,16 @@ it('학기 등록과 셀 오류 수정 후 후보 한 개를 표시하고 게시
         currentRev: 1,
       })
     }
-    if (url === base + '/lessons') lessonReads++
+    if (url === selectedBase + '/lessons') lessonReads++
     return [200, []]
   })
   mount()
-  await register()
+  fireEvent.click(await screen.findByRole('button', { name: /학기 설정$/ }))
+  const picker = within(await screen.findByRole('dialog'))
+  const option = picker.getByRole('option', { name: '2025학년도 2학기' }) as HTMLOptionElement
+  fireEvent.change(picker.getByLabelText('등록된 학기'), { target: { value: option.value } })
+  fireEvent.click(picker.getByRole('button', { name: '선택한 학기 적용' }))
+  await screen.findByRole('button', { name: /2025학년도 2학기 · 학기 설정/ })
   const file = await screen.findByLabelText('시수표 엑셀 파일')
   fireEvent.change(file, {
     target: { files: [new File(['workbook'], 'school.xlsx')] },
@@ -211,6 +233,10 @@ it('학기 등록과 셀 오류 수정 후 후보 한 개를 표시하고 게시
   fireEvent.submit(form)
   await screen.findByText(/검증 완료 · 배정 1건/)
   const generate = (await screen.findByRole('button', { name: '후보 생성' })) as HTMLButtonElement
+  fireEvent.change(screen.getByLabelText('금요일 마지막 교시'), { target: { value: '1' } })
+  fireEvent.click(screen.getByText('교사별 시간 선호 (선택)'))
+  fireEvent.click(screen.getByRole('button', { name: '선호 추가' }))
+  fireEvent.change(screen.getByLabelText('후보 평가 기준 (선택)'), { target: { value: 'PREFER_WANTS' } })
   expect(generate.disabled).toBe(true)
   fireEvent.click(await screen.findByRole('checkbox', { name: /학급별 공강/ }))
   expect(generate.disabled).toBe(false)
@@ -218,8 +244,16 @@ it('학기 등록과 셀 오류 수정 후 후보 한 개를 표시하고 게시
   const candidates = await screen.findAllByRole('radio')
   expect(candidates).toHaveLength(1)
   fireEvent.click(candidates[0])
+  const grid = within(await screen.findByRole('table', { name: '선택한 학급의 주간 배치' }))
+  const lesson = within(grid.getByRole('button'))
+  expect(await lesson.findByText('수학')).toBeTruthy()
+  expect(await lesson.findByText('김민지A')).toBeTruthy()
+  const secondRow = grid.getByRole('rowheader', { name: '2교시' }).closest('tr')!
+  expect(within(secondRow).getAllByRole('cell').map((cell) => cell.textContent)).toEqual([
+    '공강', '공강', '공강', '공강', '수업 없음',
+  ])
   fireEvent.change(screen.getByLabelText('게시 적용일'), {
-    target: { value: '2026-11-23' },
+    target: { value: '2025-11-24' },
   })
   const publish = screen.getByRole('button', {
     name: '선택한 후보 게시 확정',
