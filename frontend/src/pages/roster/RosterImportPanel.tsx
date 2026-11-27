@@ -10,6 +10,7 @@ import TermForm, { TermStatus } from '@/pages/schedule/TermForm'
 import { Dialog } from '@/pages/home/HomePanels'
 import type { RosterReceipt, RosterScope } from '@/types/rosterImport'
 import { PreviewTable, SavedRoster } from './RosterTables'
+import ClassRoles from './ClassRoles'
 import './rosterImport.css'
 
 type Preview = Awaited<ReturnType<typeof previewRoster>>
@@ -101,6 +102,7 @@ function ImportForm({ scope }: { scope: RosterScope }) {
 
   return (
     <>
+      <ClassRoles scope={scope} />
       <section className="ri-card">
         <div className="ri-heading">
           <h3>교사 명부 엑셀</h3>

@@ -30,7 +30,7 @@ it.each(['로그인', '업무 홈'])('%s 화면에 공개된 문의 주소를 �
   const footer = within(ui.getByRole('contentinfo'))
   footer.getByText('© Algorhythm')
   footer.getByText('서비스 문의')
-  const email = 'aaaalgorythm@ewha.ac.kr'
+  const email = 'aaaalgorhthm@gmail.com'
   expect(footer.getByRole('link', { name: email }).getAttribute('href')).toBe(`mailto:${email}`)
   expect(footer.queryByText('개발자 연락처')).toBeNull()
 })

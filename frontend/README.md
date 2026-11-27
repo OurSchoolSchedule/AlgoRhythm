@@ -86,7 +86,42 @@ frontend/
 - 등록 옵션을 요청하면 이메일 토큰이 소비되므로 취소·실패 뒤 재발급하려면 이메일 인증을 다시 해야 합니다. 이메일 토큰은 메모리에만 두고, 계정 전환·화면 이탈·취소 뒤 도착한 인증 결과는 사용하지 않습니다.
 - **배포 순서:** 기존 계정의 이메일 토큰으로 `registration/options`를 허용하는 백엔드를 먼저 반영한 뒤 프런트를 배포합니다.
 
-## School42 데모 검증
+## School42 학년별 편성 및 학급 담당 시연
+
+시연한들고등학교(학교 `540001`), 2026학년도 2학기(학기 `547001`)에 준비된 교사 42명, 학급 21개, 과목 35개를 사용합니다. [PC·모바일 검증 화면 10장](../docs/qa/school42-grade-profile/README.md)
+
+1. [시수표·학급 담당 통합 XLSX](public/school42-files/teaching_load_42_homeroom_demo.xlsx)를 다운로드합니다. 배포본의 다운로드 경로는 `/school42-files/teaching_load_42_homeroom_demo.xlsx`입니다.
+2. 재직 관리자로 학교와 학기를 선택합니다. **시간표 생성**에서 파일을 업로드해 `시수표` 시트를 검증합니다. 배정 251건, 주 671차시입니다.
+3. **관리자 도구 → 명부 일괄 등록 → 학급 담당**에서 같은 파일을 선택하고 **담임·부담임 적용**을 누릅니다. 학급별 목록을 펼쳐 21개 학급을 확인합니다. `학급담당` 시트는 학교 소속 교사 ID와 학급 ID로 연결합니다. 기존 담임 21명을 유지하고 나머지 교사 21명이 부담임을 맡습니다. 예를 들어 1학년 7반(`544007`) 담임은 정수빈(`542005`), 부담임은 서연수(`542013`)입니다.
+4. **시간표 생성**에서 아래 값을 입력한 다음 2학년 7반 공강 1차시를 확인하고 후보를 생성합니다. 페이지를 다시 열어 업로드 검증 ID가 사라졌다면 같은 파일을 다시 검증합니다. 직접 API를 호출할 때는 [생성 요청 예시](public/school42-files/generate_request_42_grade_demo.json)의 `validatedLoadId`를 해당 업로드의 응답 값으로 바꿉니다.
+5. 후보를 선택하고 적용 시작일 `2026-11-23`으로 게시합니다. 2학년 7반에서 수업 31차시, 운영 시간 안의 공강 1차시를 확인합니다. 같은 주를 관리자 학교 시간표와 개별 교사의 시간표에서 조회합니다.
+
+| 학년 | 월 | 화 | 수 | 목 | 금 | 배치 가능 교시 | 1~7반 각 주간 시수 | 학년 시수 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 6 | 6 | 6 | 6 | 6 | 30 | 30, 30, 30, 30, 30, 30, 30 | 210 |
+| 2 | 7 | 6 | 6 | 7 | 6 | 32 | 32, 32, 32, 32, 32, 32, 31 | 223 |
+| 3 | 7 | 7 | 6 | 7 | 7 | 34 | 34, 34, 34, 34, 34, 34, 34 | 238 |
+
+`frontend/`에서 Python 3와 `openpyxl` 3.1 이상을 사용합니다. 스크립트는 저장소의 기존 [시수표](public/school42-files/teaching_load_42.xlsx)와 [교사 명부](src/test/fixtures/school42/teacher_roster.csv)로부터 새 XLSX와 학년별 조건 JSON을 생성합니다.
+
+```bash
+python scripts/school42_demo.py
+python scripts/school42_demo.py --check
+```
+
+격리된 School42 서버에서 업로드부터 게시까지 다시 실행하려면 관리자와 시연 교사의 로컬 세션 토큰을 각각 `SCHOOL42_ADMIN_TOKEN`, `SCHOOL42_TEACHER_TOKEN` 환경 변수로 설정합니다. 다음 [HTTP 검증 스크립트](scripts/verify-school42-publication.mjs)는 담당 명부를 두 번 적용하고 권한·초과·주말 입력을 확인한 뒤 실제 후보를 생성·게시하고 학교 및 개인 주간표를 검사합니다. 반복 실행은 격리 학기에 새 게시 버전을 만듭니다.
+
+```bash
+SCHOOL42_LOCAL_API=http://127.0.0.1:8080 node scripts/verify-school42-publication.mjs
+```
+
+실제 게시본을 검산할 때는 관리자 세션으로 `GET /api/timetable/year/2026/semester/2?termId=547001&weekOf=2026-11-23`과 `GET /api/v2/terms/547001/homerooms`의 응답 배열을 각각 `week.json`, `homerooms.json`에 저장한 뒤 실행합니다. 교사·과목·학급별 시수, 요일·교시 범위, 교사·학급 충돌 및 21개 학급의 담당 ID를 대조합니다.
+
+```bash
+python scripts/school42_demo.py --check --published-week week.json --homerooms homerooms.json
+```
+
+## 기존 School42 공통 교시 회귀 검증
 
 `frontend/`에서 `npm test`를 실행하면 합성 명부와 원본 엑셀을 읽어 교사 42명·21학급·35과목의 배정 252건, 주 672차시를 검산합니다. `example_week.csv`는 가능한 배치 한 가지입니다. 후보의 합격 기준은 교사·과목·학급별 시수 일치, 허용 교시 준수, 동일 요일·교시의 교사·학급 중복 0건입니다.
 

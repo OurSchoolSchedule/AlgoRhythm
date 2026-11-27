@@ -38,6 +38,18 @@ describe('홈 프로필과 담임 선택', () => {
     })
   })
 
+  it('학교 표시 이름과 계정 이름을 구분하고 해당 학기 업로드의 담임·부담임을 표시한다', () => {
+    const deputyRoom = { ...room, classId: 7, classNumber: 7 }
+    const result = toHomeProfile(profile.userId, 2026, success(profile), success([{
+      ...member, displayName: '최도현B', rosterLinked: true, termHomeroomsApplied: true,
+      homeroomClasses: [room], deputyHomeroomClasses: [deputyRoom], rosterHomeroomClass: null,
+    }]), 22)
+    expect(result.name).toEqual({ state: 'value', value: '최도현B' })
+    expect(result.accountName).toEqual({ state: 'value', value: profile.username })
+    expect(result.homerooms).toEqual({ state: 'value', value: [room] })
+    expect(result.deputyHomeroom).toEqual({ state: 'value', value: [deputyRoom] })
+  })
+
   it('본인 userId 및 해당 학년도의 담임 학급만 선택하고 목록 밖의 선택을 취소한다', () => {
     const subject = { subjectId: 543001, subjectName: '국어' }
     const formerRoom = { ...room, classId: 40, academicYear: 2025 }

@@ -146,8 +146,7 @@ function Generation({ term }) {
             term={term}
             publication={publication}
             candidates={gen.candidates}
-            slots={gen.job?.teachingSlots}
-            objective={gen.job?.objective}
+            job={gen.job}
             onRestart={(revalidate) => {
               setShowJob(false)
               if (revalidate) setReceipt(null)

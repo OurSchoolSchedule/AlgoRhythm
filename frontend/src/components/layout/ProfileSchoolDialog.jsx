@@ -1,310 +1,199 @@
+import { useContext, useId, useRef, useState } from 'react'
+import { Dialog } from '@/pages/home/HomePanels'
 import SchoolJoinForm from '@/pages/auth/SchoolJoinForm'
-import { useContext, useState } from 'react'
 import { RosterReviewContext } from '@/pages/roster/RosterReviewContext'
 import {
-  useActiveStore,
-  useCreateOwnerStore,
-  useDeleteOwnerStore,
-  useJoinStaffStore,
-  useLeaveStaffStore,
-  useOwnerProfile,
-  useOwnerStore,
-  useOwnerStores,
-  useStaffProfile,
-  useStaffStores,
-  useUpdateActiveStore,
-  useUpdateOwnerProfile,
-  useUpdateOwnerStore,
-  useUpdateStaffProfile,
+  useActiveStore, useCreateOwnerStore, useDeleteOwnerStore, useJoinStaffStore, useLeaveStaffStore,
+  useOwnerProfile, useOwnerStore, useOwnerStores, useStaffProfile, useStaffStores,
+  useUpdateActiveStore, useUpdateOwnerProfile, useUpdateOwnerStore, useUpdateStaffProfile,
 } from '@/hooks'
-import { getApiErrorMessage } from '@/utils/timetableGeneration.js'
+import { getApiErrorMessage } from '@/utils/timetableGeneration'
+import './profileSchool.css'
 
-/**
- * 프로필·학교 목록 편집. /api/mypage/*
- * @param {{ isAdmin: boolean, onClose: () => void }} props
- */
-export default function ProfileSchoolDialog({ isAdmin, onClose }) {
-  const onReviewRoster = useContext(RosterReviewContext)
+export default function ProfileSchoolDialog({
+  isAdmin, onClose, initialTab = 'account', initialSchoolName = '', onSchoolConfirmed,
+}) {
   const active = useActiveStore()
   const ownerProfile = useOwnerProfile({ enabled: isAdmin })
   const staffProfile = useStaffProfile({ enabled: !isAdmin })
-  const ownerSchool = useOwnerStore({ enabled: isAdmin })
+  const profile = isAdmin ? ownerProfile : staffProfile
   const ownerSchools = useOwnerStores({ enabled: isAdmin })
   const staffSchools = useStaffStores({ enabled: !isAdmin })
-  const updateOwnerProfile = useUpdateOwnerProfile()
-  const updateStaffProfile = useUpdateStaffProfile()
+  const schools = (isAdmin ? ownerSchools : staffSchools).data ?? []
+  const ownerSchool = useOwnerStore({ enabled: isAdmin })
+  const updateOwner = useUpdateOwnerProfile()
+  const updateStaff = useUpdateStaffProfile()
   const updateSchool = useUpdateOwnerStore()
   const createSchool = useCreateOwnerStore()
   const deleteSchool = useDeleteOwnerStore()
   const joinSchool = useJoinStaffStore()
   const leaveSchool = useLeaveStaffStore()
-  const switchActive = useUpdateActiveStore()
+  const switchSchool = useUpdateActiveStore()
+  const onReviewRoster = useContext(RosterReviewContext)
 
-  const profileQuery = isAdmin ? ownerProfile : staffProfile
-  const schoolsQuery = isAdmin ? ownerSchools : staffSchools
-  const me = profileQuery.data
-  const [draft, setDraft] = useState(null)
-  const [schoolDraft, setSchoolDraft] = useState(null)
-  const [hireDate, setHireDate] = useState('')
+  const id = useId()
+  const body = useRef(null)
+  const tabs = useRef(null)
+  const touch = useRef(null)
+  const saving = useRef(false)
+  const [tab, setTab] = useState(initialTab)
+  const [nameDraft, setNameDraft] = useState(null)
+  const [schoolDraft, setSchoolDraft] = useState({})
+  const [managing, setManaging] = useState(false)
+  const [joining, setJoining] = useState(false)
+  const [actions, setActions] = useState(null)
   const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
 
-  const username = draft?.username ?? me?.username ?? ''
-  const email = draft?.email ?? me?.email ?? ''
-  const schoolName = schoolDraft?.name ?? ownerSchool.data?.name ?? ''
-  const schoolAddress = schoolDraft?.address ?? ownerSchool.data?.address ?? ''
-  const schoolPhone = schoolDraft?.phoneNumber ?? ownerSchool.data?.phoneNumber ?? ''
+  const me = profile.data
+  const name = nameDraft ?? me?.username ?? ''
+  const schoolValue = (key) => schoolDraft[key] ?? ownerSchool.data?.[key] ?? ''
+  const schoolDirty = Object.keys(schoolDraft).some((key) => schoolDraft[key] !== (ownerSchool.data?.[key] ?? ''))
+  const busy = joining || [updateOwner, updateStaff, updateSchool, createSchool, deleteSchool,
+    leaveSchool, switchSchool].some(mutation => mutation.isPending)
 
-  const schools = schoolsQuery.data ?? []
-  const busy = updateOwnerProfile.isPending
-    || updateStaffProfile.isPending
-    || updateSchool.isPending
-    || createSchool.isPending
-    || deleteSchool.isPending
-    || joinSchool.isPending
-    || leaveSchool.isPending
-    || switchActive.isPending
-
-  const saveProfile = async () => {
-    setMessage('')
-    try {
-      const payload = { username: username.trim(), email: email.trim() }
-      if (isAdmin) await updateOwnerProfile.mutateAsync(payload)
-      else await updateStaffProfile.mutateAsync(payload)
-      setDraft(null)
-      setMessage('프로필을 저장했습니다.')
-    } catch (error) {
-      setMessage(getApiErrorMessage(error, '프로필을 저장하지 못했습니다.'))
-    }
+  function canLeave() {
+    if (busy || saving.current) return false
+    const joinFields = body.current?.querySelectorAll('form.entry-form input')
+    const dirty = name !== (me?.username ?? '') || schoolDirty
+      || Array.from(joinFields ?? []).some(input => input.value !== input.defaultValue)
+    return !dirty || window.confirm('변경을 저장하지 않고 나갈까요?')
   }
 
-  const saveSchool = async () => {
+  function selectTab(next, focus = false) {
+    setTab(next)
     setMessage('')
-    try {
-      await updateSchool.mutateAsync({
-        name: schoolName.trim(),
-        address: schoolAddress.trim(),
-        phoneNumber: schoolPhone.trim(),
-      })
-      setSchoolDraft(null)
-      setMessage('학교 정보를 저장했습니다.')
-    } catch (error) {
-      setMessage(getApiErrorMessage(error, '학교 정보를 저장하지 못했습니다.'))
-    }
+    setError('')
+    if (body.current) body.current.scrollTop = 0
+    if (focus) tabs.current?.querySelector(`[data-tab="${next}"]`)?.focus()
   }
 
-  const handleCreateSchool = async () => {
-    setMessage('')
-    try {
-      await createSchool.mutateAsync({
-        name: schoolName.trim(),
-        address: schoolAddress.trim(),
-        phoneNumber: schoolPhone.trim(),
-        hireDate: hireDate || undefined,
-      })
-      setMessage('학교를 추가했습니다.')
-    } catch (error) {
-      setMessage(getApiErrorMessage(error, '학교를 추가하지 못했습니다.'))
+  function pressTab(event) {
+    const next = { ArrowLeft: tab === 'account' ? 'join' : 'account',
+      ArrowRight: tab === 'account' ? 'join' : 'account', Home: 'account', End: 'join' }[event.key]
+    if (!next) return
+    event.preventDefault()
+    selectTab(next, true)
+  }
+
+  function touchStart(event) {
+    touch.current = null
+    if (event.touches.length === 1 && !event.target.closest('input,textarea,select,button,a,label,summary')) {
+      touch.current = { x: event.touches[0].clientX, y: event.touches[0].clientY }
     }
+  }
+  function touchEnd(event) {
+    const start = touch.current
+    touch.current = null
+    if (!start || event.changedTouches.length !== 1) return
+    const dx = event.changedTouches[0].clientX - start.x
+    const dy = event.changedTouches[0].clientY - start.y
+    if (Math.abs(dx) < 60 || Math.abs(dx) < 2 * Math.abs(dy)) return
+    const next = dx < 0 ? 'join' : 'account'
+    if (next !== tab) selectTab(next)
+  }
+
+  async function perform(action, success, fallback) {
+    if (busy || saving.current) return
+    saving.current = true
+    setMessage('')
+    setError('')
+    try {
+      await action()
+      setMessage(success)
+    } catch (cause) {
+      setError(getApiErrorMessage(cause, fallback))
+    } finally {
+      saving.current = false
+    }
+  }
+  function saveName(event) {
+    event.preventDefault()
+    const username = name.trim()
+    if (!username) { setError('계정 이름을 입력해 주세요.'); return }
+    return perform(async () => {
+      await (isAdmin ? updateOwner : updateStaff).mutateAsync({ username })
+      setNameDraft(null)
+    }, '계정 이름을 저장했습니다.', '계정 이름을 저장하지 못했습니다.')
+  }
+  function saveSchool(add) {
+    const input = Object.fromEntries(['name', 'address', 'phoneNumber'].map(key => [key, schoolValue(key).trim()]))
+    return perform(async () => {
+      if (add) await createSchool.mutateAsync({ ...input, hireDate: schoolDraft.hireDate || undefined })
+      else await updateSchool.mutateAsync(input)
+      setSchoolDraft({})
+    }, add ? '학교를 추가했습니다.' : '학교 정보를 저장했습니다.', '학교 정보를 저장하지 못했습니다.')
   }
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="프로필·학교"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 90,
-        background: 'rgba(0,0,0,0.35)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 16,
-      }}
-    >
-      <div
-        style={{
-          width: 'min(520px, 100%)',
-          maxHeight: '86vh',
-          overflow: 'auto',
-          padding: 20,
-          borderRadius: 12,
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <h2 style={{ margin: 0, fontSize: 16 }}>프로필·학교</h2>
-          <button type="button" className="panel-close" onClick={onClose}>닫기</button>
-        </div>
-
-        {(profileQuery.isLoading || schoolsQuery.isLoading) && (
-          <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>불러오는 중...</p>
-        )}
-
-        <section style={{ marginBottom: 16 }}>
-          <h3 style={sectionTitle}>계정 정보</h3>
-          {!isAdmin && onReviewRoster && <button className="btn" type="button" onClick={onReviewRoster}>학교 명부 다시 확인</button>}
-          <label style={labelStyle}>계정 이름
-            <input
-              value={username}
-              onChange={(e) => setDraft((prev) => ({ username: e.target.value, email: prev?.email ?? email }))}
-              style={inputStyle}
-            />
-          </label>
-          <label style={labelStyle}>연락처 이메일
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setDraft((prev) => ({ username: prev?.username ?? username, email: e.target.value }))}
-              style={inputStyle}
-            />
-          </label>
-          <button type="button" className="tt-create" disabled={busy} onClick={saveProfile} style={{ marginTop: 8 }}>
-            프로필 저장
-          </button>
-        </section>
-
-        {isAdmin && (
-          <section style={{ marginBottom: 16 }}>
-            <h3 style={sectionTitle}>현재 학교</h3>
-            <label style={labelStyle}>이름
-              <input
-                value={schoolName}
-                onChange={(e) => setSchoolDraft((prev) => ({
-                  name: e.target.value,
-                  address: prev?.address ?? schoolAddress,
-                  phoneNumber: prev?.phoneNumber ?? schoolPhone,
-                }))}
-                style={inputStyle}
-              />
-            </label>
-            <label style={labelStyle}>주소
-              <input
-                value={schoolAddress}
-                onChange={(e) => setSchoolDraft((prev) => ({
-                  name: prev?.name ?? schoolName,
-                  address: e.target.value,
-                  phoneNumber: prev?.phoneNumber ?? schoolPhone,
-                }))}
-                style={inputStyle}
-              />
-            </label>
-            <label style={labelStyle}>전화
-              <input
-                value={schoolPhone}
-                onChange={(e) => setSchoolDraft((prev) => ({
-                  name: prev?.name ?? schoolName,
-                  address: prev?.address ?? schoolAddress,
-                  phoneNumber: e.target.value,
-                }))}
-                style={inputStyle}
-              />
-            </label>
-            <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-              <button type="button" className="tt-create" disabled={busy} onClick={saveSchool}>학교 저장</button>
-              <button type="button" className="tt-secondary" disabled={busy} onClick={handleCreateSchool}>새 학교 추가</button>
-            </div>
-            <label style={{ ...labelStyle, marginTop: 8 }}>고용일 (추가 시)
-              <input type="date" value={hireDate} onChange={(e) => setHireDate(e.target.value)} style={inputStyle} />
-            </label>
-          </section>
-        )}
-
-        <section style={{ marginBottom: 16 }}>
-          <h3 style={sectionTitle}>기존 학교 가입 · 학교별 이름 확인</h3>
-          <SchoolJoinForm initialCode={active.data?.schoolCode || ''} submit={input => joinSchool.mutateAsync(input)}
-            onComplete={async result => {
-              setMessage(result.employmentStatus === 'PENDING' ? '학교 가입 승인 대기 중입니다.' : '학교별 이름을 확인했습니다.')
-              await profileQuery.refetch()
-            }} >
-            <label style={labelStyle}>고용일 (선택)<input type="date" name="hireDate" /></label>
-          </SchoolJoinForm>
-        </section>
-
-        <section>
-          <h3 style={sectionTitle}>내 학교 목록</h3>
-          {schools.length === 0 && (
-            <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-muted)' }}>등록된 학교가 없습니다.</p>
-          )}
-          <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-            {schools.map((school) => {
-              const id = school.schoolId
-              const activeId = active.data?.schoolId
-              return (
-                <li
-                  key={id}
-                  style={{
-                    display: 'flex',
-                    gap: 8,
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '10px 0',
-                    borderBottom: '1px solid var(--color-border-light)',
-                    fontSize: 13,
-                  }}
-                >
-                  <div>
-                    <strong>{school.name}</strong>
-                    <div style={{ color: 'var(--color-text-muted)' }}>{school.schoolCode}{school.employmentStatus === 'PENDING' && ' · 승인 대기'}</div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button
-                      type="button"
-                      className="tt-text"
-                      disabled={busy || id === activeId || (!isAdmin && school.employmentStatus !== 'HIRED')}
-                      onClick={async () => {
-                        setMessage('')
-                        try {
-                          await switchActive.mutateAsync(id)
-                          setMessage('활성 학교를 바꿨습니다.')
-                        } catch (error) {
-                          setMessage(getApiErrorMessage(error, '활성 학교를 바꾸지 못했습니다.'))
-                        }
-                      }}
-                    >
-                      {id === activeId ? '사용 중' : '전환'}
-                    </button>
-                    <button
-                      type="button"
-                      className="tt-text"
-                      disabled={busy || school.employmentStatus === 'PENDING'}
-                      onClick={async () => {
-                        setMessage('')
-                        try {
-                          if (isAdmin) await deleteSchool.mutateAsync(id)
-                          else await leaveSchool.mutateAsync(id)
-                          setMessage(isAdmin ? '학교를 삭제했습니다.' : '학교를 나갔습니다.')
-                        } catch (error) {
-                          setMessage(getApiErrorMessage(error, '처리에 실패했습니다.'))
-                        }
-                      }}
-                    >
-                      {isAdmin ? '삭제' : '나가기'}
-                    </button>
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
-        </section>
-
-        {message && (
-          <p style={{ margin: '12px 0 0', fontSize: 13, color: 'var(--color-text)' }}>{message}</p>
-        )}
+    <Dialog title="프로필·학교" className="profile-school" onClose={() => { if (canLeave()) onClose() }}>
+      <div className="profile-tabs" role="tablist" aria-label="프로필 설정" data-current={tab}
+        ref={tabs} onKeyDown={pressTab}>
+        {['account', 'join'].map((key) => <button key={key} type="button" role="tab" id={id + key}
+          aria-selected={tab === key} aria-controls={id + key + '-panel'} tabIndex={key === tab ? 0 : -1}
+          data-tab={key} onClick={() => selectTab(key)}>{key === 'account' ? '계정 정보' : '기존 학교 가입'}</button>)}
       </div>
-    </div>
+      <div className="profile-body" ref={body} onTouchStart={touchStart} onTouchEnd={touchEnd}
+        onTouchCancel={() => { touch.current = null }}>
+        <section role="tabpanel" aria-labelledby={id + 'account'} id={id + 'account-panel'} hidden={tab !== 'account'}>
+          {profile.isLoading && <p role="status">계정 정보를 불러오고 있습니다.</p>}
+          {profile.isError && <p role="alert">계정 정보를 불러오지 못했습니다. <button onClick={() => profile.refetch()}>다시 조회</button></p>}
+          <form id={id + '-name'} onSubmit={saveName} className="profile-fields">
+            <label>계정 이름<input name="username" required maxLength={100} value={name} autoComplete="name"
+              disabled={busy || !me} onChange={e => { setNameDraft(e.target.value); setMessage(''); setError('') }} /></label>
+            <label>인증 이메일<input type="text" readOnly value={me?.verifiedEmail ?? ''}
+              placeholder={me ? '인증된 이메일 없음' : ''} /></label>
+          </form>
+          {onReviewRoster && !isAdmin && <button className="tt-text" type="button"
+            onClick={() => { if (canLeave()) onReviewRoster() }}>학교 명부 다시 확인</button>}
+          {isAdmin && <details open={managing} onToggle={e => setManaging(e.currentTarget.open)}>
+            <summary>학교 정보 관리</summary>
+            <div className="profile-fields">
+              {[['name','학교명'], ['address','주소'], ['phoneNumber','전화'], ['hireDate','고용일 (새 학교 추가 시)']].map(([key,label]) =>
+                <label key={key}>{label}<input type={key === 'hireDate' ? 'date' : 'text'} disabled={busy}
+                  value={schoolValue(key)} onChange={e => setSchoolDraft({ ...schoolDraft, [key]: e.target.value })} /></label>)}
+            </div>
+          </details>}
+        </section>
+        <section role="tabpanel" aria-labelledby={id + 'join'} id={id + 'join-panel'} hidden={tab !== 'join'}>
+          <SchoolJoinForm actions={actions} currentSchoolId={active.data?.schoolId} initialCode={active.data?.schoolCode ?? ''} initialName={initialSchoolName}
+            onBusyChange={setJoining} label="가입 요청" submit={input => joinSchool.mutateAsync(input)}
+            onComplete={async result => {
+              setError('')
+              setMessage(result.employmentStatus === 'PENDING' ? '학교 가입 승인 대기 중입니다.' : '학교별 이름을 확인했습니다.')
+              await onSchoolConfirmed?.()
+            }}>
+            <label>고용일 (선택)<input type="date" name="hireDate" /></label>
+          </SchoolJoinForm>
+          <details><summary>내 학교 목록</summary>
+            {schools.length === 0 && <p>등록된 학교가 없습니다.</p>}
+            <ul className="profile-schools">{schools.map(school => <li key={school.schoolId}>
+              <div><strong>{school.name}</strong><small>{school.schoolCode}{school.employmentStatus === 'PENDING' && ' · 승인 대기'}</small></div>
+              <button className="tt-text" disabled={busy || school.schoolId === active.data?.schoolId ||
+                (!isAdmin && school.employmentStatus !== 'HIRED')}
+                onClick={() => { if (canLeave()) perform(() => switchSchool.mutateAsync(school.schoolId), '활성 학교를 바꿨습니다.', '학교를 바꾸지 못했습니다.') }}>
+                {school.schoolId === active.data?.schoolId ? '사용 중' : '전환'}</button>
+              <button className="tt-text" disabled={busy || school.employmentStatus === 'PENDING'}
+                onClick={() => perform(() => (isAdmin ? deleteSchool : leaveSchool).mutateAsync(school.schoolId),
+                  isAdmin ? '학교를 삭제했습니다.' : '학교를 나갔습니다.', '처리에 실패했습니다.')}>
+                {isAdmin ? '삭제' : '나가기'}</button>
+            </li>)}</ul>
+          </details>
+        </section>
+      </div>
+      <footer className="profile-actions">
+        {error && <p role="alert">{error}</p>}
+        {message && <p role="status">{message}</p>}
+        {tab === 'account' && <>
+          {isAdmin && managing && <div className="profile-secondary">
+            <button className="tt-secondary" type="button" disabled={busy || !ownerSchool.data} onClick={() => saveSchool(false)}>학교 저장</button>
+            <button className="tt-secondary" type="button" disabled={busy} onClick={() => saveSchool(true)}>새 학교 추가</button>
+          </div>}
+          <button type="submit" className="entry-primary" form={id + '-name'} disabled={busy || !me}>
+            {updateOwner.isPending || updateStaff.isPending ? '저장 중…' : '수정 완료'}</button>
+        </>}
+        <div hidden={tab !== 'join'} ref={setActions} />
+      </footer>
+    </Dialog>
   )
-}
-
-const sectionTitle = { margin: '0 0 8px', fontSize: 13, fontWeight: 600, color: 'var(--color-text)' }
-const labelStyle = { display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8, fontSize: 12, color: 'var(--color-text-muted)' }
-const inputStyle = {
-  padding: '8px 10px',
-  borderRadius: 6,
-  border: '1px solid var(--color-border-input)',
-  fontSize: 14,
-  color: 'var(--color-text)',
-  background: 'var(--color-surface)',
 }

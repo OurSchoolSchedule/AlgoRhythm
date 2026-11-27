@@ -3,7 +3,7 @@ import './serviceFooter.css'
 const footer = {
   copyright: '© Algorhythm',
   contacts: [
-    { label: '서비스 문의', email: 'aaaalgorythm@ewha.ac.kr' },
+    { label: '서비스 문의', email: 'aaaalgorhthm@gmail.com' },
     { label: '개발자 연락처', email: null },
   ],
 }
