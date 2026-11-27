@@ -3,9 +3,10 @@ import './entry.css'
 import client from '@/api/client'
 import { useQueryClient } from '@tanstack/react-query'
 import { getSessionVersion } from '@/api/tokenStorage'
+import { queryKeys } from '@/hooks/queryKeys'
 import { getApiErrorMessage } from '@/utils/timetableGeneration'
 
-export default function SchoolJoinForm({ submit, onComplete, label = '학교 가입 요청', initialCode = '', initialName = '', children = null }) {
+export default function SchoolJoinForm({ submit, onComplete, label = '학교 가입 요청', initialCode = '', initialName = '', showSubjectHint = true, children = null }) {
   const cache = useQueryClient()
   const [proposal, setProposal] = useState(null)
   const [error, setError] = useState('')
@@ -38,10 +39,15 @@ export default function SchoolJoinForm({ submit, onComplete, label = '학교 가
           throw new Error('학교와 이름을 확인하지 못했습니다.')
         if (current()) setProposal(data)
       } else {
-        const result = await submit({ ...input, nameConfirmation: proposal.confirmation })
+        const subjectHint = String(values.get('subjectHint') ?? '').trim()
+        const result = await submit({ ...input, ...(subjectHint && { subjectHint }), nameConfirmation: proposal.confirmation })
         if (current()) {
           // Membership names appear across terms in the directory, timetable, and review.
-          for (const prefix of [['school-roster', proposal.schoolId], ['store'], ['timetable'], ['school', 'classes'], ['mypage']])
+          const affected = [
+            ['school-roster', proposal.schoolId], ['store'], ['timetable'], ['school', 'classes'],
+            [...queryKeys.schoolCatalog.subjects(), 'directory'], ['mypage'],
+          ]
+          for (const prefix of affected)
             void cache.invalidateQueries({ queryKey: prefix })
           form.reset()
           setProposal(null)
@@ -68,6 +74,9 @@ export default function SchoolJoinForm({ submit, onComplete, label = '학교 가
           autoComplete="off" maxLength={100} required pattern={'.*\\S.*'} /></label>
         <label>본인 이름<input name="displayName" defaultValue={initialName} readOnly={!!proposal}
           autoComplete="name" maxLength={100} required pattern={'.*\\S.*'} /></label>
+        {showSubjectHint && <label>담당 과목 (선택)<input name="subjectHint" readOnly={!!proposal}
+          maxLength={100} placeholder="예: 공통국어2, 독서와 작문" />
+          <small>관리자가 기존 교사 명부에서 본인을 확인할 때 참고합니다.</small></label>}
         {children}
         {proposal && <div aria-live="polite">
           <p>가입 학교 · <strong>{proposal.schoolName}</strong></p>

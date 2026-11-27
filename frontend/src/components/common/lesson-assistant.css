@@ -1,0 +1,24 @@
+.lesson-assistant {
+  margin-top: 0.5rem;
+}
+.lesson-assistant label {
+  display: block;
+  margin: 0.4rem 0;
+}
+.lesson-assistant select,
+.lesson-assistant input:not([type="checkbox"]):not([type="radio"]) {
+  max-width: 100%;
+}
+.lesson-assistant fieldset {
+  min-width: 0;
+  margin-top: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+.lesson-assistant button {
+  margin: 0.3rem 0.3rem 0.3rem 0;
+  padding: 0.3rem 0.6rem;
+}
+.lesson-assistant ul {
+  padding-left: 1.2rem;
+}

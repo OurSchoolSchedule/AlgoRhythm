@@ -55,6 +55,7 @@ export default function SelectedLesson({ home, term, cell, weeklyRows, roomId, o
     : lesson && lesson.actual.teacherId !== home.profile.schoolUserId.value
       ? '이 수업의 실제 담당자만 신청 가능합니다.'
       : ''
+  const coverAllowed = allowed.requestSubstitute && (!allowed.requestSwap || !swapReason)
   function open(kind) {
     onRequest({
       schoolId: term.schoolId,
@@ -92,10 +93,10 @@ export default function SelectedLesson({ home, term, cell, weeklyRows, roomId, o
       {home.slotLessons.refreshError || home.slotLessons.state === 'error' ? (
         <button onClick={home.retryDated}>다시 조회</button>
       ) : null}
-      <button disabled={!!blocked || !allowed.requestSubstitute} onClick={() => open('SUBSTITUTE')}>
+      <button disabled={!!blocked || !coverAllowed} onClick={() => open('SUBSTITUTE')}>
         보결 요청하기
       </button>
-      {!allowed.requestSubstitute && <small>재직 관리자만 보결을 신청할 수 있습니다.</small>}
+      {!coverAllowed && <small>관리자 또는 이 수업의 실제 담당자가 신청할 수 있습니다.</small>}
       <button disabled={!!blocked || !!swapReason} onClick={() => open('SWAP')}>
         교환 요청하기
       </button>

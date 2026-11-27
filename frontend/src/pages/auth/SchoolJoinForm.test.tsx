@@ -18,16 +18,23 @@ it('shows both renamed teachers after a conflict and waits for a fresh confirmat
     .mockRejectedValueOnce({ response: { status: 409, data: { code: 'NAME_CONFIRMATION_REQUIRED', proposal: changed } } })
     .mockResolvedValueOnce({ schoolId: 42 })
   const done = vi.fn()
-  render(<QueryClientProvider client={new QueryClient()}>
+  const cache = new QueryClient()
+  const directory = ['school', 'subjects', 'directory', 7, { schoolId: 42 }]
+  cache.setQueryData(directory, { teachers: [] })
+  render(<QueryClientProvider client={cache}>
     <SchoolJoinForm initialCode="S42" initialName="김민지" submit={submit} onComplete={done} />
   </QueryClientProvider>)
+  fireEvent.change(screen.getByLabelText(/담당 과목/), {target: {value: '  국어, 음악  '}})
   fireEvent.click(screen.getByRole('button', { name: '학교·이름 확인' }))
   fireEvent.click(await screen.findByRole('button', { name: '학교 가입 요청' }))
   await screen.findByText('기존 김민지 교사의 표시 이름도 김민지A로 변경됩니다.')
   expect(screen.getByText('김민지B')).toBeTruthy()
   expect(done).not.toHaveBeenCalled()
+  expect(cache.getQueryState(directory)?.isInvalidated).toBe(false)
   expect(submit).toHaveBeenCalledTimes(1)
   fireEvent.click(screen.getByRole('button', { name: '학교 가입 요청' }))
   await waitFor(() => expect(done).toHaveBeenCalledOnce())
+  expect(submit.mock.calls[1][0].subjectHint).toBe('국어, 음악')
+  expect(cache.getQueryState(directory)?.isInvalidated).toBe(true)
   expect(submit.mock.calls.map(([body]) => body.nameConfirmation)).toEqual(['v1', 'v2'])
 })

@@ -11,7 +11,8 @@ vi.mock('@/hooks', () => ({
   useConfirmVoiceCommand: () => ({ reset: vi.fn() }),
 }))
 
-const scope = { schoolId: 540001, termId: 547001, round: 4, jobs: 2, versions: 1 }
+const scope = { schoolId: 540001, termId: 547001, round: 4, jobs: 2, versions: 1,
+  mode: 'TIMETABLE', candidates: 1, weeklyLessons: 672, datedLessons: 1344, requests: 3, notifications: 2, receipts: 1 }
 beforeEach(() => { vi.resetAllMocks(); api.get.mockResolvedValue({ data: { scope, schoolCode: 'TESTCODE' } }) })
 afterEach(cleanup)
 function open() {
@@ -71,4 +72,16 @@ it('prepares a missing school then shows the join code and reset form', async ()
   expect(api.post).toHaveBeenCalledExactlyOnceWith('/api/demo-reset/setup', {}, expect.anything())
   expect(api.approve).not.toHaveBeenCalled()
   expect(screen.getByRole('button', { name: 'School42 시간표만 초기화' })).toBeTruthy()
+})
+
+it('reloads the full dry run before enabling full reset and clears the previous password', async () => {
+  open()
+  const input = await screen.findByLabelText('초기화를 진행하려면 비밀번호를 입력하세요')
+  fireEvent.change(input, { target: { value: 'test-pin' } })
+  api.get.mockResolvedValueOnce({ data: { ...scope, mode: 'FULL', applicant: { userId: 7, memberId: 8, teachingId: 542004 } } })
+  fireEvent.change(screen.getByLabelText('초기화 범위'), { target: { value: 'FULL' } })
+  const button = await screen.findByRole('button', { name: '전체 시연 초기화' })
+  expect(button.disabled).toBe(true)
+  expect(screen.getByText(/reslc0307@gmail.com/)).toBeTruthy()
+  expect(api.post).not.toHaveBeenCalled()
 })

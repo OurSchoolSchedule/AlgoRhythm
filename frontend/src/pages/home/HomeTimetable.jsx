@@ -185,27 +185,35 @@ function DatedLessons({ home, roomId, term, termStatus, onRequest }) {
                   </small>
                   {row.actual.cancelled && <span>휴강</span>}
                   {!row.actual.cancelled &&
-                    (home.access.actions.requestSubstitute ||
-                      (home.access.actions.requestSwap &&
-                        row.actual.teacherId === home.profile.schoolUserId.value)) && (
-                      <button
-                        className="desk-text-button"
-                        disabled={!!q.refreshError}
-                        onClick={() =>
-                          onRequest({
-                            schoolId: term.schoolId,
-                            termId: term.termId,
-                            date: row.date,
-                            datedLessonId: row.lessonId,
-                            rev: row.rev,
-                            teacherId: row.actual.teacherId,
-                            kind: home.access.actions.requestSubstitute ? 'SUBSTITUTE' : 'SWAP',
-                          })
-                        }
-                      >
-                        {home.access.actions.requestSubstitute ? '보결 요청' : '교환 요청'}
-                      </button>
-                    )}
+                    ['SUBSTITUTE', 'SWAP']
+                      .filter((kind) =>
+                        kind === 'SWAP'
+                          ? home.access.actions.requestSwap &&
+                            row.actual.teacherId === home.profile.schoolUserId.value
+                          : home.access.actions.requestSubstitute &&
+                            (!home.access.actions.requestSwap ||
+                              row.actual.teacherId === home.profile.schoolUserId.value),
+                      )
+                      .map((kind) => (
+                        <button
+                          key={kind}
+                          className="desk-text-button"
+                          disabled={!!q.refreshError}
+                          onClick={() =>
+                            onRequest({
+                              schoolId: term.schoolId,
+                              termId: term.termId,
+                              date: row.date,
+                              datedLessonId: row.lessonId,
+                              rev: row.rev,
+                              teacherId: row.actual.teacherId,
+                              kind,
+                            })
+                          }
+                        >
+                          {kind === 'SUBSTITUTE' ? '보결 요청' : '교환 요청'}
+                        </button>
+                      ))}
                   {row.actual.teacherId !== row.planned.teacherId && (
                     <span className="desk-tag">담당 변경</span>
                   )}

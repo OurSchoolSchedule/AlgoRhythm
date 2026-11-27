@@ -392,7 +392,7 @@ export default function School42() {
             </div>
             <Timetable lessons={lessons} admin={admin} />
           </section>
-          {admin && (
+          {admin && status?.teamResetEnabled && (
             <section>
               <h2>다음 회차</h2>
               <p>
