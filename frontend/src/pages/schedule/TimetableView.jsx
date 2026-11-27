@@ -4,10 +4,11 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { getAccessToken } from '@/api'
 import LoadError from '@/components/LoadError.jsx'
 import { useHomeSession } from '@/hooks/useHomeSession'
+import { useTermChoice } from '@/hooks/useTermChoice'
 import CreateSubstituteForm from '@/components/schedule/CreateSubstituteForm.jsx'
 import CreateTimetableCellForm from '@/components/schedule/CreateTimetableCellForm.jsx'
 import WeeklyTimetableGrid from '@/components/schedule/WeeklyTimetableGrid.jsx'
-import { SCHOOL_PERIOD_SLOTS, TIMETABLE_DAYS } from '@/constants/schoolTimetable.js'
+import { TIMETABLE_DAYS } from '@/constants/schoolTimetable.js'
 import { useDeleteTimetable, useSchoolTimetable, useUpdateTimetable } from '@/hooks'
 import { formatClassName, formatClock } from '@/utils/homeFocus.js'
 import { cellFromLessons, lessonsOf } from '@/utils/schoolTimetable.js'
@@ -68,8 +69,7 @@ function uniqueField(byDay, periods, field) {
   return [...values].sort((left, right) => left.localeCompare(right, 'ko'))
 }
 
-function periodRange(cell, period) {
-  const slot = SCHOOL_PERIOD_SLOTS.find((item) => item.period === period)
+function periodRange(cell, slot) {
   const start = formatClock(cell?.startTime || slot?.start)
   const end = formatClock(cell?.endTime || slot?.end)
   if (start && end) return `${start}–${end}`
@@ -77,7 +77,9 @@ function periodRange(cell, period) {
 }
 
 export default function TimetableView({ navigate, userRole = 'worker' }) {
-  const { access } = useHomeSession()
+  const session = useHomeSession()
+  const { access } = session
+  const { terms } = useTermChoice(session)
   const isAdmin = userRole === 'admin'
   const now = useMemo(() => new Date(), [])
   const defaultTerm = useMemo(() => termFromStartDate(toISODate(now)), [now])
@@ -125,8 +127,11 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
   const activeScope = !isAdmin
     ? (scope === 'class' ? 'class' : 'mine')
     : (scope === 'mine' ? 'class' : scope)
-  const days = schoolWeekDays(weekStart, now)
-  const breakLabel = weekBreakLabel(weekStart)
+  const visibleTerms = useTermFilter
+    ? terms.filter((term) => term.academicYear === academicYear && term.semester === semester)
+    : terms
+  const days = schoolWeekDays(weekStart, now, visibleTerms)
+  const breakLabel = weekBreakLabel(weekStart, visibleTerms)
   const thisWeek = isSameSchoolWeek(weekStart, now)
   const source = timetable
 
@@ -151,6 +156,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
   const selectedLessons = lessonsOf(selectedCell)
   const selectedCrowded = selectedLessons.length > 1
   const selectedDate = days.find((day) => day.key === selected?.day)
+  const selectedClock = selected ? periodRange(selectedCell, timetable.periodSlots.find((slot) => slot.period === selected.period)) : ''
   const actionLesson = selectedCrowded ? activeLesson : selectedCell
   const actionDateIso = selectedDate ? toISODate(selectedDate.date) : toISODate()
   const actionPeriodLabel = selected ? `${selected.period}교시` : ''
@@ -517,7 +523,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
         ) : breakLabel ? (
           <div className="home-empty">
             이번 주는 수업이 없습니다({breakLabel})
-            <button type="button" className="history-link" onClick={() => setWeekStart(nextOpenWeek(weekStart))}>다음 수업 주로 이동</button>
+            <button type="button" className="history-link" onClick={() => setWeekStart(nextOpenWeek(weekStart, visibleTerms))}>다음 수업 주로 이동</button>
           </div>
         ) : (
           <>
@@ -585,13 +591,13 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
 
       {query.error && failed ? <p className="sr-only">{String(query.error?.message || '')}</p> : null}
 
-      {selected && (
+      {selected && !selectedDate?.excluded && (
         <Dialog title="수업 상세" onClose={clearDetail}>
           <div className="detail-lesson">
             <p className="tt-detail-kicker">
               {selectedDate ? `${selectedDate.date.getMonth() + 1}월 ${selectedDate.date.getDate()}일 (${selectedDate.key})` : ''}
               {` · ${selected.period}교시`}
-              {periodRange(selectedCell, selected.period) ? ` · ${periodRange(selectedCell, selected.period)}` : ''}
+              {selectedClock ? ` · ${selectedClock}` : ''}
             </p>
             <h3>
               {selectedCrowded

@@ -5,16 +5,19 @@ import { useTermChoice } from '@/hooks/useTermChoice'
 import type { HomeTerm } from '@/types/datedLesson'
 import { Dialog } from '@/pages/home/HomePanels'
 import TermForm, { TermStatus } from './TermForm'
+import GenerationTermSetup from './GenerationTermSetup'
 import './operations.css'
 
 interface Props {
   title: string
   adminOnly?: boolean
+  inlineTermSetup?: boolean
   children: (term: HomeTerm, session: HomeSession) => ReactNode
 }
 function ScopedWorkspace({
   title,
   adminOnly,
+  inlineTermSetup,
   children,
   session,
 }: Props & { session: HomeSession }) {
@@ -22,10 +25,13 @@ function ScopedWorkspace({
   const allowed = adminOnly ? session.access.actions.generate : session.access.queries.datedLessons
   const state = useTermChoice(session, allowed)
   const { term } = state
+  const content = term && (
+    <div key={term.termId}>{children(term, session)}</div>
+  )
   return (
     <section className="detail-page schedule-work">
       <DetailHeading title={title} context={session.school?.name}>
-        {allowed && (
+        {allowed && !inlineTermSetup && (
           <button className="desk-term-button" onClick={() => setEditing(true)}>
             {term ? `${term.academicYear}학년도 ${term.semester}학기 · 학기 설정` : '학기 설정'}
           </button>
@@ -39,10 +45,10 @@ function ScopedWorkspace({
               ? '활성 학교 조회에 실패했습니다.'
               : '이 업무를 수행할 권한이 없습니다.'}
         </p>
+      ) : inlineTermSetup ? (
+        <GenerationTermSetup session={session} state={state}>{content}</GenerationTermSetup>
       ) : term ? (
-        <div key={[term.academicYear, term.semester, term.termId].join('/')}>
-          {children(term, session)}
-        </div>
+        content
       ) : (
         <section className="work-card">
           <TermStatus

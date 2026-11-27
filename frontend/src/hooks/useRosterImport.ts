@@ -6,6 +6,7 @@ import {
   readRoster,
 } from '@/api/rosterImport'
 import type { RosterScope } from '@/types/rosterImport'
+import { schoolClassRolesKey } from './useClassRoles'
 import { useAdminTerm } from './useAdminTerm'
 import { useScopedRead } from './useHomeSession'
 import { queryKeys } from './queryKeys'
@@ -45,6 +46,7 @@ export function useRosterImport(scope: RosterScope) {
         // Names are school-wide. Other terms and FE19 should also read the updated names.
         await Promise.all([
           cache.invalidateQueries({ queryKey: schoolRosterKey(scope.schoolId) }),
+          cache.invalidateQueries({ queryKey: schoolClassRolesKey(scope.schoolId) }),
           ...[
             queryKeys.home.directory(),
             queryKeys.store.staffSummary(),

@@ -5,21 +5,11 @@ import client from '@/api/client'
 import { rosterProblem } from '@/api/rosterImport'
 import { TableScroll } from '@/components/ui/DetailPage'
 import { queryKeys } from '@/hooks/queryKeys'
-import { useAdminTerm } from '@/hooks/useAdminTerm'
-import { useScopedRead } from '@/hooks/useHomeSession'
+import { useClassRoles, type ClassTeacher, type ClassAssignment } from '@/hooks/useClassRoles'
 import type { CellIssue, RosterScope } from '@/types/rosterImport'
 import { CellErrors } from './RosterTables'
 
-type Teacher = { schoolUserId: number | null; displayName: string }
-type Assignment = {
-  classId: number
-  grade: number
-  classNumber: number
-  homeroomTeacher: Teacher | null
-  deputyTeacher: Teacher | null
-}
-
-function label(teacher: Teacher | null) {
+function label(teacher: ClassTeacher | null) {
   if (!teacher) return '미배정'
   return (
     <>
@@ -30,17 +20,8 @@ function label(teacher: Teacher | null) {
 }
 
 export default function ClassRoles({ scope }: { scope: RosterScope }) {
-  const { session, termId, assertAccess } = useAdminTerm(scope)
+  const { roles, key, url, session, assertAccess } = useClassRoles(scope)
   const cache = useQueryClient()
-  const key = ['term-class-roles', scope.schoolId, scope.termId]
-  const url = `/api/v2/terms/${scope.termId}/homerooms`
-  const roles = useScopedRead(
-    session,
-    key,
-    termId !== null,
-    async (signal) => (await client.get<Assignment[]>(url, { signal })).data,
-    { retry: false },
-  )
   const [file, setFile] = useState<File | null>(null)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState('')
@@ -61,11 +42,12 @@ export default function ClassRoles({ scope }: { scope: RosterScope }) {
       assertAccess()
       const form = new FormData()
       form.append('file', file)
-      const { data } = await client.post<Assignment[]>(url + '/import', form, {
+      const { data } = await client.post<ClassAssignment[]>(url + '/import', form, {
         headers: { 'Content-Type': undefined },
         signal: controller.signal,
       })
       assertAccess()
+      cache.setQueryData([...key, session.scope], data)
       setStatus(`${data.length}개 학급의 담임·부담임을 저장했습니다.`)
       await Promise.all(
         [

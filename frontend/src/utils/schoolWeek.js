@@ -109,36 +109,40 @@ export function formatWeekCaption(monday) {
 /**
  * @param {Date} monday
  * @param {Date} today
+ * @param {import('@/api/terms').RegisteredTerm[]} terms
  */
-export function schoolWeekDays(monday, today) {
+export function schoolWeekDays(monday, today, terms = []) {
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
   return TIMETABLE_DAYS.map((key, index) => {
     const date = new Date(monday)
     date.setDate(monday.getDate() + index)
     const start = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+    const iso = isoDate(date)
+    const active = terms.filter((term) => term.startDate <= iso && iso <= term.endDate)
+    const excluded = active.length > 0 && active.every((term) => term.excludedDates?.includes(iso))
     return {
       key,
       date,
       dayNum: date.getDate(),
-      holiday: holidayOn(date),
+      excluded,
+      holiday: excluded ? '수업 제외일' : holidayOn(date),
       isToday: start === todayStart,
       isPast: start < todayStart,
     }
   })
 }
 
-/** 월~금이 모두 공휴일이면 그 이름을 돌려준다. */
-export function weekBreakLabel(monday) {
-  const names = schoolWeekDays(monday, monday).map((day) => day.holiday).filter(Boolean)
+/** 월~금이 모두 쉬는 날이면 그 사유를 돌려준다. */
+export function weekBreakLabel(monday, terms = []) {
+  const names = schoolWeekDays(monday, monday, terms).map((day) => day.holiday).filter(Boolean)
   if (names.length < 5) return ''
   return [...new Set(names)].join('·')
 }
 
 /** 휴업이 아닌 다음 주 월요일. */
-export function nextOpenWeek(monday) {
+export function nextOpenWeek(monday, terms = []) {
   let cursor = shiftSchoolWeek(monday, 1)
-  for (let step = 0; step < 8; step += 1) {
-    if (!weekBreakLabel(cursor)) return cursor
+  while (weekBreakLabel(cursor, terms)) {
     cursor = shiftSchoolWeek(cursor, 1)
   }
   return cursor
