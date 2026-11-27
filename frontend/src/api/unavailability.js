@@ -10,8 +10,8 @@ import client from './client.js'
  */
 
 /** @returns {Promise<TeacherAvailabilityResponseDto[]>} */
-export async function getMyUnavailabilities() {
-  const { data } = await client.get('/api/me/unavailabilities')
+export async function getMyUnavailabilities({ signal } = {}) {
+  const { data } = await client.get('/api/me/unavailabilities', { signal })
   if (!Array.isArray(data)) {
     throw new Error('근무 불가 응답 형식이 아닙니다.')
   }

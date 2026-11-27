@@ -37,3 +37,9 @@ it('does not infer an empty assignment from an ambiguous older directory respons
   expect(directoryHomerooms(older, 2026, term)).toBeUndefined()
   expect(directoryHomerooms({ ...older, rosterHomeroomClass: assigned }, 2026, term)).toEqual([assigned])
 })
+
+it('uses the resolved class list including rooms added after a term import', () => {
+  const linked = { ...member, rosterLinked: true, homeroomAssignmentTermId: term, termHomeroomsApplied: false }
+  expect(directoryHomerooms(linked, 2026, term)).toEqual([legacy])
+  expect(directoryHomerooms(linked, 2026, term + 1)).toBeUndefined()
+})

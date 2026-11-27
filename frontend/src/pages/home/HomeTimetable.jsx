@@ -1,7 +1,9 @@
+import { useOperatingWeek } from '@/hooks/useOperatingWeek'
+import { operatingReason } from '@/api/operatingWeek'
 import { useState } from 'react'
 import mochi from '@/assets/home-mochi.webp?no-inline'
 import { toISODate } from '@/utils'
-import { startOfSchoolWeek, shiftSchoolWeek } from '@/utils/schoolWeek'
+import { startOfSchoolWeek, shiftSchoolWeek, holidayOn } from '@/utils/schoolWeek'
 import { resolveSubjectColor } from '@/utils/subjectColor'
 import SelectedLesson from './SelectedLesson'
 import { Icon } from './HomePanels'
@@ -31,7 +33,7 @@ function ReadMessage({ query, label, retry }) {
   )
 }
 
-function WeekTable({ home, term, roomId, onRequest, daysOfWeek, rows, selected, onPick }) {
+function WeekTable({ home, term, roomId, onRequest, daysOfWeek, rows, selected, onPick, operating }) {
   const periods = [
     ...new Set([
       ...(home.periods.data ?? []).map((p) => p.periodNumber),
@@ -69,6 +71,7 @@ function WeekTable({ home, term, roomId, onRequest, daysOfWeek, rows, selected, 
                   <small>
                     {d.date.getMonth() + 1}/{d.date.getDate()}
                   </small>
+                  {d.note && <small>{d.note}</small>}
                   {d.iso === home.today && <span className="desk-today-label">오늘</span>}
                 </th>
               ))}
@@ -82,16 +85,20 @@ function WeekTable({ home, term, roomId, onRequest, daysOfWeek, rows, selected, 
                   <small>교시</small>
                 </th>
                 {daysOfWeek.map((d) => {
-                  const lessons = slots.get(`${d.key}/${period}`) ?? []
+                  const lessons = d.closed ? [] : slots.get(`${d.key}/${period}`) ?? []
                   const first = lessons[0]
-                  const actualOnly = !first && d.iso === home.date && actualPeriods.has(period)
-                  const emptyLabel = actualOnly ? '날짜 수업 있음' : '수업 없음'
+                  const actualOnly = !d.closed && !first && d.iso === home.date && actualPeriods.has(period)
+                  const bounds = operating?.days.find((day) => day.date === d.iso)
+                  const reason = d.closed || operatingReason(bounds, roomId, period)
+                  const emptyLabel = actualOnly ? '날짜 수업 있음' : reason || (bounds?.periods ? '공강' : '수업 없음')
+
                   return (
                     <td key={d.key} data-today={d.iso === home.today}>
                       <button
                         className="desk-cell"
                         type="button"
                         aria-label={`${d.name}요일 ${period}교시 · ${first?.subjectName ?? (first ? '과목 미확인' : emptyLabel)}${lessons.length > 1 ? ' 외 ' + (lessons.length - 1) + '건' : ''}`}
+                        disabled={!first && !actualOnly && Boolean(reason)}
                         aria-pressed={selected?.iso === d.iso && selected.period === period}
                         onClick={() => onPick({ day: d.key, iso: d.iso, period })}
                       >
@@ -110,7 +117,7 @@ function WeekTable({ home, term, roomId, onRequest, daysOfWeek, rows, selected, 
                             </small>
                           </>
                         ) : (
-                          <span className="desk-dash">{actualOnly ? emptyLabel : '—'}</span>
+                          <span className="desk-dash">{reason ? '수업 없음' : emptyLabel}</span>
                         )}
                       </button>
                     </td>
@@ -236,18 +243,22 @@ function DatedLessons({ home, roomId, term, termStatus, onRequest }) {
   )
 }
 
-export default function HomeTimetable({ home, term, setDate, setRoom, termStatus, onRequest }) {
+export default function HomeTimetable({ home, term, session, setDate, setRoom, termStatus, onRequest }) {
   const [cell, setCell] = useState(null)
   const [classFilter, setClassFilter] = useState(null)
   const weekly = home.weekly
   const monday = startOfSchoolWeek(localDay(home.date))
+  const operating = useOperatingWeek(session, term, toISODate(monday))
   const raw = weekly.data ?? []
   const rows = raw.filter((r) => !classFilter || r.schoolClassId === classFilter)
   const daysOfWeek = days.flatMap((key, i) => {
     if (i > 4 && !rows.some((r) => r.dayOfWeek === key)) return []
     const date = new Date(monday)
     date.setDate(date.getDate() + i)
-    return [{ key, name: dayNames[i], date, iso: toISODate(date) }]
+    const iso = toISODate(date)
+    const closed = term && (iso < term.startDate || iso > term.endDate) ? '학기 기간 밖' :
+      term?.excludedDates?.includes(iso) ? '수업 제외일' : ''
+    return [{ key, name: dayNames[i], date, iso, closed, note: closed || holidayOn(date) }]
   })
   const chosen = cell?.iso === home.date ? cell : null
   const chooseDate = (iso) => {
@@ -270,16 +281,18 @@ export default function HomeTimetable({ home, term, setDate, setRoom, termStatus
           <button
             className="desk-icon"
             aria-label="이전 주"
+            disabled={Boolean(term && toISODate(monday) <= term.startDate)}
             onClick={() => chooseDate(toISODate(shiftSchoolWeek(monday, -1)))}
           >
             <Icon name="prev" />
           </button>
-          <button className="desk-today" onClick={() => chooseDate(undefined)}>
+          <button className="desk-today" disabled={Boolean(term && (home.today < term.startDate || home.today > term.endDate))} onClick={() => chooseDate(undefined)}>
             오늘
           </button>
           <button
             className="desk-icon"
             aria-label="다음 주"
+            disabled={Boolean(term && toISODate(shiftSchoolWeek(monday, 1)) > term.endDate)}
             onClick={() => chooseDate(toISODate(shiftSchoolWeek(monday, 1)))}
           >
             <Icon name="next" />
@@ -356,7 +369,8 @@ export default function HomeTimetable({ home, term, setDate, setRoom, termStatus
           rows={rows}
           term={term}
           onRequest={onRequest}
-          roomId={classFilter}
+          roomId={classFilter ?? home.selection.classId ?? null}
+          operating={operating.data}
           daysOfWeek={daysOfWeek}
           selected={chosen}
           onPick={(value) => {
@@ -372,6 +386,8 @@ export default function HomeTimetable({ home, term, setDate, setRoom, termStatus
             aria-label="수업 날짜"
             type="date"
             value={home.date}
+            min={term?.startDate}
+            max={term?.endDate}
             onChange={(e) => {
               if (e.target.value) chooseDate(e.target.value)
             }}

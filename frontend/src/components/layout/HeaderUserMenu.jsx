@@ -324,7 +324,7 @@ export default function HeaderUserMenu({ userRole, alarmOpen, onAlarmToggle, onL
               setUnavailabilityOpen(true)
             }}
           >
-            시간대 선호도 제출
+            근무 불가 시간 제출
           </button>
 
           {onLogout && (

@@ -9,7 +9,7 @@ import { buildSchoolTimetable } from '@/utils/schoolTimetable.js'
  * 홈·시간표 페이지 공통 시간표.
  * - 교사(TEACHER): GET /api/timetable/me 또는 year/semester
  * - 관리자(ADMIN): GET /api/timetable 또는 year/semester
- * @param {Date | { referenceDate?: Date, weekOf?: string, academicYear?: number, semester?: number }} [input]
+ * @param {Date | { referenceDate?: Date, weekOf?: string, academicYear?: number, semester?: number, termId?: number, enabled?: boolean }} [input]
  */
 export function useSchoolTimetable(input = new Date()) {
   const isDate = input instanceof Date
@@ -25,7 +25,7 @@ export function useSchoolTimetable(input = new Date()) {
   const isAdmin = session.access.queries.adminProfile
   const view = isAdmin ? 'school' : session.access.queries.teacherProfile ? 'mine' : 'unavailable'
   const weekOf = (!isDate && input?.weekOf) || schoolDate(referenceDate)
-  const query = useWeekRead(session, view, academicYear, semester, undefined, undefined, { date: weekOf })
+  const query = useWeekRead(session, view, academicYear, semester, isDate ? undefined : input?.termId, undefined, { date: weekOf, enabled: isDate || input?.enabled !== false })
   const error = session.active.error || query.error
   const timetable = useMemo(
     () => buildSchoolTimetable(query.isError ? [] : query.data ?? [], referenceDate, periodSettings.data),
@@ -34,6 +34,7 @@ export function useSchoolTimetable(input = new Date()) {
 
   return {
     timetable,
+    rows: query.data ?? [],
     isAdminView: isAdmin,
     isLoading: session.switching || session.active.isLoading || query.isLoading,
     isError: Boolean(error),

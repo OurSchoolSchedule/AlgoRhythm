@@ -1,6 +1,8 @@
 import CandidateGrid from './CandidateGrid'
+import CandidateQualityDetails from './CandidateQualityDetails'
+import { candidateQuality } from './candidateQuality'
 import { objectives } from './generationOptions'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { HomeTerm } from '@/types/datedLesson'
 import type { ScheduleCandidate, GenerationJob } from '@/types/generationJob'
 import type { useCandidatePublication } from '@/hooks/useCandidatePublication'
@@ -34,6 +36,7 @@ export default function CandidatePublication({
 }: Props) {
   const [id, setId] = useState('')
   const [room, setRoom] = useState('')
+  const [sortBy, setSortBy] = useState<'rank' | 'concentrated' | 'longDays'>('rank')
   const [date, setDate] = useState(() => {
     const today = schoolDate(new Date())
     if (term.startDate && term.endDate && (today < term.startDate || today > term.endDate))
@@ -52,6 +55,26 @@ export default function CandidatePublication({
     if (r && (grade === undefined || r.grade === grade)) return `${r.grade}학년 ${r.classNumber}반`
     return grade === undefined ? '학급 #' + id : `${grade}학년 · 학급 #${id}`
   }
+  const subjectName = (id: string) =>
+    subjects.data?.find((s) => String(s.id) === id)?.name ?? '과목 #' + id
+  const teacherName = (id: string) =>
+    members.data?.find((m) => String(m.schoolUserId) === id)?.username ?? '교사 #' + id
+  const comparisons = useMemo(
+    () =>
+      candidates.map((candidate, rank) => ({
+        candidate,
+        rank,
+        quality: candidateQuality(candidate.placements),
+      })),
+    [candidates],
+  )
+  const ordered =
+    sortBy === 'rank'
+      ? comparisons
+      : [...comparisons].sort(
+          (a, b) => a.quality[sortBy].length - b.quality[sortBy].length || a.rank - b.rank,
+        )
+  const selectedQuality = comparisons.find((row) => row.candidate.candidateId === id)?.quality
   const state = publication.state
   const mustRestart =
     state.phase === 'conflict' &&
@@ -68,10 +91,20 @@ export default function CandidatePublication({
     <section className="work-card">
       <h2>후보 비교 및 게시</h2>
       {objective && <p>후보 평가 기준 · {objectives[objective]}</p>}
+      {comparisons.length > 1 && (
+        <label>
+          후보 정렬
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)}>
+            <option value="rank">후보 평가 순</option>
+            <option value="concentrated">하루에 모인 학급·과목 적은 순</option>
+            <option value="longDays">하루 6차시 이상인 교사·요일 적은 순</option>
+          </select>
+        </label>
+      )}
       <fieldset disabled={publication.isPublishing || state.phase === 'published' || mustRestart}>
         <legend>게시할 후보 선택</legend>
         <div className="work-candidates">
-          {candidates.map((c, i) => (
+          {ordered.map(({ candidate: c, quality, rank }) => (
             <label key={c.candidateId}>
               <span>
                 <input
@@ -84,7 +117,7 @@ export default function CandidatePublication({
                     setError('')
                   }}
                 />{' '}
-                후보 {i + 1}
+                후보 {rank + 1}
               </span>
               <small>주 {c.placements.length}차시</small>
               <small>
@@ -97,13 +130,24 @@ export default function CandidatePublication({
                 교사 공강{' '}
                 {c.score.teacherGapPeriods == null ? '미집계' : c.score.teacherGapPeriods + '교시'}
               </small>
-              <small>희망 미충족 교사 {c.score.teachersWithNoWantMet}명</small>
+              <small>희망이 하나도 충족되지 않은 교사 {c.score.teachersWithNoWantMet}명</small>
+              <small>주간 시수가 하루에 모인 학급·과목 {quality.concentrated.length}건</small>
+              <small>하루 6차시 이상인 교사·요일 {quality.longDays.length}건</small>
             </label>
           ))}
         </div>
       </fieldset>
       {candidate && (
         <section className="work-detail">
+          <h3>선택한 후보의 수업 분산</h3>
+          {selectedQuality && (
+            <CandidateQualityDetails
+              quality={selectedQuality}
+              className={className}
+              subjectName={subjectName}
+              teacherName={teacherName}
+            />
+          )}
           <h3>선택한 후보의 학급별 배치</h3>
           <label>
             학급{' '}
@@ -129,12 +173,8 @@ export default function CandidatePublication({
               registeredPeriods={job?.registeredPeriods}
               placements={candidate.placements}
               room={selectedRoom}
-              subjectName={(id) =>
-                subjects.data?.find((s) => String(s.id) === id)?.name ?? '과목 #' + id
-              }
-              teacherName={(id) =>
-                members.data?.find((m) => String(m.schoolUserId) === id)?.username ?? '교사 #' + id
-              }
+              subjectName={subjectName}
+              teacherName={teacherName}
             />
           ) : (
             <p role="status">이 작업의 운영 교시를 확인할 수 없습니다.</p>

@@ -7,13 +7,12 @@ import {
   replaceMyUnavailabilities,
 } from '@/api'
 import { queryKeys } from './queryKeys.js'
+import { useHomeSession, useScopedRead } from './useHomeSession'
 
 export function useMyUnavailabilities(options = {}) {
-  return useQuery({
-    queryKey: queryKeys.unavailability.me(),
-    queryFn: getMyUnavailabilities,
-    ...options,
-  })
+  const session = useHomeSession()
+  return useScopedRead(session, queryKeys.unavailability.me(), session.access.queries.catalog,
+    (signal) => getMyUnavailabilities({ signal }), options)
 }
 
 export function useSchoolUnavailabilities(options = {}) {
@@ -32,9 +31,10 @@ export function useSaveUnavailabilities() {
         ? replaceMyUnavailabilities(unavailabilities)
         : createMyUnavailabilities(unavailabilities)
     ),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.unavailability.me() })
-    },
+    onSuccess: () => Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.unavailability.me() }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.unavailability.school() }),
+    ]),
   })
 }
 

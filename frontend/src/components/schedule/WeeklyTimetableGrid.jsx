@@ -45,6 +45,7 @@ function statusMeta(cell) {
 export default function WeeklyTimetableGrid({
   timetable,
   days,
+  closedReason = (day) => day.excluded ? '수업 제외일' : '',
   detailMode = 'teacher',
   selectedKey = '',
   editing = false,
@@ -74,11 +75,11 @@ export default function WeeklyTimetableGrid({
         <div
           key={day.key}
           aria-current={day.isToday ? 'date' : undefined}
-          className={`tt-headcell${day.isToday ? ' is-today' : ''}${day.holiday ? ' is-off' : ''}${day.isPast ? ' is-past' : ''}`}
+          className={`tt-headcell${day.isToday ? ' is-today' : ''}${day.excluded || day.outsideTerm ? ' is-off' : ''}${day.isPast ? ' is-past' : ''}`}
         >
           <span className="tt-dow">{day.key}</span>
           <span className={`tt-dom${day.isToday ? ' is-today' : ''}`}>{day.dayNum}</span>
-          {day.holiday ? <span className="tt-holiday">{day.holiday}</span> : null}
+          {day.outsideTerm ? <span className="tt-holiday">학기 기간 밖</span> : day.holiday ? <span className="tt-holiday">{day.holiday}</span> : null}
         </div>
       ))}
       </div>
@@ -100,20 +101,21 @@ export default function WeeklyTimetableGrid({
               <span className="tt-period-clock">{formatClock(periodSlots.find((slot) => slot.period === row.period)?.start)}</span>
             </div>
             {days.map((day) => {
-              if (day.excluded) {
+              const cell = timetable.byDay?.[day.key]?.[row.period] ?? null
+              const reason = closedReason(day, row.period)
+              if (day.excluded || day.outsideTerm || reason === '수업 제외일' || reason === '학기 기간 밖' || (reason && !cell)) {
                 return (
                   <button
                     key={day.key}
                     type="button"
                     className="tt-slot is-off"
-                    aria-label={`${day.key}요일 ${row.period}교시 · 수업 제외일`}
+                    aria-label={`${day.key}요일 ${row.period}교시 · ${reason}`}
                     disabled
                   >
-                    <span className="tt-free">수업 없음</span>
+                    <span className="tt-free">{reason === '운영 교시 확인 필요' ? '확인 필요' : reason === '운영 교시 조회 중' ? '조회 중' : '수업 없음'}</span>
                   </button>
                 )
               }
-              const cell = timetable.byDay?.[day.key]?.[row.period] ?? null
               const lessons = lessonsOf(cell)
               const crowded = lessons.length > 1
               const preview = crowded ? lessons.slice(0, CROWD_PREVIEW) : []
@@ -134,7 +136,7 @@ export default function WeeklyTimetableGrid({
                 'tt-slot',
                 day.isToday ? 'is-today' : '',
                 isNowSlot ? 'is-now' : '',
-                day.holiday ? 'is-off' : '',
+                day.excluded || day.outsideTerm ? 'is-off' : '',
                 day.isPast ? 'is-past' : '',
                 selectedKey === key ? 'is-selected' : '',
                 dragging ? 'is-drag' : '',
@@ -160,7 +162,7 @@ export default function WeeklyTimetableGrid({
                   draggable={editing && Boolean(cell) && !crowded}
                   title={rejected ? hoverReason : undefined}
                   aria-pressed={selectedKey === key}
-                  aria-label={`${day.key}요일 ${row.period}교시 · ${crowded ? lessons.length + '학급' : cell?.subject || '공강'}`}
+                  aria-label={`${day.key}요일 ${row.period}교시 · ${crowded ? lessons.length + '학급' : cell?.subject || (showFreeLabel ? '공강' : '조회된 수업 없음')}`}
                   onClick={() => onSelect?.({ day: day.key, period: row.period })}
                   onDragStart={(event) => {
                     event.dataTransfer.effectAllowed = 'move'
@@ -208,7 +210,7 @@ export default function WeeklyTimetableGrid({
                       {status ? <span className={`tt-badge ${status.className}`}>{status.label}</span> : null}
                     </>
                   ) : showFreeLabel ? (
-                    <span className="tt-free">—</span>
+                    <span className="tt-free">공강</span>
                   ) : null}
                 </button>
               )

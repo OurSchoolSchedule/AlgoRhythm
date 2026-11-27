@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useSchoolHome } from '@/hooks/useSchoolHome'
+import { useTimetableDate } from '@/hooks/useTimetableDate'
 import { useTermChoice } from '@/hooks/useTermChoice'
 import AIFloatingChat from '@/components/common/AIFloatingChat'
 import { Actions, Dialog, Icon, Notices, Profile } from './HomePanels'
@@ -9,7 +10,7 @@ import HomeTimetable from './HomeTimetable'
 export default function HomeContent({ session, navigate, panel, openPanel }) {
   const state = useTermChoice(session)
   const { term, weeklyTerm } = state
-  const [date, setDate] = useState()
+  const { date, setDate } = useTimetableDate(session, term)
   const [classId, setClassId] = useState(null)
   const [editingTerm, setEditingTerm] = useState(false)
   const home = useSchoolHome({ term, weeklyTerm, classId, date })
@@ -86,6 +87,7 @@ export default function HomeContent({ session, navigate, panel, openPanel }) {
             <HomeTimetable
               key={term?.termId ?? 'legacy'}
               term={term}
+              session={session}
               home={home}
               onRequest={(selection) => navigate('lesson-changes', selection.date, selection)}
               setDate={setDate}
@@ -132,10 +134,7 @@ export default function HomeContent({ session, navigate, panel, openPanel }) {
             session={session}
             state={state}
             onClose={() => setEditingTerm(false)}
-            onApplied={() => {
-              setClassId(null)
-              setDate(undefined)
-            }}
+            onApplied={() => setClassId(null)}
           />
         </Dialog>
       )}
