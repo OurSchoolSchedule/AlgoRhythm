@@ -3,6 +3,7 @@ import type { ComponentType } from 'react'
 export type WorkSession = { userId: number; accessToken: string; refreshToken: string }
 type SchoolMembership = Record<string, unknown> & { schoolId: number; employmentStatus: string }
 export type VerifiedEmail = {
+  // AUTHENTICATE identifies a returning account; either verified email grant allows new registration.
   nextStep: 'REGISTER' | 'AUTHENTICATE'
   flowToken: string
   userId: number

@@ -17,7 +17,6 @@ vi.mock('@/api/passkeys', async (original) => ({
   supportsPasskeys: vi.fn(() => true),
   registerPasskey: vi.fn(),
   loginWithPasskey: vi.fn(),
-  recoverPasskey: vi.fn(),
 }))
 const verified: VerifiedEmail = {
   userId: 42,
@@ -43,7 +42,7 @@ it('continues directly after registration without displaying or storing a recove
   const enter = vi.fn()
   vi.mocked(api.registerPasskey).mockResolvedValueOnce(work)
   render(<VerifiedPasskeyStep verification={verified} onAuthenticated={enter} onRestart={vi.fn()} />)
-  click('패스키 등록')
+  click('새 패스키 발급')
   await waitFor(() => expect(enter).toHaveBeenCalledExactlyOnceWith(work))
   expect(screen.queryByText(/복구 코드 보관/)).toBeNull()
   expect(screen.queryByRole('button', { name: /보관했습니다/ })).toBeNull()
@@ -56,37 +55,84 @@ it('explains a rejected registration origin without sending the user through ema
   render(
     <VerifiedPasskeyStep verification={verified} onAuthenticated={vi.fn()} onRestart={vi.fn()} />,
   )
-  click('패스키 등록')
+  click('새 패스키 발급')
   expect((await screen.findByRole('alert')).textContent).toContain('공식 주소')
   expect(screen.queryByText(/이메일 인증 코드를 새로/)).toBeNull()
   expect(screen.queryByText(/세션이 만료/)).toBeNull()
 })
 
-it('requires fresh email verification after a bad recovery code instead of reusing the grant', async () => {
-  vi.mocked(api.recoverPasskey).mockRejectedValueOnce({
-    response: { data: { code: 'PASSKEY_INVALID' } },
+it.each(['REGISTER', 'AUTHENTICATE'] as const)(
+  'lets a returning account issue a new passkey after email verification (%s)',
+  async (nextStep) => {
+    const enter = vi.fn()
+    vi.mocked(api.registerPasskey).mockResolvedValueOnce(work)
+    render(
+      <VerifiedPasskeyStep
+        verification={{ ...verified, nextStep, newUser: false }}
+        onAuthenticated={enter}
+        onRestart={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('button', { name: '등록한 패스키로 인증' })).toBeTruthy()
+    expect(screen.queryByLabelText('기존 복구 코드')).toBeNull()
+    click('새 패스키 발급')
+    await waitFor(() => expect(enter).toHaveBeenCalledExactlyOnceWith(work))
+    expect(api.registerPasskey).toHaveBeenCalledExactlyOnceWith(
+      verified.flowToken,
+      expect.any(AbortSignal),
+    )
+    expect(api.loginWithPasskey).not.toHaveBeenCalled()
+  },
+)
+
+it('requires fresh email verification after a failed new registration instead of reusing the grant', async () => {
+  vi.mocked(api.registerPasskey).mockRejectedValueOnce({
+    response: { data: { code: 'PASSKEY_FLOW_EXPIRED' } },
   })
   const restart = vi.fn()
   render(
     <VerifiedPasskeyStep
-      verification={{ ...verified, nextStep: 'AUTHENTICATE' }}
+      verification={{ ...verified, nextStep: 'AUTHENTICATE', newUser: false }}
       onAuthenticated={vi.fn()}
       onRestart={restart}
     />,
   )
-  click('이전에 발급받은 복구 코드 사용')
-  fireEvent.change(screen.getByLabelText('기존 복구 코드'), { target: { value: 'wrong-fixture' } })
-  click('새 패스키로 복구')
+  click('새 패스키 발급')
   await screen.findByRole('alert')
-  expect(api.recoverPasskey).toHaveBeenCalledExactlyOnceWith(
-    verified.flowToken,
-    'wrong-fixture',
-    expect.any(AbortSignal),
-  )
-  expect(screen.queryByLabelText('기존 복구 코드')).toBeNull()
   expect(screen.getByText(/이메일 인증 코드를 새로/)).toBeTruthy()
+  expect((screen.getByRole('button', { name: '새 패스키 발급' }) as HTMLButtonElement).disabled).toBe(true)
+  click('새 패스키 발급')
+  expect(api.registerPasskey).toHaveBeenCalledOnce()
   click('이메일 입력으로 돌아가기')
   expect(restart).toHaveBeenCalledOnce()
+})
+
+it('discards a cancelled registration and requires a fresh email grant while preserving existing-key login', async () => {
+  let resolve!: (session: WorkSession) => void
+  vi.mocked(api.registerPasskey).mockImplementationOnce(
+    () => new Promise((r) => { resolve = r }),
+  )
+  vi.mocked(api.loginWithPasskey).mockResolvedValueOnce(work)
+  const enter = vi.fn()
+  render(<VerifiedPasskeyStep verification={verified} onAuthenticated={enter} onRestart={vi.fn()} />)
+  click('새 패스키 발급')
+  click('인증 취소')
+  expect(vi.mocked(api.registerPasskey).mock.calls[0][1]?.aborted).toBe(true)
+  await act(async () => resolve(work))
+  expect(enter).not.toHaveBeenCalled()
+  expect(screen.getByText(/이메일 인증 코드를 새로/)).toBeTruthy()
+  expect((screen.getByRole('button', { name: '새 패스키 발급' }) as HTMLButtonElement).disabled).toBe(true)
+  click('등록한 패스키로 인증')
+  await waitFor(() => expect(enter).toHaveBeenCalledExactlyOnceWith(work))
+})
+
+it('discards a verified email grant when the current session changes', async () => {
+  const enter = vi.fn()
+  render(<VerifiedPasskeyStep verification={verified} onAuthenticated={enter} onRestart={vi.fn()} />)
+  await act(async () => clearTokens())
+  expect(screen.getByRole('alert').textContent).toContain('로그인 상태가 변경')
+  expect(screen.queryByRole('button', { name: '새 패스키 발급' })).toBeNull()
+  expect(api.registerPasskey).not.toHaveBeenCalled()
 })
 
 it('starts a fresh discoverable login after cancel and discards the cancelled result', async () => {
@@ -154,4 +200,12 @@ it('gives unsupported browsers a next action without starting a ceremony', () =>
   ).toBe(true)
   expect(screen.getByText(/최신 브라우저/)).toBeTruthy()
   expect(api.loginWithPasskey).not.toHaveBeenCalled()
+})
+
+it('shows the new passkey action with supported-browser guidance when WebAuthn is unavailable', () => {
+  vi.mocked(api.supportsPasskeys).mockReturnValue(false)
+  render(<VerifiedPasskeyStep verification={verified} onAuthenticated={vi.fn()} onRestart={vi.fn()} />)
+  expect((screen.getByRole('button', { name: '새 패스키 발급' }) as HTMLButtonElement).disabled).toBe(true)
+  expect(screen.getByRole('status').textContent).toContain('최신 브라우저')
+  expect(api.registerPasskey).not.toHaveBeenCalled()
 })

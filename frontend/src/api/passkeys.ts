@@ -9,7 +9,7 @@ const messages = {
   PASSKEY_UNSUPPORTED:
     '이 환경에서는 패스키를 사용할 수 없습니다. 최신 브라우저에서 서비스 주소를 직접 열어 주세요.',
   PASSKEY_CANCELLED: '패스키 요청이 취소되었거나 시간이 지났습니다. 준비되면 다시 시도해 주세요.',
-  PASSKEY_INVALID: '패스키 또는 복구 코드를 확인할 수 없습니다. 인증을 다시 시작해 주세요.',
+  PASSKEY_INVALID: '패스키를 확인할 수 없습니다. 인증을 다시 시작해 주세요.',
   PASSKEY_REQUIRED: '등록한 패스키로 로그인해 주세요.',
   PASSKEY_FLOW_EXPIRED: '요청이 만료되었거나 등록 상태가 바뀌었습니다. 인증을 다시 시작해 주세요.',
   LAST_PASSKEY: '마지막 패스키입니다. 다른 패스키를 먼저 추가해 주세요.',
@@ -180,14 +180,6 @@ export async function loginWithPasskey(signal?: AbortSignal) {
   const authenticated = session(data)
   void updateSavedName(data)
   return authenticated
-}
-
-export async function recoverPasskey(flowToken: string, code: string, signal?: AbortSignal) {
-  const data = await ceremony(attempt(signal), 'create', '/recovery/options', {
-    flowToken,
-    recoveryCode: code,
-  })
-  return session(data)
 }
 
 export async function listPasskeys(signal?: AbortSignal): Promise<PasskeyDevice[]> {
