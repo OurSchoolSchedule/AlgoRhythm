@@ -46,8 +46,12 @@ it('supports switching roles, forward/backward navigation and the mobile content
   fireEvent.click(screen.getByRole('link', { name: '관리자' }))
   await screen.findByRole('heading', { name: '시수표 검증' })
   fireEvent.click(screen.getByRole('link', { name: '다음' }))
-  const heading = await screen.findByRole('heading', { name: '후보 생성과 비교' })
+  const heading = await screen.findByRole('heading', { name: '학년별 마지막 교시' })
   expect(document.activeElement).toBe(heading)
+  fireEvent.click(screen.getByRole('link', { name: '다음' }))
+  await screen.findByRole('heading', { name: '후보 생성과 비교' })
+  fireEvent.click(screen.getByRole('button', { name: '이전' }))
+  await screen.findByRole('heading', { name: '학년별 마지막 교시' })
   fireEvent.click(screen.getByRole('button', { name: '이전' }))
   await screen.findByRole('heading', { name: '시수표 검증' })
   fireEvent.change(screen.getByRole('combobox', { name: '단계 선택' }), {

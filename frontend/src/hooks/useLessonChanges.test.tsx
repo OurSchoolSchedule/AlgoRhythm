@@ -192,6 +192,8 @@ describe('날짜별 수업 변경', () => {
       }
       const { result } = mount()
       await loaded(result)
+      const directoryPath = isSwap ? '/api/school/teachers' : '/api/school/members'
+      expect(reads.find((r) => r.url === directoryPath)?.params).toEqual({ termId: term.termId })
       await act(async () => {
         const outcome = isSwap
           ? await result.current.requestSwap(first, second)

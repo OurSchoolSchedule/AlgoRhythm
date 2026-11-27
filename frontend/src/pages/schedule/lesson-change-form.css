@@ -1,0 +1,10 @@
+.swap-teacher-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+
+.swap-teacher-fields :is(label, select, input) {
+  min-width: 0;
+  width: 100%;
+}

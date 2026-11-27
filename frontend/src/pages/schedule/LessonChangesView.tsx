@@ -7,6 +7,8 @@ import { useSubjects, useSchoolClasses } from '@/hooks/useSchoolCatalog'
 import { usePeriodSettings } from '@/hooks/useSchoolSetting'
 import { operationError } from '@/utils/operationInputs'
 import { schoolDate } from '@/utils/homeContract'
+import CoverTeacherGrid from './CoverTeacherGrid'
+import './lesson-change-form.css'
 import TermWorkspace from './TermWorkspace'
 
 const states = {
@@ -45,7 +47,8 @@ interface Props {
 function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: HomeTerm }) {
   const [date, setDate] = useState(selection?.date ?? (initialDate || schoolDate(new Date())))
   const [otherDate, setOtherDate] = useState<string | null>(null)
-  const changes = useLessonChanges(term, date, otherDate || date)
+  const targetDate = otherDate ?? date
+  const changes = useLessonChanges(term, date, targetDate)
   const [detailId, setDetailId] = useState<number | null>(null)
   const details = useChangeDetails(term, detailId)
   const [firstKey, setFirst] = useState('')
@@ -78,8 +81,7 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
       )
     : firstRows.find((r) => stamp(r) === firstKey)
   const coverCandidates = useChangeCandidates(term, first, 'SUBSTITUTE')
-  const swapCandidates = useChangeCandidates(term, first, 'SWAP', otherDate || date)
-  const validTargets = coverTargets.filter((id) => coverCandidates.data?.includes(id))
+  const swapCandidates = useChangeCandidates(term, first, 'SWAP', targetDate)
   const name = (id: number) => {
     const person = members.find((m) => m.schoolUserId === id)
     return person?.displayName ?? person?.username ?? '교사 #' + id
@@ -91,19 +93,36 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
       m.schoolUserId !== first?.actual.teacherId &&
       m.schoolUserId !== changes.memberId,
   )
-  const validTeacher = teachers.some((t) => String(t.schoolUserId) === teacher)
-  const secondRows = (changes.secondLessons.data ?? []).filter(
-    (r) =>
-      first &&
-      validTeacher &&
-      swapCandidates.data?.includes(r.id) &&
-      r.actual.teacherId === Number(teacher) &&
-      !r.actual.cancelled &&
-      r.versionId === first.versionId &&
-      r.id !== first.id &&
-      !(r.date === first.date && r.actual.periodId === first.actual.periodId),
+  const freeIds = coverCandidates.isSuccess ? coverCandidates.data : []
+  const validTargets = coverTargets.filter(
+    (id) => freeIds.includes(id) && teachers.some((t) => t.schoolUserId === id),
   )
-  const second = secondRows.find((r) => stamp(r) === secondKey)
+  const targetDay = changes.secondLessons
+  const swapReadError =
+    swapCandidates.error ?? ('error' in targetDay ? targetDay.error : targetDay.refreshError)
+  const swapIds = new Set(swapCandidates.data ?? [])
+  const eligibleLessons = swapReadError
+    ? []
+    : (targetDay.data ?? []).filter(
+        (row) =>
+          first &&
+          swapIds.has(row.id) &&
+          row.date === targetDate &&
+          row.versionId === first.versionId &&
+          !row.actual.cancelled &&
+          row.actual.teacherId !== first.actual.teacherId &&
+          !(row.date === first.date && row.actual.periodId === first.actual.periodId),
+      )
+  const eligibleTeachers = new Set(eligibleLessons.map((row) => row.actual.teacherId))
+  const matchingTeachers = teachers.filter(
+    (t) => eligibleTeachers.has(t.schoolUserId) && name(t.schoolUserId).includes(search.trim()),
+  )
+  const validTeacher = matchingTeachers.some((t) => String(t.schoolUserId) === teacher)
+  const secondRows = validTeacher
+    ? eligibleLessons.filter((row) => row.actual.teacherId === Number(teacher))
+    : []
+  const second = secondRows.find((row) => stamp(row) === secondKey)
+  const swapLoading = swapCandidates.isPending || targetDay.state === 'loading'
   function clearTarget() {
     setSecond('')
     setCoverTargets([])
@@ -248,24 +267,12 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
                 </p>
               )}
               {coverCandidates.data?.length === 0 && <p>이 교시에 보결 가능한 교사가 없습니다.</p>}
-              {teachers
-                .filter((t) => coverCandidates.data?.includes(t.schoolUserId))
-                .map((t) => (
-                  <label key={t.schoolUserId}>
-                    <input
-                      type="checkbox"
-                      checked={validTargets.includes(t.schoolUserId)}
-                      onChange={(e) =>
-                        setCoverTargets(
-                          e.target.checked
-                            ? [...validTargets, t.schoolUserId]
-                            : validTargets.filter((id) => id !== t.schoolUserId),
-                        )
-                      }
-                    />
-                    {name(t.schoolUserId)}
-                  </label>
-                ))}
+              <CoverTeacherGrid
+                teachers={teachers}
+                candidateIds={freeIds}
+                selectedIds={validTargets}
+                onChange={setCoverTargets}
+              />
               <button
                 className="work-primary"
                 disabled={!first || !validTargets.length || coverCandidates.isError}
@@ -287,47 +294,14 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
           >
             <fieldset disabled={locked || !!retry}>
               <legend>1:1 수업 교환</legend>
-              <label>
-                상대 교사 검색
-                <input
-                  type="search"
-                  disabled={!first}
-                  value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value)
-                    setTeacher('')
-                    setSecond('')
-                  }}
-                />
-              </label>
-              <label>
-                상대 교사
-                <select
-                  required
-                  disabled={!first}
-                  value={validTeacher ? teacher : ''}
-                  onChange={(e) => {
-                    setTeacher(e.target.value)
-                    setSecond('')
-                  }}
-                >
-                  <option value="">상대 교사 선택</option>
-                  {teachers
-                    .filter((t) => name(t.schoolUserId).includes(search.trim()))
-                    .map((t) => (
-                      <option key={t.schoolUserId} value={t.schoolUserId}>
-                        {name(t.schoolUserId)}
-                      </option>
-                    ))}
-                </select>
-              </label>
               <label className="change-date-toggle">
                 <input
                   type="checkbox"
-                  disabled={!validTeacher}
+                  disabled={!first}
                   checked={otherDate !== null}
                   onChange={(e) => {
                     setOtherDate(e.target.checked ? date : null)
+                    setTeacher('')
                     setSecond('')
                   }}
                 />
@@ -342,14 +316,49 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
                     onChange={(e) => {
                       if (e.target.value) {
                         setOtherDate(e.target.value)
+                        setTeacher('')
                         setSecond('')
                       }
                     }}
                   />
                 </label>
               )}
+              <div className="swap-teacher-fields">
+                <label>
+                  상대 교사 검색
+                  <input
+                    type="search"
+                    disabled={!first}
+                    value={search}
+                    onChange={(e) => {
+                      setSearch(e.target.value)
+                      setTeacher('')
+                      setSecond('')
+                    }}
+                  />
+                </label>
+                <label>
+                  상대 교사
+                  <select
+                    required
+                    disabled={!matchingTeachers.length}
+                    value={validTeacher ? teacher : ''}
+                    onChange={(e) => {
+                      setTeacher(e.target.value)
+                      setSecond('')
+                    }}
+                  >
+                    <option value="">상대 교사 선택</option>
+                    {matchingTeachers.map((t) => (
+                      <option key={t.schoolUserId} value={t.schoolUserId}>
+                        {name(t.schoolUserId)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
               <label>
-                교환할 상대 수업 · {otherDate || date}
+                교환할 상대 수업 · {targetDate}
                 <select
                   required
                   disabled={!first || !validTeacher}
@@ -364,20 +373,23 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
                   ))}
                 </select>
               </label>
-              {swapCandidates.isError && (
-                <p role="alert">
-                  교환 후보 조회에 실패했습니다.{' '}
-                  <button type="button" onClick={() => swapCandidates.refetch()}>
-                    다시 조회
-                  </button>
-                </p>
-              )}
-              {validTeacher && !secondRows.length && (
-                <small>
-                  {readLabel[changes.secondLessons.state] ??
-                    '해당 날짜에 교환할 수 있는 상대 수업이 없습니다.'}
-                </small>
-              )}
+              {first &&
+                (swapReadError ? (
+                  <p role="alert">
+                    교환 후보 조회에 실패했습니다. {operationError(swapReadError)}{' '}
+                    <button type="button" onClick={refresh}>
+                      다시 조회
+                    </button>
+                  </p>
+                ) : swapLoading ? (
+                  <p role="status">교환 가능한 수업을 조회하고 있습니다.</p>
+                ) : !eligibleLessons.length ? (
+                  <p role="status">
+                    이 날짜에 교환 가능한 수업이 없습니다. 다른 날짜를 선택하세요.
+                  </p>
+                ) : !matchingTeachers.length && search.trim() ? (
+                  <p role="status">검색과 일치하는 상대 교사가 없습니다.</p>
+                ) : null)}
               {first && second && (
                 <div className="change-preview" aria-label="교환 미리보기">
                   <div>
