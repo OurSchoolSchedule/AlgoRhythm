@@ -142,7 +142,7 @@ function Generation({ term }) {
           publication.state.phase === 'conflict' ||
           publication.state.phase === 'published') && (
           <CandidatePublication
-            key={gen.accepted.jobId}
+            key={JSON.stringify([gen.accepted.jobId, term.startDate, term.endDate])}
             term={term}
             publication={publication}
             candidates={gen.candidates}
@@ -163,7 +163,7 @@ function Generation({ term }) {
 }
 export default function ScheduleCreateView() {
   return (
-    <TermWorkspace title="시간표 생성·게시" adminOnly>
+    <TermWorkspace title="시간표 생성·게시" adminOnly inlineTermSetup>
       {(term) => <Generation term={term} />}
     </TermWorkspace>
   )

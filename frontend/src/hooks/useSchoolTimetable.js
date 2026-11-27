@@ -1,6 +1,7 @@
 import { schoolDate } from '@/utils/homeContract'
 import { useMemo } from 'react'
 import { useHomeSession } from './useHomeSession'
+import { usePeriodSettings } from './useSchoolSetting.js'
 import { useWeekRead } from './homeReads'
 import { buildSchoolTimetable } from '@/utils/schoolTimetable.js'
 
@@ -20,14 +21,15 @@ export function useSchoolTimetable(input = new Date()) {
   }, [isDate, input])
 
   const session = useHomeSession()
+  const periodSettings = usePeriodSettings()
   const isAdmin = session.access.queries.adminProfile
   const view = isAdmin ? 'school' : session.access.queries.teacherProfile ? 'mine' : 'unavailable'
   const weekOf = (!isDate && input?.weekOf) || schoolDate(referenceDate)
   const query = useWeekRead(session, view, academicYear, semester, undefined, undefined, { date: weekOf })
   const error = session.active.error || query.error
   const timetable = useMemo(
-    () => buildSchoolTimetable(query.isError ? [] : query.data ?? [], referenceDate),
-    [query.data, query.isError, referenceDate],
+    () => buildSchoolTimetable(query.isError ? [] : query.data ?? [], referenceDate, periodSettings.data),
+    [query.data, query.isError, referenceDate, periodSettings.data],
   )
 
   return {

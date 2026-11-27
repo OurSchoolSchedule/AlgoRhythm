@@ -69,14 +69,16 @@ function adapter(handler: (config: InternalAxiosRequestConfig) => [number, unkno
   }
 }
 async function register() {
-  fireEvent.click(await screen.findByRole('button', { name: '새 학기 등록' }))
-  fireEvent.change(screen.getByLabelText('시작일'), {
+  await screen.findByRole('heading', { name: '생성할 학기 설정' })
+  fireEvent.change(screen.getByLabelText('학년도'), { target: { value: '2026' } })
+  fireEvent.change(screen.getByLabelText('학기', { exact: true }), { target: { value: '2' } })
+  fireEvent.change(screen.getByLabelText('시작일자'), {
     target: { value: '2026-08-20' },
   })
-  fireEvent.change(screen.getByLabelText('종료일'), {
+  fireEvent.change(screen.getByLabelText('마감일자'), {
     target: { value: '2027-02-20' },
   })
-  fireEvent.click(screen.getByRole('button', { name: '새 학기 등록 확정' }))
+  fireEvent.click(screen.getByRole('button', { name: '새 학기 등록 및 적용' }))
 }
 beforeEach(() => {
   cache = new QueryClient({
@@ -120,8 +122,45 @@ it('학기 중복이면 기간을 보존하고 새로 조회된 목록에서 적
   mount()
   await register()
   expect((await screen.findByRole('alert')).textContent).toContain('목록에서 기존 학기를 선택')
-  expect((screen.getByLabelText('시작일') as HTMLInputElement).value).toBe('2026-08-20')
+  expect((screen.getByLabelText('시작일자') as HTMLInputElement).value).toBe('2026-08-20')
   expect(await screen.findByRole('option', { name: '2026학년도 2학기' })).toBeTruthy()
+})
+
+it('학기의 동시 변경으로 충돌하면 입력을 보존하고 최신 기간을 다시 확인한 뒤 저장한다', async () => {
+  const first = { ...registered, excludedDates: [] as string[] }
+  let server = first
+  const writes: Record<string, unknown>[] = []
+  adapter((config) => {
+    if (config.url === '/api/v2/terms') return [200, [server]]
+    if (config.url === base && config.method === 'patch') {
+      const body = JSON.parse(config.data)
+      writes.push(body)
+      if (writes.length === 1) {
+        server = { ...first, excludedDates: ['2026-11-24'] }
+        return failure(config, 409, { code: 'TERM_CALENDAR_CHANGED', message: '학기 기간이 변경됐습니다.' })
+      }
+      server = { ...server, endDate: body.endDate }
+      return [200, server]
+    }
+    return [200, []]
+  })
+  mount()
+  const end = await screen.findByLabelText('마감일자') as HTMLInputElement
+  fireEvent.change(end, { target: { value: '2027-02-21' } })
+  fireEvent.click(screen.getByRole('button', { name: '학기 변경 저장' }))
+  const reload = await screen.findByRole('button', { name: '최신 설정 불러오기' })
+  expect(end.value).toBe('2027-02-21')
+  expect((screen.getByRole('button', { name: '학기 변경 저장' }) as HTMLButtonElement).disabled).toBe(true)
+  fireEvent.click(reload)
+  expect(end.value).toBe('2027-02-20')
+  expect(screen.getByText('2026-11-24', { exact: true })).toBeTruthy()
+  fireEvent.change(end, { target: { value: '2027-02-21' } })
+  fireEvent.click(screen.getByRole('button', { name: '학기 변경 저장' }))
+  await screen.findByText('2026학년도 2학기를 적용했습니다.')
+  expect(writes.map((body) => body.expectedCalendar)).toEqual([
+    { startDate: first.startDate, endDate: first.endDate, excludedDates: [] },
+    { startDate: first.startDate, endDate: first.endDate, excludedDates: ['2026-11-24'] },
+  ])
 })
 
 it('등록된 학기를 선택하고 파일 오류를 수정해 선택한 조건의 후보 표를 검토한 뒤 게시 충돌을 처리한다', async () => {
@@ -235,12 +274,12 @@ it('등록된 학기를 선택하고 파일 오류를 수정해 선택한 조건
     return [200, []]
   })
   mount()
-  fireEvent.click(await screen.findByRole('button', { name: /학기 설정$/ }))
-  const picker = within(await screen.findByRole('dialog'))
+  expect(screen.queryByRole('button', { name: /학기 설정$/ })).toBeNull()
+  const picker = within(await screen.findByRole('region', { name: '생성할 학기 설정' }))
   const option = picker.getByRole('option', { name: '2025학년도 2학기' }) as HTMLOptionElement
   fireEvent.change(picker.getByLabelText('등록된 학기'), { target: { value: option.value } })
   fireEvent.click(picker.getByRole('button', { name: '선택한 학기 적용' }))
-  await screen.findByRole('button', { name: /2025학년도 2학기 · 학기 설정/ })
+  await screen.findByText('2025학년도 2학기를 적용했습니다.')
   const file = await screen.findByLabelText('시수표 엑셀 파일')
   fireEvent.change(file, {
     target: { files: [new File(['workbook'], 'school.xlsx')] },

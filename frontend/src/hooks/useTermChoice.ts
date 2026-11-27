@@ -38,10 +38,9 @@ export function useTermChoice(session: HomeSession, enabled = true) {
   const term =
     selected && session.school
       ? {
+          ...selected,
           schoolId: session.school.schoolId,
-          termId: selected.termId,
-          academicYear: selected.academicYear,
-          semester: selected.semester,
+          excludedDates: selected.excludedDates ?? [],
         }
       : null
   const choice = term ?? { ...calendar, termId: null }

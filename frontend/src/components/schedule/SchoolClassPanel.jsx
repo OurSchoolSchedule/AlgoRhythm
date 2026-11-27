@@ -1,5 +1,8 @@
 import { TableScroll } from '@/components/ui/DetailPage'
 import { useState } from 'react'
+import { useHomeSession } from '@/hooks/useHomeSession'
+import { useTermChoice } from '@/hooks/useTermChoice'
+import { useClassRoles } from '@/hooks/useClassRoles'
 import {
   useCreateSchoolClass,
   useDeleteSchoolClass,
@@ -81,16 +84,44 @@ function toPayload(draft, options = {}) {
 }
 
 export default function SchoolClassPanel() {
-  const classesQuery = useSchoolClasses()
+  const session = useHomeSession()
+  const state = useTermChoice(session)
+  if (!session.access.actions.generate) return <p role="status">관리자 권한을 확인하세요.</p>
+  if (state.list.isError) return (
+    <p role="alert">업무 학기를 불러오지 못했습니다.{' '}
+      <button type="button" onClick={() => state.list.refetch()}>다시 조회</button>
+    </p>
+  )
+  if (!state.list.isSuccess) return <p role="status">업무 학기를 불러오는 중…</p>
+  return (
+    <ClassList
+      key={JSON.stringify([session.scope, state.term?.termId])}
+      termChoice={state}
+    />
+  )
+}
+
+/** @param {{termChoice: import('@/hooks/useTermChoice').TermChoice}} props */
+function ClassList({ termChoice }) {
+  const { term, terms, saveChoice } = termChoice
+  const classesQuery = useSchoolClasses(term?.academicYear)
+  const { roles } = useClassRoles(term)
   const staffQuery = useStoreStaffSummary()
   const createClass = useCreateSchoolClass()
   const updateClass = useUpdateSchoolClass()
   const deleteClass = useDeleteSchoolClass()
-  const [draft, setDraft] = useState(() => emptyDraft())
+  const [draft, setDraft] = useState(() => emptyDraft(term?.academicYear))
   const [editingId, setEditingId] = useState(null)
   const [editDraft, setEditDraft] = useState(() => emptyDraft())
 
   const classes = classesQuery.data ?? []
+  const byClass = new Map((roles.data ?? []).map((row) => [row.classId, row]))
+  function roleLabel(classId, property) {
+    if (roles.isError) return '조회 실패'
+    if (roles.isPending) return '조회 중…'
+    const row = byClass.get(classId)
+    return row ? (row[property]?.displayName || '미배정') : '미확인'
+  }
   const teachers = staffQuery.data?.staffList ?? []
 
   const handleCreate = (event) => {
@@ -127,7 +158,7 @@ export default function SchoolClassPanel() {
 
   const teacherOptions = (
     <>
-      <option value="">담임 없음</option>
+      <option value="">학년도 기본 담임 없음</option>
       {teachers.map((item) => (
         <option key={item.schoolUserId} value={item.schoolUserId}>
           {item.username}
@@ -139,6 +170,26 @@ export default function SchoolClassPanel() {
   return (
     <div className="admin-panel">
       <h2>학급</h2>
+      {term && (
+        <label>
+          대상 학기{' '}
+          <select aria-label="대상 학기" style={{ ...selectStyle, width: 'auto' }} value={term.termId} onChange={(event) => {
+            const next = terms.find((item) => item.termId === Number(event.target.value))
+            if (next) saveChoice(next)
+          }}>
+            {terms.map((item) => (
+              <option key={item.termId} value={item.termId}>
+                {item.academicYear}학년도 {item.semester}학기
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {roles.isError && (
+        <p role="alert">학기별 담임·부담임을 불러오지 못했습니다.{' '}
+          <button type="button" onClick={() => roles.refetch()}>학급 담당 다시 조회</button>
+        </p>
+      )}
       {classesQuery.isLoading && (
         <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-muted)' }}>불러오는 중...</p>
       )}
@@ -159,7 +210,7 @@ export default function SchoolClassPanel() {
         <table>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-              {['학년도', '학급', '담임', ''].map((label) => (
+              {['학년도', '학급', '담임', '부담임', ''].map((label) => (
                 <th key={label || 'action'} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)' }}>
                   {label}
                 </th>
@@ -205,19 +256,26 @@ export default function SchoolClassPanel() {
                     ) : `${item.grade}-${item.classNumber}`}
                   </td>
                   <td style={{ padding: '10px 12px', color: 'var(--color-text-secondary)', verticalAlign: 'middle' }}>
+                    {term && roleLabel(item.id, 'homeroomTeacher')}
                     {isEditing ? (
-                      <select
-                        aria-label="담임"
-                        value={editDraft.homeroomTeacherSchoolUserId}
-                        onChange={(event) => setEditDraft((current) => ({
-                          ...current,
-                          homeroomTeacherSchoolUserId: event.target.value,
-                        }))}
-                        style={selectStyle}
-                      >
-                        {teacherOptions}
-                      </select>
-                    ) : (item.homeroomTeacherName || '—')}
+                      <label style={{ display: 'block' }}>
+                        학년도 기본 담임
+                        <select
+                          aria-label="학년도 기본 담임"
+                          value={editDraft.homeroomTeacherSchoolUserId}
+                          onChange={(event) => setEditDraft((current) => ({
+                            ...current,
+                            homeroomTeacherSchoolUserId: event.target.value,
+                          }))}
+                          style={selectStyle}
+                        >
+                          {teacherOptions}
+                        </select>
+                      </label>
+                    ) : (!term && (item.homeroomTeacherName || '미배정'))}
+                  </td>
+                  <td style={{ padding: '10px 12px', color: 'var(--color-text-secondary)' }}>
+                    {term ? roleLabel(item.id, 'deputyTeacher') : '미배정'}
                   </td>
                   <td style={{ padding: '10px 12px', textAlign: 'right', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>
                     {isEditing ? (
@@ -264,6 +322,7 @@ export default function SchoolClassPanel() {
         <input
           aria-label="학년도"
           inputMode="numeric"
+          readOnly={!!term}
           value={draft.academicYear}
           onChange={(event) => setDraft((current) => ({ ...current, academicYear: event.target.value }))}
           style={inputStyle}
@@ -286,7 +345,7 @@ export default function SchoolClassPanel() {
           placeholder="반"
         />
         <select
-          aria-label="담임"
+          aria-label="새 학급 학년도 기본 담임"
           value={draft.homeroomTeacherSchoolUserId}
           onChange={(event) => setDraft((current) => ({
             ...current,

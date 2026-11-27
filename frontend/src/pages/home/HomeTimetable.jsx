@@ -162,7 +162,9 @@ function DatedLessons({ home, roomId, term, termStatus, onRequest }) {
       ) : !['empty', 'ready'].includes(q.state) ? (
         <ReadMessage query={q} label="날짜 수업" retry={home.retryDated} />
       ) : !rows.length ? (
-        <p>이 날짜에 조회된 수업이 없습니다.</p>
+        <p>{term.excludedDates?.includes(home.date)
+          ? '학기에 설정한 정규 수업 제외일입니다.'
+          : '이 날짜에 조회된 수업이 없습니다.'}</p>
       ) : (
         <>
           <ul>

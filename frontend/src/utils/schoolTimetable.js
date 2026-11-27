@@ -157,8 +157,9 @@ function mergeCell(existing, cell) {
 /**
  * @param {import('@/types/timetable.js').TimetableDto[]} entries
  * @param {Date} [referenceDate]
+ * @param {import('@/types/schoolSetting.js').PeriodSettingResponse[]} [settings]
  */
-export function buildSchoolTimetable(entries, referenceDate = new Date()) {
+export function buildSchoolTimetable(entries, referenceDate = new Date(), settings = []) {
   const cells = []
   for (const entry of entries) {
     const cell = entryToTimetableCell(entry)
@@ -166,7 +167,10 @@ export function buildSchoolTimetable(entries, referenceDate = new Date()) {
   }
 
   const maxPeriod = cells.reduce((max, cell) => Math.max(max, cell.period), TIMETABLE_PERIODS.at(-1))
-  const periods = Array.from({ length: maxPeriod }, (_, index) => index + 1)
+  const hasRegisteredPeriods = settings.length > 0
+  const periods = hasRegisteredPeriods
+    ? [...new Set([...settings.map((row) => row.periodNumber), ...cells.map((cell) => cell.period)])].sort((a, b) => a - b)
+    : Array.from({ length: maxPeriod }, (_, index) => index + 1)
   const byDay = emptyDayMap(periods)
 
   for (const cell of cells) {
@@ -180,15 +184,17 @@ export function buildSchoolTimetable(entries, referenceDate = new Date()) {
     ? periods.filter((p) => todayByPeriod[p]).length
     : 0
 
-  const slots = []
-  const seenPeriods = new Set()
+  const bells = new Map()
   for (const cell of cells) {
-    if (seenPeriods.has(cell.period) || !cell.startTime || !cell.endTime) continue
-    seenPeriods.add(cell.period)
-    slots.push({ period: cell.period, start: cell.startTime, end: cell.endTime })
+    if (cell.startTime && cell.endTime && !bells.has(cell.period))
+      bells.set(cell.period, { period: cell.period, start: cell.startTime, end: cell.endTime })
   }
-  const currentPeriod =
-    getPeriodFromSlots(referenceDate, slots) ?? getPeriodFromDatetime(referenceDate)
+  for (const row of settings) {
+    if (row.startTime && row.endTime)
+      bells.set(row.periodNumber, { period: row.periodNumber, start: row.startTime, end: row.endTime })
+  }
+  const periodSlots = bells.size ? [...bells.values()] : SCHOOL_PERIOD_SLOTS
+  const currentPeriod = getPeriodFromSlots(referenceDate, periodSlots)
   const currentClass =
     todayKey && currentPeriod ? byDay[todayKey][currentPeriod] : null
 
@@ -196,6 +202,8 @@ export function buildSchoolTimetable(entries, referenceDate = new Date()) {
     byDay,
     cells,
     periods,
+    hasRegisteredPeriods,
+    periodSlots,
     todayKey,
     todayByPeriod,
     todayClassCount,

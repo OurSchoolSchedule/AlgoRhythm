@@ -1,0 +1,40 @@
+.term-excluded-dates {
+  min-width: 0;
+  margin-block: 0.75rem;
+}
+.term-excluded-dates p {
+  color: var(--color-text-secondary);
+  margin-block: 0.25rem 0.5rem;
+}
+.term-excluded-dates [role='alert'] {
+  color: var(--color-danger-text);
+}
+.term-excluded-entry,
+.term-excluded-dates ul,
+.term-excluded-dates li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.term-excluded-entry input {
+  min-width: 0;
+  max-width: 13rem;
+}
+.term-excluded-entry button {
+  flex: none;
+}
+.term-excluded-dates ul {
+  flex-wrap: wrap;
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+}
+.term-excluded-dates li {
+  border: 1px solid var(--color-border);
+  background: var(--surface-1);
+  border-radius: 0.5rem;
+  padding: 0.15rem 0.25rem 0.15rem 0.5rem;
+}
+.term-excluded-dates li button {
+  padding: 0.25rem 0.4rem;
+}

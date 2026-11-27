@@ -44,6 +44,8 @@ it('opens without authentication or a query provider, with only a static example
 it('supports switching roles, forward/backward navigation and the mobile contents selector', async () => {
   render(<GuidePage />)
   fireEvent.click(screen.getByRole('link', { name: '관리자' }))
+  await screen.findByRole('heading', { name: '학기와 정규 수업 제외일 설정' })
+  fireEvent.click(screen.getByRole('link', { name: '다음' }))
   await screen.findByRole('heading', { name: '시수표 검증' })
   fireEvent.click(screen.getByRole('link', { name: '다음' }))
   const heading = await screen.findByRole('heading', { name: '학년별 마지막 교시' })
@@ -91,7 +93,7 @@ it('keeps each role’s contents aligned with real local captures and handles un
       expect(step.alt && step.action && step.result).toBeTruthy()
     }
   }
-  expect(guideLocation('#admin/removed').step.id).toBe('validate')
+  expect(guideLocation('#admin/removed').step.id).toBe('term-calendar')
   expect(guideLocation('#unknown').step.id).toBe('week')
   expect(guideSteps.teacher.map((s) => s.id)).not.toContain('approve')
 })

@@ -298,8 +298,12 @@ export default function School42() {
         <p>
           주 671차시 · 2학년 7반 공강 1차시. 담임·부담임은 관리자 계정의 관리자
           도구 → 명부 일괄 등록 → 학급 담당에서 같은 파일을 적용하세요.
+          관리자 도구의 학급 탭에서 해당 학기의 담임과 부담임을 확인할 수 있습니다.
         </p>
         <div className="s42-actions">
+          <a href="https://github.com/OurSchoolSchedule/AlgoRhythm-BE/raw/5c740bea7175b46238d8d2e608e7e15c981a5b39/demo/school42-roster.xlsx">
+            교사 명부 다운로드
+          </a>
           <a download href={files + sampleName}>
             담임·부담임 포함 시수표 다운로드
           </a>
