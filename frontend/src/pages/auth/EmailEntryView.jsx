@@ -12,6 +12,7 @@ import {
 } from '@/api/tokenStorage'
 import { getApiErrorMessage } from '@/utils/timetableGeneration'
 import { isWorkSession, readVerifiedEmail } from './emailSession'
+import { loginEmailNotice, normalizeLoginEmail } from './loginEmail'
 import EntryLayout from './EntryLayout'
 import SchoolOnboarding from './SchoolOnboarding'
 import { DirectPasskeyLogin, VerifiedPasskeyStep } from './PasskeyEntry'
@@ -57,12 +58,18 @@ export default function EmailEntryView({ onSuccess, PasskeyStep }) {
     if (busy) return
     setError('')
     setNotice('')
+    const address = normalizeLoginEmail(email)
+    if (!address) {
+      setError(loginEmailNotice)
+      return
+    }
     try {
-      const result = await send.mutateAsync({ email: email.trim() })
+      const result = await send.mutateAsync({ email: address })
       if (result?.success !== true) {
         setError(result?.message || '인증 코드를 보내지 못했습니다.')
         return
       }
+      setEmail(address)
       setPhase('code')
       setCode('')
       setNotice(result.message || '인증 코드를 보냈습니다.')
@@ -198,6 +205,7 @@ export default function EmailEntryView({ onSuccess, PasskeyStep }) {
               onAuthenticated={(session) => enter(session, hasPendingSchoolFor(session.userId))}
             />
           )}
+          {phase === 'email' && <p id="allowed-login-email">지원 이메일은 ewha.ac.kr 또는 gmail.com입니다.</p>}
           <form className="entry-form" onSubmit={phase === 'code' ? verifyCode : requestCode}>
             {phase === 'email' ? (
               <label>
@@ -210,7 +218,8 @@ export default function EmailEntryView({ onSuccess, PasskeyStep }) {
                   value={email}
                   disabled={busy}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@school.ac.kr"
+                  placeholder="name@ewha.ac.kr"
+                  aria-describedby="allowed-login-email"
                 />
               </label>
             ) : (

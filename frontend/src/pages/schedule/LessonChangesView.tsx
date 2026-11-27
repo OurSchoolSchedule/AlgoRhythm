@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { isAxiosError } from 'axios'
 import type { HomeTerm, DatedLessonDto, HomeLessonSelection } from '@/types/datedLesson'
 import type { ChangeResult, LessonChange } from '@/types/lessonChange'
-import { useLessonChanges } from '@/hooks/useLessonChanges'
+import { useChangeCandidates, useChangeDetails, useLessonChanges } from '@/hooks/useLessonChanges'
 import { useSubjects, useSchoolClasses } from '@/hooks/useSchoolCatalog'
 import { usePeriodSettings } from '@/hooks/useSchoolSetting'
 import { operationError } from '@/utils/operationInputs'
@@ -11,6 +11,7 @@ import TermWorkspace from './TermWorkspace'
 
 const states = {
   PENDING: '응답 대기',
+  WITHDRAWN: '다른 교사가 수락하여 마감',
   ACCEPTED: '수락 · 승인 대기',
   REJECTED: '거절',
   APPROVED: '승인 완료',
@@ -45,9 +46,12 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
   const [date, setDate] = useState(selection?.date ?? (initialDate || schoolDate(new Date())))
   const [otherDate, setOtherDate] = useState<string | null>(null)
   const changes = useLessonChanges(term, date, otherDate || date)
+  const [detailId, setDetailId] = useState<number | null>(null)
+  const details = useChangeDetails(term, detailId)
   const [firstKey, setFirst] = useState('')
   const [secondKey, setSecond] = useState('')
   const [teacher, setTeacher] = useState('')
+  const [coverTargets, setCoverTargets] = useState<number[]>([])
   const [search, setSearch] = useState('')
   const [message, setMessage] = useState<{ text: string; error: boolean } | null>(null)
   const [retry, setRetry] = useState<RetryApproval | null>(null)
@@ -73,6 +77,9 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
           (selection.kind === 'SWAP' ? mine : changes.canRequestSubstitute),
       )
     : firstRows.find((r) => stamp(r) === firstKey)
+  const coverCandidates = useChangeCandidates(term, first, 'SUBSTITUTE')
+  const swapCandidates = useChangeCandidates(term, first, 'SWAP', otherDate || date)
+  const validTargets = coverTargets.filter((id) => coverCandidates.data?.includes(id))
   const name = (id: number) => {
     const person = members.find((m) => m.schoolUserId === id)
     return person?.displayName ?? person?.username ?? '교사 #' + id
@@ -89,6 +96,7 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
     (r) =>
       first &&
       validTeacher &&
+      swapCandidates.data?.includes(r.id) &&
       r.actual.teacherId === Number(teacher) &&
       !r.actual.cancelled &&
       r.versionId === first.versionId &&
@@ -98,6 +106,7 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
   const second = secondRows.find((r) => stamp(r) === secondKey)
   function clearTarget() {
     setSecond('')
+    setCoverTargets([])
     setTeacher('')
     setSearch('')
     setOtherDate(null)
@@ -223,35 +232,50 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
             aria-label="보결 신청"
             onSubmit={(e) => {
               e.preventDefault()
-              if (first && validTeacher)
-                void run(() => changes.requestSubstitute(first, Number(teacher)))
+              if (first && validTargets.length)
+                void run(() => changes.requestSubstitute(first, validTargets))
             }}
           >
             <fieldset disabled={locked || !!retry}>
               <legend>보결 요청</legend>
-              <label>
-                지정 교사
-                <select
-                  required
-                  disabled={!first}
-                  value={validTeacher ? teacher : ''}
-                  onChange={(e) => setTeacher(e.target.value)}
-                >
-                  <option value="">보결 교사 선택</option>
-                  {teachers.map((t) => (
-                    <option key={t.schoolUserId} value={t.schoolUserId}>
-                      {name(t.schoolUserId)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button className="work-primary" disabled={!first || !validTeacher}>
-                보결 신청
+              {first && coverCandidates.isPending && <p>공강 교사를 확인하고 있습니다.</p>}
+              {coverCandidates.isError && (
+                <p role="alert">
+                  후보 조회에 실패했습니다.{' '}
+                  <button type="button" onClick={() => coverCandidates.refetch()}>
+                    다시 조회
+                  </button>
+                </p>
+              )}
+              {coverCandidates.data?.length === 0 && <p>이 교시에 보결 가능한 교사가 없습니다.</p>}
+              {teachers
+                .filter((t) => coverCandidates.data?.includes(t.schoolUserId))
+                .map((t) => (
+                  <label key={t.schoolUserId}>
+                    <input
+                      type="checkbox"
+                      checked={validTargets.includes(t.schoolUserId)}
+                      onChange={(e) =>
+                        setCoverTargets(
+                          e.target.checked
+                            ? [...validTargets, t.schoolUserId]
+                            : validTargets.filter((id) => id !== t.schoolUserId),
+                        )
+                      }
+                    />
+                    {name(t.schoolUserId)}
+                  </label>
+                ))}
+              <button
+                className="work-primary"
+                disabled={!first || !validTargets.length || coverCandidates.isError}
+              >
+                선택한 교사 {validTargets.length}명에게 보결 요청
               </button>
             </fieldset>
           </form>
         ) : (
-          <p>보결은 재직 관리자만 신청할 수 있습니다.</p>
+          <p>학교 재직 상태를 확인하세요.</p>
         )}
         {mine ? (
           <form
@@ -340,6 +364,14 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
                   ))}
                 </select>
               </label>
+              {swapCandidates.isError && (
+                <p role="alert">
+                  교환 후보 조회에 실패했습니다.{' '}
+                  <button type="button" onClick={() => swapCandidates.refetch()}>
+                    다시 조회
+                  </button>
+                </p>
+              )}
               {validTeacher && !secondRows.length && (
                 <small>
                   {readLabel[changes.secondLessons.state] ??
@@ -362,7 +394,10 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
                   </div>
                 </div>
               )}
-              <button className="work-primary" disabled={!first || !second}>
+              <button
+                className="work-primary"
+                disabled={!first || !second || swapCandidates.isError}
+              >
                 교환 신청
               </button>
             </fieldset>
@@ -400,6 +435,21 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
                   신청 {name(row.requester)} · 지정 {name(row.responder)} · 신청 버전 {row.rev}
                 </small>
               </div>
+              <button onClick={() => setDetailId(detailId === row.id ? null : row.id)}>
+                {detailId === row.id ? '상세 닫기' : '요청 상세'}
+              </button>
+              {detailId === row.id && (
+                <div aria-live="polite">
+                  {details.isPending && '대상 수업 조회 중'}
+                  {details.isError &&
+                    '대상 수업을 조회할 수 없습니다. 게시 버전과 학교를 확인하세요.'}
+                  {details.data?.map((r) => (
+                    <p key={r.id}>
+                      {r.date} · {lessonName(r)}
+                    </p>
+                  ))}
+                </div>
+              )}
               {changes.canRespond(row) && (
                 <div className="work-row">
                   <button
@@ -428,7 +478,11 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
       <div aria-live="polite">
         {message && <p className={message.error ? 'work-error' : 'work-success'}>{message.text}</p>}
         {result?.phase === 'created' && (
-          <p className="work-success">신청 #{result.change.id}을 접수했습니다.</p>
+          <p className="work-success">
+            {result.count
+              ? `보결 요청 ${result.count}건을 접수했습니다.`
+              : `신청 #${result.change.id}을 접수했습니다.`}
+          </p>
         )}
         {result?.phase === 'responded' && (
           <p className="work-success">

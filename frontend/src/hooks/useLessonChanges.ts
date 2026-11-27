@@ -5,6 +5,9 @@ import { getDatedLessons, type DirectoryMember } from '@/api/home'
 import {
   approveLessonChange,
   createLessonChange,
+  createSubstituteBatch,
+  getChangeCandidates,
+  getChangeLessons,
   getLessonChanges,
   respondToLessonChange,
 } from '@/api/lessonChanges'
@@ -27,6 +30,7 @@ import { useSchoolTerm, type SchoolTerm } from './useSchoolTerm'
 
 type Command =
   | { kind: 'create'; body: NewLessonChange }
+  | { kind: 'batch'; firstId: number; firstRev: number; ids: number[] }
   | { kind: 'respond'; changeId: number; body: ChangeDecision }
   | { kind: 'approve'; changeId: number; body: ChangeApproval; key: string }
 
@@ -55,6 +59,16 @@ async function sendCommand(
   switch (command.kind) {
     case 'create':
       return { phase: 'created', change: await createLessonChange(termId, command.body, signal) }
+    case 'batch': {
+      const rows = await createSubstituteBatch(
+        termId,
+        command.firstId,
+        command.firstRev,
+        command.ids,
+        signal,
+      )
+      return { phase: 'created', change: rows[0], count: rows.length }
+    }
     case 'respond':
       return {
         phase: 'responded',
@@ -223,7 +237,10 @@ export function useLessonChanges(term: SchoolTerm | null, date: string, secondDa
 
   async function execute(command: Command) {
     const { signal } = currentScope()
-    const lock = command.kind === 'create' ? JSON.stringify(command.body) : String(command.changeId)
+    const lock =
+      command.kind === 'create' || command.kind === 'batch'
+        ? JSON.stringify(command)
+        : String(command.changeId)
     if (
       cache.isMutating({
         mutationKey,
@@ -241,21 +258,30 @@ export function useLessonChanges(term: SchoolTerm | null, date: string, secondDa
     })
   }
 
-  async function requestSubstitute(first: DatedLessonDto, substituteTeacherId: number) {
+  async function requestSubstitute(first: DatedLessonDto, targets: number | number[]) {
     currentScope()
-    if (!actions.requestSubstitute) throw new Error('재직 관리자만 보결을 신청할 수 있습니다.')
+    if (!actions.requestSubstitute) throw new Error('재직 중인 교직원만 보결을 신청할 수 있습니다.')
     const a = selectedLesson(first)
+    if (!actions.approve && myMembership() !== a.actual.teacherId)
+      throw new Error('내가 담당하는 수업만 신청할 수 있습니다.')
+    const ids = Array.isArray(targets) ? targets : [targets]
     if (
-      !Number.isSafeInteger(substituteTeacherId) ||
-      substituteTeacherId <= 0 ||
-      substituteTeacherId === a.actual.teacherId
-    ) {
+      !ids.length ||
+      new Set(ids).size !== ids.length ||
+      ids.some((id) => !Number.isSafeInteger(id) || id <= 0 || id === a.actual.teacherId)
+    )
       throw new Error('다른 보결 교사를 지정하세요.')
-    }
-    return execute({
-      kind: 'create',
-      body: { kind: 'SUBSTITUTE', firstId: a.id, firstRev: a.rev, substituteTeacherId },
-    })
+    return Array.isArray(targets)
+      ? execute({ kind: 'batch', firstId: a.id, firstRev: a.rev, ids })
+      : execute({
+          kind: 'create',
+          body: {
+            kind: 'SUBSTITUTE',
+            firstId: a.id,
+            firstRev: a.rev,
+            substituteTeacherId: targets,
+          },
+        })
   }
 
   async function requestSwap(first: DatedLessonDto, second: DatedLessonDto) {
@@ -335,4 +361,33 @@ export function useLessonChanges(term: SchoolTerm | null, date: string, secondDa
     result: visible ? mutation.data : undefined,
     error: visible ? mutation.error : null,
   }
+}
+
+export function useChangeCandidates(
+  term: SchoolTerm,
+  first: DatedLessonDto | undefined,
+  kind: LessonChange['kind'],
+  targetDate?: string,
+) {
+  const { session, termId } = useSchoolTerm(term)
+  const enabled =
+    termId !== null && !!first && (kind === 'SUBSTITUTE' || session.access.actions.requestSwap)
+  return useScopedRead(
+    session,
+    ['lesson-change-candidates', termId, first?.id, first?.rev, kind, targetDate],
+    enabled,
+    (signal) => getChangeCandidates(termId!, first!.id, first!.rev, kind, targetDate, signal),
+    { retry: false },
+  )
+}
+
+export function useChangeDetails(term: SchoolTerm, changeId: number | null) {
+  const { session, termId } = useSchoolTerm(term)
+  return useScopedRead(
+    session,
+    ['lesson-change-detail', termId, changeId],
+    !!termId && !!changeId,
+    (signal) => getChangeLessons(termId!, changeId!, signal),
+    { retry: false, staleTime: 0 },
+  )
 }

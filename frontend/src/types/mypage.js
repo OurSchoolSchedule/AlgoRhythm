@@ -106,6 +106,7 @@
  * 교사 학교 가입 (POST /api/mypage/teacher/schools/join).
  * @typedef {Object} TeacherJoinSchoolRequest
  * @property {string} schoolCode
+ * @property {string} [subjectHint] 가입 시 관리자가 참고할 담당 과목
  * @property {string} [displayName]
  * @property {string} [hireDate]
  */

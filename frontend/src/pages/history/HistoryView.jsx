@@ -8,6 +8,7 @@ import {
   useSubstituteHistory,
 } from "@/hooks";
 import LoadError from "@/components/LoadError.jsx";
+import JoinApprovalPanel from "@/pages/roster/JoinApprovalPanel";
 import RosterImportPanel from "@/pages/roster/RosterImportPanel";
 import SchoolClassPanel from "@/components/schedule/SchoolClassPanel.jsx";
 import SchoolSettingPanel from "@/components/schedule/SchoolSettingPanel.jsx";
@@ -354,7 +355,7 @@ const ROLE_LABEL = { ADMIN: "관리자", TEACHER: "교사" };
 
 export function AdminView({ navigate }) {
   const [tab, setTab] = useState("교사");
-  const tabs = ["교사", "명부 일괄 등록", "학급", "불가", "설정"];
+  const tabs = ["교사", "가입 승인", "명부 일괄 등록", "학급", "불가", "설정"];
 
   const {
     data: staffSummary,
@@ -496,6 +497,7 @@ export function AdminView({ navigate }) {
           </div>
         )}
 
+        {tab === "가입 승인" && <JoinApprovalPanel />}
         {tab === "명부 일괄 등록" && <RosterImportPanel />}
         {tab === "설정" && <SchoolSettingPanel />}
       </div>

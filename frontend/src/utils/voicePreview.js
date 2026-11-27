@@ -4,6 +4,10 @@ export const VOICE_INTENT_LABEL = {
   SUBSTITUTE_APPROVE: '보결 승인',
   AVAILABILITY_ADD: '근무 불가 추가',
   AVAILABILITY_REPLACE: '근무 불가 교체',
+  MY_WEEK: '내 시간표',
+  COVER_OPTIONS: '보결 요청',
+  SWAP_OPTIONS: '교환 요청',
+  CHANGE_STATUS: '내 요청 상태',
   UNKNOWN: '알 수 없는 명령',
 }
 

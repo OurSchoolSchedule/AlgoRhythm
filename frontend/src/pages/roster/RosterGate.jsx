@@ -89,6 +89,7 @@ function TeacherReview({ session, logout, children }) {
     key,
     entry?.displayName,
     entry?.authEmail,
+    entry?.teachingSchoolUserId,
     entry?.term,
   ])
   const [verifiedSnapshot, setVerifiedSnapshot] = useState('')
@@ -149,13 +150,17 @@ function TeacherReview({ session, logout, children }) {
             <dt>로그인 이메일</dt>
             <dd>{entry.authEmail}</dd>
           </div>
+          {entry.teachingSchoolUserId != null && <div>
+            <dt>기존 수업 명부</dt>
+            <dd>연결됨 · #{entry.teachingSchoolUserId}</dd>
+          </div>}
           <div>
             <dt>담당 과목</dt>
             <dd>
               {assignment
                 ? assignment.subjects.map((s) => s.subjectName).join(', ') ||
                   '등록된 과목 없음'
-                : missingAssignment}
+                : entry.teachingSchoolUserId != null ? '담당 수업은 개인 시간표에서 확인하세요.' : missingAssignment}
             </dd>
           </div>
           <div>
@@ -178,7 +183,7 @@ function TeacherReview({ session, logout, children }) {
       )}
       {(legacy || linked) && <details>
         <summary>이 학교의 본인 이름 확인·수정</summary>
-        <SchoolJoinForm initialCode={school.schoolCode} initialName={entry?.baseName || entry?.displayName || ''}
+        <SchoolJoinForm showSubjectHint={false} initialCode={school.schoolCode} initialName={entry?.baseName || entry?.displayName || ''}
           submit={joinStaffStore} label="학교별 이름 확정" onComplete={() => query.refetch()} />
       </details>}
       {query.isError && !legacy && (

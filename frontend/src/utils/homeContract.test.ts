@@ -128,7 +128,7 @@ describe('메뉴와 조회 권한', () => {
     expect(teacher.actions).toMatchObject({
       generate: false,
       publish: false,
-      requestSubstitute: false,
+      requestSubstitute: true,
       approve: false,
       requestSwap: true,
       respondToChange: true,

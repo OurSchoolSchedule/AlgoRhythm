@@ -45,11 +45,28 @@ function display(onSuccess = vi.fn(), PasskeyStep?: PasskeyContinuation) {
   )
 }
 
-async function emailAndCode(email = 'teacher@example.invalid') {
+async function emailAndCode(email = 'teacher@gmail.com') {
   fireEvent.change(screen.getByLabelText('이메일'), { target: { value: email } })
   fireEvent.click(screen.getByRole('button', { name: '인증 코드 받기' }))
   await inputCode()
 }
+
+it.each(['login', 'signup'])('blocks unsupported domains before sending from %s', async (intent) => {
+  const post = vi.spyOn(client, 'post').mockResolvedValue({ data: { success: true } })
+  display()
+  if (intent === 'signup') fireEvent.click(screen.getByRole('button', { name: '회원가입' }))
+  const field = screen.getByLabelText('이메일')
+  for (const denied of ['a@naver.com', 'a@sub.gmail.com', 'a@gmail.com.example']) {
+    fireEvent.change(field, { target: { value: denied } })
+    fireEvent.click(screen.getByRole('button', { name: '인증 코드 받기' }))
+    expect((await screen.findByRole('alert')).textContent).toContain('gmail.com')
+  }
+  expect(post).not.toHaveBeenCalled()
+  fireEvent.change(field, { target: { value: '  Teacher@EWHA.AC.KR  ' } })
+  fireEvent.click(screen.getByRole('button', { name: '인증 코드 받기' }))
+  await screen.findByLabelText('인증 코드')
+  expect(post.mock.calls[0][1]).toEqual({ email: 'teacher@ewha.ac.kr' })
+})
 
 async function inputCode() {
   const field = await screen.findByLabelText('인증 코드')
@@ -70,7 +87,7 @@ it('keeps the email step usable after a failed send and clears the old code on s
     .mockResolvedValueOnce({ data: { success: true, newUser: false, ...session } })
   display(done)
   fireEvent.change(screen.getByLabelText('이메일'), {
-    target: { value: 'teacher@example.invalid' },
+    target: { value: 'teacher@gmail.com' },
   })
   fireEvent.click(screen.getByRole('button', { name: '인증 코드 받기' }))
   expect((await screen.findByRole('alert')).textContent).toBe('발송 실패')

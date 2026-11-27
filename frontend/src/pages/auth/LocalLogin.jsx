@@ -1,16 +1,19 @@
+import { normalizeLoginEmail } from './loginEmail'
 import { useDevToken } from '@/hooks/useAuth'
 import { clearPreviewUserRole, clearTokens, saveDevLoginTokens, setPreviewUserRole } from '@/api'
 import { getApiErrorMessage } from '@/utils/timetableGeneration'
 
 export default function LocalLogin({ email, onSuccess }) {
   const issue = useDevToken()
+  const address = normalizeLoginEmail(email)
   function preview(role) {
     clearTokens()
     setPreviewUserRole(role)
     onSuccess()
   }
   function login() {
-    issue.mutate(email.trim(), {
+    if (!address) return
+    issue.mutate(address, {
       onSuccess: (token) => {
         clearPreviewUserRole()
         saveDevLoginTokens(token)
@@ -21,7 +24,7 @@ export default function LocalLogin({ email, onSuccess }) {
   return (
     <details className="entry-local">
       <summary>로컬 개발 도구</summary>
-      <button type="button" disabled={!email.trim() || issue.isPending} onClick={login}>
+      <button type="button" disabled={!address || issue.isPending} onClick={login}>
         개발 로그인
       </button>
       <button type="button" onClick={() => preview('worker')}>

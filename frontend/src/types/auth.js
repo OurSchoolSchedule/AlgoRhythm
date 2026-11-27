@@ -27,6 +27,7 @@
  * @property {'ADMIN'|'TEACHER'} role
  * @property {string} [schoolCode] TEACHER: 기존 학교 코드
  * @property {string} [name] ADMIN: 새 학교 이름
+ * @property {string} [subjectHint] 가입 시 관리자가 참고할 담당 과목
  * @property {string} [displayName] TEACHER: 학교 표시 이름
  * @property {string} [address] ADMIN: 새 학교 주소
  * @property {string} [phoneNumber]

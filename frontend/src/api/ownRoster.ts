@@ -10,6 +10,7 @@ export interface OwnRoster {
   status: 'UNLINKED' | 'PENDING' | 'LINKED'
   employmentStatus: string | null
   schoolUserId: number | null
+  teachingSchoolUserId?: number | null
   term: {
     termId: number
     assignmentRecorded?: boolean

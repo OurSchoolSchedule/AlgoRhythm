@@ -39,6 +39,7 @@ let cache: QueryClient
 let calls: string[]
 let active: typeof school | null
 let status: number
+let hasTeachingLink: boolean
 let failTerm: boolean
 let list: (typeof school)[]
 function error(config: InternalAxiosRequestConfig, status: number) {
@@ -57,6 +58,7 @@ beforeEach(() => {
   calls = []
   active = school
   status = 200
+  hasTeachingLink = false
   failTerm = false
   list = [school]
   client.defaults.adapter = async (config) => {
@@ -77,9 +79,11 @@ beforeEach(() => {
       data = active
         ? {
             ...record,
+            teachingSchoolUserId: hasTeachingLink ? 542004 : null,
             term: config.params?.termId
               ? {
                   termId: config.params.termId,
+                  assignmentRecorded: !hasTeachingLink,
                   subjects: [],
                   homeroomClass: null,
                 }
@@ -189,4 +193,13 @@ it('uses the selected term’s directory values, including an explicitly unassig
     value: member.rosterSubjects,
   })
   expect(profile.homerooms).toEqual({ state: 'empty' })
+})
+
+it('distinguishes a linked teaching identity from optional term roster assignments', async () => {
+  hasTeachingLink = true
+  show()
+  await screen.findByText('연결됨 · #542004')
+  expect(screen.getByText('담당 수업은 개인 시간표에서 확인하세요.')).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: '확인하고 업무 홈으로' }))
+  await screen.findByText('업무 영역')
 })
