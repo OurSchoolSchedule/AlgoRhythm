@@ -73,10 +73,11 @@ export async function createSubstituteBatch(
   firstRev: number,
   substituteTeacherIds: number[],
   signal?: AbortSignal,
+  firstDate?: string,
 ): Promise<LessonChange[]> {
   const { data, status } = await client.post<LessonChange[]>(
     `${changesUrl(termId)}/substitutes`,
-    { firstId, firstRev, substituteTeacherIds },
+    { firstId, firstRev, substituteTeacherIds, ...(firstDate && { firstDate }) },
     { signal },
   )
   if (

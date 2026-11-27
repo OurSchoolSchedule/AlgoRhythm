@@ -1,24 +1,298 @@
-.lesson-assistant {
-  margin-top: 0.5rem;
+.ai-assistant-button.ai-chat-launch {
+  position: fixed;
+  z-index: 20;
+  inset: auto var(--space-6) var(--space-6) auto;
+  padding: 0 var(--space-4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  background: var(--color-primary-button);
+  color: var(--color-on-primary);
+  border: 1px solid var(--color-primary-button);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-sm);
+  font-weight: 650;
+  cursor: pointer;
 }
-.lesson-assistant label {
+.ai-assistant-panel.ai-chat-panel {
+  box-sizing: border-box;
+  position: fixed;
+  inset: auto var(--space-6) var(--space-6) auto;
+  margin: 0;
+  padding: 0;
+  width: min(448px, calc(100% - var(--space-8)));
+  height: min(740px, calc(100dvh - var(--space-8)));
+  max-width: none;
+  max-height: none;
+  border: 1px solid var(--color-primary-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-lg);
+  font: inherit;
+  font-size: var(--font-body);
+  line-height: 1.5;
+}
+.ai-chat-panel[open] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.ai-chat-panel::backdrop {
+  background: color-mix(in srgb, var(--color-text) 24%, transparent);
+}
+.ai-chat-panel *,
+.ai-chat-panel *::before {
+  box-sizing: border-box;
+}
+.ai-chat-panel :is(h2, p, ul, fieldset) {
+  margin: 0;
+}
+.ai-chat-header,
+.ai-chat-compose {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+}
+.ai-chat-header {
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-border);
+}
+.ai-chat-header h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-heading);
+}
+.ai-chat-header h2 span {
+  color: var(--color-primary-text);
+}
+.ai-chat-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: var(--space-4);
+  overflow-wrap: anywhere;
+}
+.ai-chat-scroll > * + * {
+  margin-block-start: var(--space-3);
+}
+.ai-chat-panel :is(small, .ai-chat-intro, .ai-chat-meta) {
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+.ai-chat-term,
+.ai-chat-panel fieldset,
+.ai-date-conflict {
+  min-inline-size: 0;
+  border: 1px solid var(--color-primary-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+}
+.ai-chat-term {
+  flex: none;
+  margin: var(--space-2) var(--space-3) 0;
+  background: var(--color-primary-subtle);
+}
+.ai-chat-term label {
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.ai-chat-term label,
+.lesson-assistant label,
+.ai-date {
+  display: grid;
+  gap: var(--space-1);
+}
+.ai-chat-panel label,
+.ai-chat-examples summary {
+  font-size: var(--font-caption);
+  font-weight: 600;
+}
+.ai-chat-examples summary {
+  cursor: pointer;
+  color: var(--color-primary-text);
+}
+.ai-chat-term small {
   display: block;
-  margin: 0.4rem 0;
+  margin-top: var(--space-1);
 }
-.lesson-assistant select,
-.lesson-assistant input:not([type="checkbox"]):not([type="radio"]) {
+.ai-chat-chips,
+.ai-chat-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.ai-chat-panel .ai-chat-bubble {
+  width: fit-content;
   max-width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-hover);
+  white-space: pre-line;
 }
-.lesson-assistant fieldset {
+.ai-chat-panel .ai-chat-user {
+  max-width: 92%;
+  margin-inline-start: auto;
+  background: var(--color-primary-subtle);
+  border-color: var(--color-primary-border);
+}
+.ai-chat-user + .ai-chat-bubble {
+  margin-block-start: var(--space-2);
+}
+.ai-chat-panel .ai-chat-reply {
+  width: 100%;
+}
+.ai-chat-reply > * + *,
+.lesson-assistant > * + *,
+.lesson-assistant fieldset > * + * {
+  margin-block-start: var(--space-2);
+}
+.ai-chat-panel button,
+.ai-chat-panel select,
+.ai-chat-panel input:not([type='checkbox']):not([type='radio']),
+.ai-chat-panel textarea {
+  max-width: 100%;
   min-width: 0;
-  margin-top: 0.5rem;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+  color: var(--color-text);
+  background: var(--color-surface);
+  font: inherit;
+}
+.ai-chat-panel :is(select, input:not([type='radio']):not([type='checkbox'])) {
+  width: 100%;
+}
+.ai-chat-panel button {
+  border-color: var(--color-primary-border);
+  color: var(--color-primary-text);
+  cursor: pointer;
+  line-height: 1.3;
+}
+.ai-chat-panel .ai-chat-primary,
+.ai-chat-panel button[aria-pressed='true'] {
+  border-color: var(--color-primary-button);
+  background: var(--color-primary-button);
+  color: var(--color-on-primary);
+  font-weight: 650;
+}
+.ai-chat-panel button:not(:disabled):hover {
+  border-color: var(--color-primary-text);
+  background: var(--color-primary-subtle);
+}
+.ai-chat-panel .ai-chat-primary:not(:disabled):hover,
+.ai-chat-panel button[aria-pressed='true']:hover,
+.ai-assistant-button.ai-chat-launch:not(:disabled):hover {
+  background: color-mix(in srgb, var(--color-primary-button) 86%, black);
+  color: var(--color-on-primary);
+}
+.ai-chat-panel .demo-reset-submit:not(:disabled) {
+  border-color: var(--color-danger);
+  color: var(--color-on-primary);
+  background: var(--color-danger);
+}
+.ai-chat-panel .demo-reset-submit:not(:disabled):hover {
+  background: color-mix(in srgb, var(--color-danger) 86%, black);
+}
+.ai-assistant-button.ai-chat-launch:disabled,
+.ai-chat-panel button:disabled,
+.ai-chat-panel fieldset:disabled button {
+  cursor: default;
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-input);
+  color: var(--color-text-muted);
+}
+.ai-chat-panel [aria-busy='true'] {
+  cursor: progress;
+}
+.ai-chat-panel :is(button, input, select, textarea, summary):focus-visible,
+.ai-assistant-button.ai-chat-launch:focus-visible {
+  outline: 2px solid var(--keyboard-focus-ring);
+  outline-offset: 2px;
+}
+.ai-chat-panel .ai-chat-icon {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: var(--radius-lg);
+}
+.ai-chat-compose {
+  border-top: 1px solid var(--color-border);
+  align-items: flex-end;
+}
+.ai-chat-compose textarea {
+  flex: 1 1 0;
+  min-height: 44px;
+  max-height: 6rem;
+  border-radius: var(--radius-lg);
+  resize: none;
+  field-sizing: content;
+}
+.lesson-assistant fieldset legend {
+  padding-inline: var(--space-1);
+  font-weight: 600;
+}
+.lesson-assistant fieldset button {
+  margin-inline-end: var(--space-1);
+}
+.lesson-assistant .ai-candidate {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
+  background: var(--color-surface);
+  cursor: pointer;
 }
-.lesson-assistant button {
-  margin: 0.3rem 0.3rem 0.3rem 0;
-  padding: 0.3rem 0.6rem;
+.lesson-assistant .ai-candidate:has(:checked) {
+  background: var(--color-primary-subtle);
+  border-color: var(--color-primary-border);
+}
+.ai-candidate input {
+  flex: none;
+  accent-color: var(--color-primary-button);
+}
+.ai-date-conflict {
+  background: var(--color-warning-subtle);
+  border-color: var(--color-warning-border);
 }
 .lesson-assistant ul {
-  padding-left: 1.2rem;
+  padding-inline-start: var(--space-5);
+}
+@media (max-width: 600px) {
+  .school-desk.desk-detail .ai-chat-launch {
+    position: fixed;
+    inset: auto var(--space-3) max(var(--space-3), env(safe-area-inset-bottom)) auto;
+  }
+  .ai-assistant-panel.ai-chat-panel {
+    inset: auto var(--space-2) max(var(--space-2), env(safe-area-inset-bottom)) var(--space-2);
+    width: auto;
+    height: min(740px, calc(100dvh - var(--space-4) - env(safe-area-inset-bottom)));
+  }
+  .ai-chat-scroll {
+    scrollbar-gutter: auto;
+    padding: var(--space-3);
+  }
+  .ai-chat-compose,
+  .ai-chat-header {
+    padding: var(--space-2) var(--space-3);
+  }
+  .ai-chat-panel :is(input, select, textarea) {
+    font-size: 16px;
+  }
 }

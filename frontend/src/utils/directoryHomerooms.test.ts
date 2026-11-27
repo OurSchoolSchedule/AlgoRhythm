@@ -43,3 +43,13 @@ it('uses the resolved class list including rooms added after a term import', () 
   expect(directoryHomerooms(linked, 2026, term)).toEqual([legacy])
   expect(directoryHomerooms(linked, 2026, term + 1)).toBeUndefined()
 })
+
+it('returns all primary assignments for this term and leaves deputies separate', () => {
+  const other = { ...assigned, classId: 8 }
+  const linked = {
+    ...member, rosterLinked: true, homeroomAssignmentTermId: term,
+    homeroomClasses: [legacy, assigned], deputyHomeroomClasses: [other],
+  }
+  expect(directoryHomerooms(linked, 2026, term)).toEqual([legacy, assigned])
+  expect(directoryHomerooms({ ...linked, homeroomClasses: [] }, 2026, term)).toEqual([])
+})

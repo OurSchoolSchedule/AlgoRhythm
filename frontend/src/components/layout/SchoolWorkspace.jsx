@@ -75,8 +75,6 @@ function observePhone(change) {
 
 function DetailView({ view, date, selection, navigate, role }) {
   switch (view) {
-    case 'timetable':
-      return <TimetableView navigate={navigate} userRole={role} />
     case 'todos':
       return <ScheduleTodoTab date={toISODate()} userRole={role} />
     case 'lesson-changes':
@@ -123,7 +121,10 @@ function Workspace({ session, navigate: onNavigate, onLogout, passkeyButton }) {
     sessionStorage.setItem(menuPreference, String(collapsed))
     setSidebarCollapsed(collapsed)
   }
-  const [page, setPage] = useState({ view: 'home' })
+  const pageKey = `school-board-page/${session.userId}/${session.scope.schoolId}`
+  const [page, setPage] = useState(() => ({
+    view: session.access.queries.datedLessons && sessionStorage.getItem(pageKey) === 'timetable' ? 'timetable' : 'home',
+  }))
   const [panel, openPanel] = useState(null)
   const [theme, setTheme] = useState(getStoredTheme)
   const phone = useSyncExternalStore(
@@ -136,6 +137,8 @@ function Workspace({ session, navigate: onNavigate, onLogout, passkeyButton }) {
   const navigate = (view, ...args) => {
     if (!items.some((item) => item.view === view)) return
     openPanel(null)
+    if (view === 'timetable') sessionStorage.setItem(pageKey, view)
+    else sessionStorage.removeItem(pageKey)
     setPage({ view, date: args[0], selection: args[1] })
     onNavigate?.(view, ...args)
   }
@@ -204,6 +207,8 @@ function Workspace({ session, navigate: onNavigate, onLogout, passkeyButton }) {
       )}
       {home ? (
         <HomeContent session={session} navigate={navigate} panel={panel} openPanel={openPanel} />
+      ) : page.view === 'timetable' ? (
+        <TimetableView session={session} navigate={navigate} panel={panel} openPanel={openPanel} />
       ) : (
         <main className="desk-main" id="desk-main" tabIndex="-1">
           <Suspense fallback={<p role="status">업무 화면을 여는 중입니다.</p>}>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import CreateSubstituteForm from '@/components/schedule/CreateSubstituteForm'
 
 const unavailable = {
   loading: '날짜 수업을 불러오는 중입니다.',
@@ -9,6 +10,7 @@ const unavailable = {
 
 export default function SelectedLesson({ home, term, cell, weeklyRows, roomId, onRequest }) {
   const [choice, setChoice] = useState('')
+  const [publicRequest, setPublicRequest] = useState(null)
   const actual = (home.slotLessons.data ?? []).filter(
     (r) =>
       r.date === cell.iso &&
@@ -31,12 +33,14 @@ export default function SelectedLesson({ home, term, cell, weeklyRows, roomId, o
     if (!actual.some((r) => r.classId === row.schoolClassId)) {
       options.push({
         key: 'weekly-' + (row.weeklyLessonId ?? row.id),
+        legacyId: row.id,
         label: `${row.grade}학년 ${row.classNumber}반 · ${row.subjectName ?? '과목 미확인'} · 기본표`,
       })
     }
   }
   const picked = options.length === 1 ? options[0] : options.find((o) => o.key === choice)
   const lesson = picked?.lesson
+  const clock = home.periods?.data?.find((p) => p.periodNumber === cell.period)
   const allowed = home.access.actions
   const blocked = !home.access.queries.datedLessons
     ? '학교 승인 후 이용 가능합니다.'
@@ -56,6 +60,10 @@ export default function SelectedLesson({ home, term, cell, weeklyRows, roomId, o
       ? '이 수업의 실제 담당자만 신청 가능합니다.'
       : ''
   const coverAllowed = allowed.requestSubstitute && (!allowed.requestSwap || !swapReason)
+  const publicKey = allowed.approve && picked &&
+    (term ? lesson && !blocked : picked.legacyId != null)
+    ? picked.key + '/' + (lesson?.rev ?? 'legacy')
+    : null
   function open(kind) {
     onRequest({
       schoolId: term.schoolId,
@@ -72,6 +80,11 @@ export default function SelectedLesson({ home, term, cell, weeklyRows, roomId, o
       <h3>
         {cell.iso} · {cell.period}교시
       </h3>
+      {clock?.startTime && clock?.endTime && (
+        <p>
+          {clock.startTime.slice(0, 5)} ~ {clock.endTime.slice(0, 5)}
+        </p>
+      )}
       {options.length > 1 && (
         <label>
           이 교시의 수업
@@ -86,6 +99,22 @@ export default function SelectedLesson({ home, term, cell, weeklyRows, roomId, o
         </label>
       )}
       {picked && <strong>{picked.label}</strong>}
+      {publicKey &&
+        (publicRequest === publicKey ? (
+          <CreateSubstituteForm
+            key={publicKey}
+            timetableId={picked.legacyId}
+            datedTarget={lesson ? {
+              termId: term.termId, datedLessonId: lesson.lessonId, expectedLessonRev: lesson.rev,
+            } : undefined}
+            defaultDate={cell.iso}
+            periodLabel={cell.period + '교시'}
+          />
+        ) : (
+          <button type="button" onClick={() => setPublicRequest(publicKey)}>
+            공개 보결 모집
+          </button>
+        ))}
       {lesson && lesson.actual.teacherId !== lesson.planned.teacherId && (
         <span>담당 변경 · 실제 담당자 기준</span>
       )}
