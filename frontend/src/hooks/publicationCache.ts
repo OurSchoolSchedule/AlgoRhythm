@@ -21,6 +21,7 @@ function includesPublishedLessons(key: QueryKey, term: HomeTerm, scope: Scope, f
   if (key[0] === 'dated-lessons') {
     return key[1] === term.termId && typeof key[2] === 'string' && key[2] >= from
   }
+  if (key[0] === 'timetable' && key[1] === 'published') return key[2] === term.termId
   if (key[0] !== 'timetable' || (key[1] !== 'me' && key[1] !== 'school')) return false
 
   // useWeekRead appends [termId, view, classId, scope] to the weekly endpoint's key.

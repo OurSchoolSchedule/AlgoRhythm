@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import AIFloatingChat from './AIFloatingChat'
 
 const api = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), approve: vi.fn(), voice: vi.fn() }))
@@ -13,10 +14,13 @@ vi.mock('@/hooks', () => ({
 
 const scope = { schoolId: 540001, termId: 547001, round: 4, jobs: 2, versions: 1,
   mode: 'TIMETABLE', candidates: 1, weeklyLessons: 672, datedLessons: 1344, requests: 3, notifications: 2, receipts: 1 }
-beforeEach(() => { vi.resetAllMocks(); api.get.mockResolvedValue({ data: { scope, schoolCode: 'TESTCODE' } }) })
+beforeEach(() => {
+  HTMLDialogElement.prototype.showModal = function () { this.open = true }
+  HTMLDialogElement.prototype.close = function () { this.open = false }
+  vi.resetAllMocks(); api.get.mockResolvedValue({ data: { scope, schoolCode: 'TESTCODE' } }) })
 afterEach(cleanup)
 function open() {
-  render(<AIFloatingChat />)
+  render(<QueryClientProvider client={new QueryClient()}><AIFloatingChat /></QueryClientProvider>)
   fireEvent.click(screen.getByRole('button', { name: 'AI 도우미 열기' }))
   fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Algorhythm' } })
   fireEvent.click(screen.getByRole('button', { name: '명령 보내기' }))

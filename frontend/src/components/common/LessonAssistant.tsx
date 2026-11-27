@@ -1,13 +1,19 @@
-import { useRef, useState, useEffect, type RefObject } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import {
+  useRef,
+  useState,
+  useEffect,
+  type Dispatch,
+  type SetStateAction,
+  type RefObject,
+} from 'react'
+import { useQueries, useQueryClient } from '@tanstack/react-query'
 import { getDatedLessons } from '@/api/home'
 import { createLessonChange, createSubstituteBatch, getLessonChanges } from '@/api/lessonChanges'
 import { useChangeCandidates } from '@/hooks/useLessonChanges'
 import { lessonDayKey } from '@/hooks/lessonChangeCache'
 import { useHomeDirectory } from '@/hooks/homeReads'
-import { useHomeSession, useScopedRead, type HomeSession } from '@/hooks/useHomeSession'
+import { useScopedRead, type HomeSession } from '@/hooks/useHomeSession'
 import { assertHiredSchool } from '@/hooks/useSchoolTerm'
-import { useTermChoice } from '@/hooks/useTermChoice'
 import { usePeriodSettings } from '@/hooks/useSchoolSetting'
 import { useSchoolClasses, useSubjects } from '@/hooks/useSchoolCatalog'
 import { queryKeys } from '@/hooks/queryKeys.js'
@@ -15,14 +21,22 @@ import { schoolDate } from '@/utils/homeContract'
 import { getSchoolWeekRange } from '@/utils/weekRange.js'
 import { operationError } from '@/utils/operationInputs'
 import type { DatedLessonDto, HomeTerm } from '@/types/datedLesson'
-import type { RegisteredTerm } from '@/api/terms'
-import './lesson-assistant.css'
 
 type Intent = 'MY_WEEK' | 'COVER_OPTIONS' | 'SWAP_OPTIONS' | 'CHANGE_STATUS'
+type CalendarStatus = 'OUTSIDE_TERM' | 'EXCLUDED_DATE'
 interface Filters {
   schoolId: number
   userId: number
+  termId?: number
   date?: string
+  targetDate?: string
+  dateFromText?: boolean
+  targetDateFromText?: boolean
+  dateStatus?: CalendarStatus
+  targetDateStatus?: CalendarStatus
+  weekStart?: string
+  targetWeekStart?: string
+  range?: 'DAY' | 'WEEK'
   periodNumber?: number
   teacherName?: string
 }
@@ -35,7 +49,7 @@ const states: Record<string, string> = {
   WITHDRAWN: '마감',
 }
 type ReviewButton = RefObject<HTMLButtonElement | null>
-type Option = { id: number; rev?: number; label: string }
+type Option = { id: number; rev?: number; date?: string; label: string }
 
 function weekdays(date: string) {
   const { start } = getSchoolWeekRange(new Date(date + 'T12:00:00'))
@@ -46,85 +60,262 @@ function weekdays(date: string) {
   })
 }
 
-export default function LessonAssistant({
-  command,
-  reviewButton,
+type ChosenDates = { requestDate?: string; targetDate?: string }
+type DateField = keyof ChosenDates
+
+function dateNotice(term: HomeTerm, date: string, weekly: boolean, status?: CalendarStatus) {
+  if (!date) return '날짜를 선택하세요.'
+  if (
+    status === 'OUTSIDE_TERM' ||
+    (term.startDate && date < term.startDate) ||
+    (term.endDate && date > term.endDate)
+  )
+    return '업무 학기 기간 밖의 날짜입니다.'
+  if (weekly) return ''
+  if (status === 'EXCLUDED_DATE' || term.excludedDates?.includes(date))
+    return '시험·휴업 등으로 등록된 정규 수업 제외일입니다.'
+  if ([0, 6].includes(new Date(date + 'T12:00:00Z').getUTCDay())) return '주말 휴업일입니다.'
+  return ''
+}
+
+function dateDecision(
+  manual: string | undefined,
+  natural: string | undefined,
+  week: string | undefined,
+  fallback: string,
+  resolved: string | undefined,
+) {
+  const value = manual ?? natural ?? (week ? '' : fallback)
+  const mismatch =
+    manual &&
+    (week
+      ? getSchoolWeekRange(new Date(manual + 'T12:00:00')).start !== week
+      : natural && natural !== manual)
+  return {
+    value,
+    conflict: Boolean(mismatch && resolved !== manual),
+    natural,
+    week,
+  }
+}
+
+function DateInput({
+  title,
+  decision,
+  onChange,
+  onAccept,
+  notice,
 }: {
-  command: Command
-  reviewButton: ReviewButton
+  title: string
+  decision: ReturnType<typeof dateDecision>
+  onChange: (value: string) => void
+  onAccept: () => void
+  notice: string
 }) {
-  const session = useHomeSession()
-  const allowed =
-    session.access.actions.requestSwap &&
-    command.preview.userId === session.userId &&
-    command.preview.schoolId === session.scope.schoolId
-  const choice = useTermChoice(session, allowed)
-  if (!allowed) return <p>현재 학교와 재직 교사 권한을 확인하세요.</p>
-  if (choice.list.isError) return <p role="alert">{operationError(choice.list.error)}</p>
-  if (choice.list.isPending) return <p>학기 조회 중…</p>
-  const term = choice.term
-  const bounds = choice.terms.find((t) => t.termId === term?.termId)
-  if (!term || !bounds) return <p>먼저 학교의 업무 학기를 등록하세요.</p>
+  const { value, conflict, natural, week } = decision
   return (
-    <div className="lesson-assistant">
+    <div className="ai-date">
       <label>
-        업무 학기{' '}
-        <select
-          value={term.termId}
-          onChange={(e) => {
-            const next = choice.terms.find((t) => t.termId === Number(e.target.value))
-            if (next) choice.saveChoice(next)
-          }}
-        >
-          {choice.terms.map((t) => (
-            <option key={t.termId} value={t.termId}>
-              {t.academicYear}학년도 {t.semester}학기 · {t.startDate}
-            </option>
-          ))}
-        </select>
+        {title}
+        <input type="date" value={value} onChange={(event) => onChange(event.target.value)} />
       </label>
-      <LessonQuery
-        key={JSON.stringify([term.termId, session.scope, command])}
-        {...{ term, bounds, session, command, reviewButton }}
-      />
+      {(natural || week) && (
+        <small>
+          {week
+            ? '문장에서 확인한 주간 ' + week + ' ~ ' + weekdays(week)[4]
+            : '문장에서 확인한 날짜 ' + natural}{' '}
+          (한국시간)
+        </small>
+      )}
+      {conflict ? (
+        <div className="ai-date-conflict" role="alert">
+          <p>문장과 선택한 날짜가 다릅니다. {title}를 확인하세요.</p>
+          <div className="ai-chat-actions">
+            {natural && (
+              <button type="button" onClick={() => onChange(natural)}>
+                문장 날짜 사용 ({natural})
+              </button>
+            )}
+            <button type="button" onClick={onAccept}>
+              선택 날짜 사용 ({value})
+            </button>
+          </div>
+        </div>
+      ) : (
+        notice && <p role="status">{notice}</p>
+      )}
     </div>
   )
 }
 
-function LessonQuery({
+export default function LessonAssistant({
+  command,
+  session,
   term,
-  bounds,
+  dates,
+  originalDates,
+  boardDate,
+  setDates,
+  reviewButton,
+}: {
+  command: Command
+  session: HomeSession
+  term: HomeTerm | null
+  dates: ChosenDates
+  originalDates: ChosenDates
+  boardDate?: string
+  setDates: Dispatch<SetStateAction<ChosenDates>>
+  reviewButton: ReviewButton
+}) {
+  const { preview, intentType } = command
+  const [accepted, setAccepted] = useState<ChosenDates>({})
+  const [period, setPeriod] = useState(preview.periodNumber ?? 0)
+  const periods = usePeriodSettings()
+  if (
+    !session.access.actions.requestSwap ||
+    preview.userId !== session.userId ||
+    preview.schoolId !== session.scope.schoolId
+  )
+    return <p role="alert">현재 학교와 재직 교사 권한을 확인하세요.</p>
+  if (!term) return <p>먼저 학교의 업무 학기를 등록하세요.</p>
+  if (preview.termId != null && preview.termId !== term.termId)
+    return <p role="alert">업무 학기가 바뀌었습니다. 현재 학기로 다시 질문하세요.</p>
+  const referenceDate = boardDate || schoolDate(new Date())
+  const weekly = intentType === 'MY_WEEK' && preview.range !== 'DAY'
+  const status = intentType === 'CHANGE_STATUS'
+  const swap = intentType === 'SWAP_OPTIONS'
+  const natural =
+    preview.dateFromText ||
+    (preview.dateFromText === undefined && originalDates.requestDate !== preview.date)
+      ? preview.date
+      : undefined
+  const naturalTarget =
+    preview.targetDateFromText ||
+    (preview.targetDateFromText === undefined && originalDates.targetDate !== preview.targetDate)
+      ? preview.targetDate
+      : undefined
+  const first = dateDecision(
+    dates.requestDate,
+    natural,
+    preview.weekStart,
+    !dateNotice(term, referenceDate, true) ? referenceDate : '',
+    accepted.requestDate,
+  )
+  const second = dateDecision(
+    dates.targetDate,
+    naturalTarget,
+    preview.targetWeekStart,
+    first.value,
+    accepted.targetDate,
+  )
+  // A natural-language week can straddle the term boundary. Only query its in-term school days.
+  const partialWeek =
+    weekly &&
+    preview.weekStart === first.value &&
+    !dates.requestDate &&
+    weekdays(first.value).some((day) => !dateNotice(term, day, true))
+  const firstNotice = partialWeek
+    ? ''
+    : dateNotice(
+        term,
+        first.value,
+        weekly,
+        preview.date === first.value ? preview.dateStatus : undefined,
+      )
+  const secondNotice = dateNotice(
+    term,
+    second.value,
+    false,
+    preview.targetDate === second.value ? preview.targetDateStatus : undefined,
+  )
+  function field(
+    name: DateField,
+    decision: ReturnType<typeof dateDecision>,
+    title: string,
+    notice: string,
+  ) {
+    return (
+      <DateInput
+        {...{ title, decision, notice }}
+        onChange={(value) => {
+          setDates((old) => ({ ...old, [name]: value }))
+          setAccepted((old) => ({ ...old, [name]: undefined }))
+        }}
+        onAccept={() => setAccepted((old) => ({ ...old, [name]: decision.value }))}
+      />
+    )
+  }
+  return (
+    <div className="lesson-assistant">
+      {!status && (
+        <>
+          {field(
+            'requestDate',
+            first,
+            weekly ? '조회 주간의 날짜' : intentType === 'MY_WEEK' ? '조회 날짜' : '요청 날짜',
+            firstNotice,
+          )}
+          {swap && field('targetDate', second, '상대 수업 날짜', secondNotice)}
+          <label>
+            교시
+            <select value={period} onChange={(event) => setPeriod(Number(event.target.value))}>
+              <option value={0}>모든 교시</option>
+              {(periods.data ?? []).map((p) => (
+                <option key={p.id} value={p.periodNumber}>
+                  {p.periodNumber}교시
+                </option>
+              ))}
+            </select>
+          </label>
+        </>
+      )}
+      {(status || (!first.conflict && !firstNotice)) && (
+        <LessonResults
+          key={JSON.stringify([first.value, period, intentType])}
+          {...{ term, session, command, reviewButton, weekly, status, period }}
+          date={first.value}
+          targetDate={swap && !secondNotice && !second.conflict ? second.value : ''}
+        />
+      )}
+    </div>
+  )
+}
+
+function LessonResults({
+  term,
   session,
   command,
   reviewButton,
+  date,
+  targetDate,
+  weekly,
+  status,
+  period,
 }: {
   reviewButton: ReviewButton
   term: HomeTerm
-  bounds: RegisteredTerm
   session: HomeSession
   command: Command
+  date: string
+  targetDate: string
+  weekly: boolean
+  status: boolean
+  period: number
 }) {
   const { preview, intentType } = command
-  const today = schoolDate(new Date())
-  const [date, setDate] = useState(preview.date ?? today)
-  const [period, setPeriod] = useState(preview.periodNumber ?? 0)
   const [selected, setSelected] = useState('')
-  const weekly = intentType === 'MY_WEEK'
-  const status = intentType === 'CHANGE_STATUS'
-  const dates = (weekly && date ? weekdays(date) : [date]).filter(
-    (d) => bounds.startDate <= d && d <= bounds.endDate,
-  )
+  const dates = (weekly ? weekdays(date) : [date]).filter((d) => !dateNotice(term, d, false))
   const directory = useHomeDirectory(session, true, term.termId)
   const periods = usePeriodSettings()
   const subjects = useSubjects()
-  const classes = useSchoolClasses(term.academicYear)
-  const days = useScopedRead(
-    session,
-    ['assistant-lessons', term.termId, ...dates],
-    !status && dates.length > 0,
-    async (signal) => (await Promise.all(dates.map((d) => getDatedLessons(term.termId, d, signal)))).flat(),
-    { retry: false },
-  )
+  const classes = useSchoolClasses(term.academicYear, { termId: term.termId })
+  const days = useQueries({
+    queries: (status ? [] : dates).map((day) => ({
+      queryKey: [...lessonDayKey(term.termId, day), session.scope],
+      queryFn: ({ signal }: { signal: AbortSignal }) => getDatedLessons(term.termId, day, signal),
+      retry: false,
+    })),
+  })
   const requests = useScopedRead(
     session,
     queryKeys.home.lessonChanges(term.termId),
@@ -138,7 +329,8 @@ function LessonQuery({
     const row = people.find((p) => p.schoolUserId === id)
     return row?.displayName || row?.username || '교사 #' + id
   }
-  const periodOf = (r: DatedLessonDto) => periods.data?.find((p) => p.id === r.actual.periodId)?.periodNumber
+  const periodOf = (r: DatedLessonDto) =>
+    periods.data?.find((p) => p.id === r.actual.periodId)?.periodNumber
   function label(r: DatedLessonDto) {
     const room = classes.data?.find((c) => c.id === r.classId)
     return [
@@ -149,11 +341,16 @@ function LessonQuery({
     ].join(' · ')
   }
   const stamp = (r: DatedLessonDto) => r.id + '/' + r.rev
-  const rows = (days.data ?? [])
-    .filter((r) => r.actual.teacherId === me && !r.actual.cancelled && (!period || periodOf(r) === period))
+  const rows = days
+    .flatMap((day) => day.data ?? [])
+    .filter(
+      (r) =>
+        r.actual.teacherId === me && !r.actual.cancelled && (!period || periodOf(r) === period),
+    )
     .sort((a, b) => a.date.localeCompare(b.date) || (periodOf(a) ?? 0) - (periodOf(b) ?? 0))
   const first = rows.find((r) => stamp(r) === selected)
-  const error = directory.error || (status ? requests.error : days.error)
+  const error =
+    directory.error || (status ? requests.error : days.find((day) => day.isError)?.error)
   if (error) return <p role="alert">{operationError(error)}</p>
   if (directory.isPending) return <p>학교 명부 조회 중…</p>
   if (!me) return <p>본인과 연결된 교사 명부를 확인하세요.</p>
@@ -175,43 +372,16 @@ function LessonQuery({
   }
   return (
     <>
-      <label>
-        {weekly ? '조회할 주간의 날짜' : '내 수업 날짜'}{' '}
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => {
-            setDate(e.target.value)
-            setSelected('')
-          }}
-        />
-      </label>
-      <label>
-        교시{' '}
-        <select
-          value={period}
-          onChange={(e) => {
-            setPeriod(Number(e.target.value))
-            setSelected('')
-          }}
-        >
-          <option value={0}>모든 교시</option>
-          {(periods.data ?? []).map((p) => (
-            <option key={p.id} value={p.periodNumber}>
-              {p.periodNumber}교시
-            </option>
-          ))}
-        </select>
-      </label>
       {!dates.length ? (
-        <p>
-          학기 기간 {bounds.startDate} ~ {bounds.endDate} 중 날짜를 선택하세요.
-        </p>
-      ) : days.isPending ? (
+        <p>이 주간에는 학기 달력상 정규 수업일이 없습니다.</p>
+      ) : days.some((day) => day.isPending) ? (
         <p>게시 수업 조회 중…</p>
       ) : !rows.length ? (
-        <p>해당 기간과 교시에 본인의 게시 수업이 없습니다.</p>
-      ) : weekly ? (
+        <p>
+          {weekly ? '이 주간' : date}
+          {period ? ' ' + period + '교시' : ''}에 본인의 게시 수업이 없습니다.
+        </p>
+      ) : intentType === 'MY_WEEK' ? (
         <ul>
           {rows.map((r) => (
             <li key={r.id}>{label(r)}</li>
@@ -220,7 +390,11 @@ function LessonQuery({
       ) : (
         <label>
           내 수업{' '}
-          <select aria-label="내 수업" value={first ? stamp(first) : ''} onChange={(e) => setSelected(e.target.value)}>
+          <select
+            aria-label="내 수업"
+            value={first ? stamp(first) : ''}
+            onChange={(e) => setSelected(e.target.value)}
+          >
             <option value="">수업 선택</option>
             {rows.map((r) => (
               <option key={r.id} value={stamp(r)}>
@@ -230,9 +404,10 @@ function LessonQuery({
           </select>
         </label>
       )}
-      {first && (
+      {first && (intentType !== 'SWAP_OPTIONS' || targetDate) && (
         <Candidates
-          key={stamp(first)}
+          key={stamp(first) + '/' + targetDate}
+          date={targetDate}
           {...{ term, session, first, label, teacher, reviewButton }}
           swap={intentType === 'SWAP_OPTIONS'}
           teacherFilter={preview.teacherName ?? ''}
@@ -249,6 +424,7 @@ function Candidates({
   label,
   teacher,
   swap,
+  date,
   teacherFilter,
   reviewButton,
 }: {
@@ -257,11 +433,11 @@ function Candidates({
   session: HomeSession
   first: DatedLessonDto
   swap: boolean
+  date: string
   teacherFilter: string
   label: (row: DatedLessonDto) => string
   teacher: (id: number) => string
 }) {
-  const [date, setDate] = useState(first.date)
   const [search, setSearch] = useState(teacherFilter)
   const [ids, setIds] = useState<number[]>([])
   const [review, setReview] = useState<Option[] | null>(null)
@@ -296,6 +472,7 @@ function Candidates({
         .map((row) => ({
           id: row.id,
           rev: row.rev,
+          date: row.date,
           label: teacher(row.actual.teacherId) + ' · ' + label(row),
         }))
     : [...matches].map((id) => ({ id, label: teacher(id) }))
@@ -329,17 +506,20 @@ function Candidates({
                 kind: 'SWAP',
                 firstId: first.id,
                 firstRev: first.rev,
+                firstDate: first.date,
                 secondId: review[0].id,
+                secondDate: review[0].date,
                 secondRev: review[0].rev!,
               },
               signal,
             ),
           ]
-        : await createSubstituteBatch(term.termId, first.id, first.rev, ids, signal)
+        : await createSubstituteBatch(term.termId, first.id, first.rev, ids, signal, first.date)
       void cache.invalidateQueries({
         queryKey: [...queryKeys.home.lessonChanges(term.termId), session.scope],
       })
-      if (!signal.aborted) setResult('접수 완료 · 응답 대기 ' + receipts.map((r) => '#' + r.id).join(', '))
+      if (!signal.aborted)
+        setResult('접수 완료 · 응답 대기 ' + receipts.map((r) => '#' + r.id).join(', '))
     } catch (err) {
       if (!signal.aborted) {
         setError(operationError(err) + ' 현재 요청 상태와 최신 후보를 확인하세요.')
@@ -373,9 +553,18 @@ function Candidates({
       {review ? (
         <>
           <p>
-            {label(first)} → {review.map((o) => o.label).join(', ')}
+            업무 학기 {term.academicYear}학년도 {term.semester}학기
           </p>
-          <button type="button" onClick={() => void submit()}>
+          <p>요청 수업 {label(first)}</p>
+          <p>
+            {swap ? '상대 수업' : '보결 교사'} {review.map((o) => o.label).join(', ')}
+          </p>
+          <button
+            type="button"
+            className="ai-chat-primary"
+            onClick={() => void submit()}
+            aria-busy={pending}
+          >
             {pending ? '접수 중…' : '확인하고 요청 보내기'}
           </button>
           <button type="button" onClick={() => setReview(null)}>
@@ -384,19 +573,6 @@ function Candidates({
         </>
       ) : (
         <>
-          {swap && (
-            <label>
-              상대 수업 날짜{' '}
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => {
-                  setDate(e.target.value)
-                  setIds([])
-                }}
-              />
-            </label>
-          )}
           <label>
             교사 검색{' '}
             <input
@@ -411,18 +587,24 @@ function Candidates({
             <p role="alert">{operationError(candidateError)}</p>
           ) : candidates.isPending || (swap && targets.isPending) ? (
             <p>후보 조회 중…</p>
+          ) : swap && !targets.data?.some((row) => !row.actual.cancelled) ? (
+            <p>상대 수업 날짜 {date}에 게시된 수업이 없습니다.</p>
           ) : !options.length ? (
             <p>조건에 맞는 후보가 없습니다.</p>
           ) : (
             options.map((o) => (
-              <label key={o.id}>
+              <label key={o.id} className="ai-candidate">
                 <input
                   type={swap ? 'radio' : 'checkbox'}
                   name="assistant-recipient"
                   checked={ids.includes(o.id)}
                   onChange={(e) =>
                     setIds(
-                      swap ? [o.id] : e.target.checked ? [...ids, o.id] : ids.filter((id) => id !== o.id),
+                      swap
+                        ? [o.id]
+                        : e.target.checked
+                          ? [...ids, o.id]
+                          : ids.filter((id) => id !== o.id),
                     )
                   }
                 />{' '}
@@ -432,6 +614,7 @@ function Candidates({
           )}
           <button
             type="button"
+            className="ai-chat-primary"
             ref={reviewButton}
             disabled={!selected.length || !!candidateError}
             onClick={() => {

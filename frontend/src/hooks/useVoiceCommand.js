@@ -4,14 +4,14 @@ import { queryKeys } from './queryKeys.js'
 
 export function usePreviewVoiceCommand() {
   return useMutation({
-    mutationFn: (text) => previewVoiceCommand({ text, lang: 'ko' }),
+    mutationFn: (request) => previewVoiceCommand(typeof request === 'string' ? { text: request, lang: 'ko' } : request),
   })
 }
 
 export function useConfirmVoiceCommand() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (draftToken) => confirmVoiceCommand(draftToken),
+    mutationFn: confirmVoiceCommand,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['substitute'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.unavailability.me() })

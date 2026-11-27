@@ -503,36 +503,6 @@ body {
   align-items: start;
 }
 
-.ai-assistant-button {
-  position: fixed;
-  right: var(--space-6);
-  bottom: var(--space-6);
-  z-index: 20;
-  height: 44px;
-  padding: 0 18px;
-  border: none;
-  border-radius: var(--radius-full);
-  background: var(--color-primary-button);
-  color: var(--color-on-primary);
-  font-size: var(--font-body);
-  font-weight: 600;
-}
-
-.ai-assistant-panel {
-  position: fixed;
-  right: var(--space-6);
-  bottom: var(--space-6);
-  z-index: 40;
-  width: min(400px, calc(100vw - 48px));
-  height: min(600px, calc(100vh - 96px));
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
 .top-nav {
   display: flex;
   align-items: center;
@@ -2915,21 +2885,7 @@ body {
     box-shadow: none;
   }
 
-  .ai-assistant-button {
-    bottom: 72px;
-  }
-
-  .ai-assistant-panel {
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    max-height: none;
-    border-radius: 0;
-    bottom: 0;
-    right: 0;
-  }
-
-  /* 모달은 하단 시트. 현재 오버레이 모달은 없고, 알림·AI는 전체 화면이다. */
+  /* 모달은 하단 시트. 알림은 전체 화면을 사용한다. */
   .bottom-sheet {
     position: fixed;
     left: 0;

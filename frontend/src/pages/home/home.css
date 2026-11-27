@@ -869,3 +869,61 @@
 @media (max-width: 719px) {
   .desk-selection-layout { grid-template-columns: minmax(0, 1fr); }
 }
+
+.desk-board-head {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.desk-board-controls {
+  margin-left: auto;
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  min-width: 0;
+}
+.desk-board-controls .desk-week-tools,
+.desk-target-controls {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.desk-board-controls label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.desk-board-controls :is(input, select) {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 4px 7px;
+  color: var(--color-text);
+  background: var(--surface-0);
+}
+.desk-target-controls:empty {
+  display: none;
+}
+.desk-day-status {
+  color: var(--color-text-secondary);
+}
+.desk-cell:disabled {
+  background: var(--surface-1);
+  cursor: default;
+}
+@media (max-width: 540px) {
+  .desk-board-controls {
+    width: 100%;
+    margin: 0;
+    justify-items: start;
+  }
+  .desk-board-controls .desk-week-tools,
+  .desk-target-controls {
+    justify-content: start;
+  }
+}

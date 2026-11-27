@@ -22,8 +22,9 @@ export async function refreshLessonChanges(
   const affected = (q: Query) =>
     q.queryHash === listHash ||
     (includeLessons &&
-      (q.queryKey[0] === 'dated-lessons' || q.queryKey[0] === 'lesson-change-candidates') &&
-      q.queryKey[1] === termId &&
+      (((q.queryKey[0] === 'dated-lessons' || q.queryKey[0] === 'lesson-change-candidates') &&
+        q.queryKey[1] === termId) || (q.queryKey[0] === 'timetable' && q.queryKey[1] === 'published' &&
+        q.queryKey[2] === termId)) &&
       hashKey([q.queryKey.at(-1)]) === owner)
   await cache.cancelQueries({ predicate: affected })
   await cache.invalidateQueries({ predicate: affected, refetchType: 'none' })
