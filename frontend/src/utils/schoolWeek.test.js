@@ -18,14 +18,20 @@ describe('school week', () => {
     expect(formatWeekCaption(monday)).toBe('10.05 – 10.09')
   })
 
-  it('주말 공휴일 다음 월요일을 대체공휴일로 표시한다', () => {
+  it('확인된 날짜만 대체공휴일로 표시하고 학교 운영일과 구분한다', () => {
     expect(holidayOn(new Date(2026, 9, 3))).toBe('개천절')
     expect(holidayOn(new Date(2026, 9, 5))).toBe('대체공휴일')
     expect(holidayOn(new Date(2026, 9, 9))).toBe('한글날')
     expect(holidayOn(new Date(2026, 9, 6))).toBe('')
+    expect(holidayOn(new Date(2026, 5, 8))).toBe('')
+    expect(holidayOn(new Date(2026, 4, 25))).toBe('대체공휴일')
+    expect(holidayOn(new Date(2026, 5, 3))).toBe('전국동시지방선거')
+    expect(holidayOn(new Date(2027, 6, 19))).toBe('대체공휴일')
+    expect(holidayOn(new Date(2032, 5, 7))).toBe('')
+    expect(schoolWeekDays(new Date(2026, 4, 25), new Date(2026, 4, 25))[0].excluded).toBe(false)
   })
 
-  it('평일이 모두 공휴일일 때만 휴업 주를 돌려준다', () => {
+  it('공휴일 표시는 학교의 휴업 주를 결정하지 않는다', () => {
     expect(weekBreakLabel(new Date(2026, 9, 5))).toBe('')
   })
 

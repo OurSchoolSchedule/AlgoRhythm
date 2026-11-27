@@ -35,7 +35,7 @@ export function getNotificationAction(n, position) {
   if (
     type === 'SUBSTITUTE_REQUEST_INVITE' &&
     role === 'TEACHER' &&
-    n.substituteRequestId &&
+    n.substituteRequestId && !n.substituteWorkerAction &&
     (!n.substituteStatus || n.substituteStatus === 'OPEN')
   ) {
     return { kind: 'extra-shift-respond', requestId: n.substituteRequestId }
@@ -44,7 +44,10 @@ export function getNotificationAction(n, position) {
   if (
     type === 'SUBSTITUTE_NOTIFY_ADMIN' &&
     role === 'ADMIN' &&
-    n.substituteResponseId
+    n.substituteResponseId &&
+    (!n.substituteStatus || n.substituteStatus === 'OPEN') &&
+    (!n.substituteWorkerAction || n.substituteWorkerAction === 'ACCEPT') &&
+    (!n.substituteManagerApproval || n.substituteManagerApproval === 'PENDING')
   ) {
     return {
       kind: 'extra-shift-approve',

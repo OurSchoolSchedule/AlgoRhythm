@@ -4,7 +4,12 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { getAccessToken } from '@/api'
 import LoadError from '@/components/LoadError.jsx'
 import { useHomeSession } from '@/hooks/useHomeSession'
+import { schoolDate } from '@/utils/homeContract'
+import { useTimetableDate } from '@/hooks/useTimetableDate'
+import { useOperatingWeek } from '@/hooks/useOperatingWeek'
+import { operatingReason } from '@/api/operatingWeek'
 import { useTermChoice } from '@/hooks/useTermChoice'
+import PublishedCoverForm from '@/components/schedule/PublishedCoverForm'
 import CreateSubstituteForm from '@/components/schedule/CreateSubstituteForm.jsx'
 import CreateTimetableCellForm from '@/components/schedule/CreateTimetableCellForm.jsx'
 import WeeklyTimetableGrid from '@/components/schedule/WeeklyTimetableGrid.jsx'
@@ -24,7 +29,7 @@ import {
   startOfSchoolWeek,
   weekBreakLabel,
 } from '@/utils/schoolWeek.js'
-import { getApiErrorMessage, termFromStartDate } from '@/utils/timetableGeneration.js'
+import { getApiErrorMessage } from '@/utils/timetableGeneration.js'
 import {
   applyCellMoves,
   cellSlotKey,
@@ -76,22 +81,37 @@ function periodRange(cell, slot) {
   return start
 }
 
-export default function TimetableView({ navigate, userRole = 'worker' }) {
+export default function TimetableView(props) {
   const session = useHomeSession()
+  const state = useTermChoice(session)
+  if (session.access.queries.datedLessons && !state.list.isSuccess) {
+    return state.list.isError
+      ? <LoadError onRetry={() => state.list.refetch()} />
+      : <p role="status">학기 조회 중</p>
+  }
+  return <TimetableBoard {...props} session={session} state={state} key={JSON.stringify([session.scope, state.term?.termId])} />
+}
+
+function TimetableBoard({ navigate, userRole = 'worker', session, state }) {
   const { access } = session
-  const { terms } = useTermChoice(session)
+  const { terms, term, choice, saveChoice } = state
   const isAdmin = userRole === 'admin'
   const now = useMemo(() => new Date(), [])
-  const defaultTerm = useMemo(() => termFromStartDate(toISODate(now)), [now])
-  const [academicYear, setAcademicYear] = useState(defaultTerm.academicYear || new Date().getFullYear())
-  const [semester, setSemester] = useState(defaultTerm.semester || 2)
-  const [useTermFilter, setUseTermFilter] = useState(true)
-  const [weekStart, setWeekStart] = useState(() => startOfSchoolWeek(new Date()))
+  const [legacyYear, setAcademicYear] = useState(choice.academicYear)
+  const [legacySemester, setSemester] = useState(choice.semester)
+  const academicYear = term?.academicYear ?? legacyYear
+  const semester = term?.semester ?? legacySemester
+  const [draftTermId, setDraftTermId] = useState(term?.termId)
+  const { date, setDate } = useTimetableDate(session, term)
+  const weekStart = startOfSchoolWeek(new Date(date + 'T12:00:00'))
+  const weekOf = toISODate(weekStart)
+  const operating = useOperatingWeek(session, term, weekOf)
   const query = useSchoolTimetable({
     referenceDate: now,
-    weekOf: toISODate(weekStart),
-    academicYear: useTermFilter ? academicYear : undefined,
-    semester: useTermFilter ? semester : undefined,
+    weekOf,
+    academicYear,
+    semester,
+    termId: term?.termId,
   })
   const timetable = query.timetable
   const isLoading = query.isLoading
@@ -101,6 +121,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
 
   const [scope, setScope] = useState(isAdmin ? 'class' : 'mine')
   const [target, setTarget] = useState('')
+  const [targetClassId, setTargetClassId] = useState(null)
   const [termOpen, setTermOpen] = useState(false)
   const [kindOpen, setKindOpen] = useState(false)
   const [scopeSearchOpen, setScopeSearchOpen] = useState(false)
@@ -127,12 +148,24 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
   const activeScope = !isAdmin
     ? (scope === 'class' ? 'class' : 'mine')
     : (scope === 'mine' ? 'class' : scope)
-  const visibleTerms = useTermFilter
-    ? terms.filter((term) => term.academicYear === academicYear && term.semester === semester)
-    : terms
+  const visibleTerms = term ? [term] : []
   const days = schoolWeekDays(weekStart, now, visibleTerms)
   const breakLabel = weekBreakLabel(weekStart, visibleTerms)
-  const thisWeek = isSameSchoolWeek(weekStart, now)
+  const nextOpen = breakLabel ? nextOpenWeek(weekStart, visibleTerms) : null
+  const today = schoolDate(now)
+  const thisWeek = isSameSchoolWeek(weekStart, new Date(today + 'T12:00:00'))
+  const prevWeekOutside = term && weekOf <= term.startDate
+  const nextWeekOutside = term && toISODate(shiftSchoolWeek(weekStart, 1)) > term.endDate
+  function closedReason(day, period) {
+    if (day?.outsideTerm) return '학기 기간 밖'
+    if (day?.excluded) return '수업 제외일'
+    const operatingDay = operating.data?.days.find((value) => value.date === day?.iso)
+    const classId = activeScope === 'class' && target ? targetClassId : null
+    const reason = operatingReason(operatingDay, classId, period)
+    if (reason) return reason
+    if (term && !operatingDay) return operating.isError ? '운영 교시 확인 필요' : '운영 교시 조회 중'
+    return ''
+  }
   const source = timetable
 
   const accept = activeScope === 'class' && target
@@ -156,6 +189,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
   const selectedLessons = lessonsOf(selectedCell)
   const selectedCrowded = selectedLessons.length > 1
   const selectedDate = days.find((day) => day.key === selected?.day)
+  const selectedClosed = selected && selectedDate && closedReason(selectedDate, selected.period)
   const selectedClock = selected ? periodRange(selectedCell, timetable.periodSlots.find((slot) => slot.period === selected.period)) : ''
   const actionLesson = selectedCrowded ? activeLesson : selectedCell
   const actionDateIso = selectedDate ? toISODate(selectedDate.date) : toISODate()
@@ -172,7 +206,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
     setRequestMode(mode)
   }
   const hoverReason = dragFrom && hover
-    ? dropRejection(shown.byDay, dragFrom, hover, days.find((day) => day.key === hover.day)?.holiday || '')
+    ? dropRejection(shown.byDay, dragFrom, hover, closedReason(days.find((day) => day.key === hover.day), hover.period))
     : ''
 
   useEffect(() => {
@@ -210,7 +244,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
 
   const goWeek = (delta) => {
     requestLeave(() => {
-      setWeekStart((current) => shiftSchoolWeek(current, delta))
+      setDate(toISODate(shiftSchoolWeek(weekStart, delta)))
       clearDetail()
     })
   }
@@ -264,9 +298,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
     }
   }
 
-  const emptyCopy = isAdmin
-    ? '아직 등록된 시간표가 없습니다'
-    : '시간표가 확정되면 알림으로 알려드립니다'
+  const emptyCopy = '선택한 주에 조회된 수업이 없습니다.'
 
   const queryText = scopeQuery.trim()
   const classHits = classes
@@ -302,38 +334,48 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
                 </button>
                 {termOpen && (
                   <div className="dropdown-panel dropdown-panel-top tt-term-panel" role="dialog" aria-label="학년도 학기">
-                    <label className="tt-term-field">
-                      <span>학년도</span>
-                      <input
-                        type="number"
-                        min={2000}
-                        max={2100}
-                        value={academicYear}
-                        onChange={(event) => {
-                          setAcademicYear(Number(event.target.value) || academicYear)
-                          setUseTermFilter(true)
-                        }}
-                      />
-                    </label>
-                    <label className="tt-term-field">
-                      <span>학기</span>
-                      <select
-                        value={semester}
-                        onChange={(event) => {
-                          setSemester(Number(event.target.value))
-                          setUseTermFilter(true)
-                        }}
-                      >
-                        <option value={1}>1학기</option>
-                        <option value={2}>2학기</option>
-                      </select>
-                    </label>
+                    {term ? (
+                      <label className="tt-term-field">
+                        <span>등록된 학기</span>
+                        <select aria-label="등록된 학기" value={draftTermId} onChange={(e) => setDraftTermId(Number(e.target.value))}>
+                          {terms.map((t) => <option key={t.termId} value={t.termId}>{t.academicYear}학년도 {t.semester}학기</option>)}
+                        </select>
+                      </label>
+                    ) : (<>
+                      <label className="tt-term-field">
+                        <span>학년도</span>
+                        <input
+                          type="number"
+                          min={2000}
+                          max={2100}
+                          value={academicYear}
+                          onChange={(event) => {
+                            setAcademicYear(Number(event.target.value) || academicYear)
+                          }}
+                        />
+                      </label>
+                      <label className="tt-term-field">
+                        <span>학기</span>
+                        <select
+                          value={semester}
+                          onChange={(event) => {
+                            setSemester(Number(event.target.value))
+                          }}
+                        >
+                          <option value={1}>1학기</option>
+                          <option value={2}>2학기</option>
+                        </select>
+                      </label>
+                    </>)}
                     <button
                       type="button"
                       className="tt-term-apply"
                       onClick={() => {
-                        setUseTermFilter(true)
-                        setTermOpen(false)
+                        const selectedTerm = terms.find((t) => t.termId === draftTermId)
+                        requestLeave(() => {
+                          if (selectedTerm) saveChoice(selectedTerm)
+                          setTermOpen(false)
+                        })
                       }}
                     >
                       적용
@@ -347,20 +389,21 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
                   <span className="tt-week-short">{formatWeekShort(weekStart)}</span>
                 </div>
                 <div className="tt-nav" role="group" aria-label="주 이동">
-                  <button type="button" className="tt-nav-arrow" aria-label="이전 주" onClick={() => goWeek(-1)}>‹</button>
+                  <button type="button" className="tt-nav-arrow" aria-label="이전 주" disabled={prevWeekOutside} onClick={() => goWeek(-1)}>‹</button>
                   <button
                     type="button"
                     className="tt-nav-today"
-                    disabled={thisWeek}
+                    disabled={thisWeek || (term && (today < term.startDate || today > term.endDate))}
                     onClick={() => {
                       requestLeave(() => {
-                        setWeekStart(startOfSchoolWeek(now))
+                        setDate()
+                        clearDetail()
                       })
                     }}
                   >
                     오늘
                   </button>
-                  <button type="button" className="tt-nav-arrow" aria-label="다음 주" onClick={() => goWeek(1)}>›</button>
+                  <button type="button" className="tt-nav-arrow" aria-label="다음 주" disabled={nextWeekOutside} onClick={() => goWeek(1)}>›</button>
                 </div>
               </div>
               <p className="tt-week-caption">{formatWeekCaption(weekStart)}</p>
@@ -489,6 +532,8 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
                       onClick={() => {
                         setScope(item.kind)
                         setTarget(item.value)
+                        const row = item.kind === 'class' && query.rows.find((r) => `${r.grade}-${r.classNumber}` === item.value)
+                        setTargetClassId(row?.schoolClassId ?? null)
                         setScopeSearchOpen(false)
                         setScopeQuery('')
                       }}
@@ -523,34 +568,31 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
         ) : breakLabel ? (
           <div className="home-empty">
             이번 주는 수업이 없습니다({breakLabel})
-            <button type="button" className="history-link" onClick={() => setWeekStart(nextOpenWeek(weekStart, visibleTerms))}>다음 수업 주로 이동</button>
+            {nextOpen && <button type="button" className="history-link" onClick={() => setDate(toISODate(nextOpen))}>다음 수업 주로 이동</button>}
           </div>
         ) : (
           <>
             {timetable.weekClassCount === 0 && (
               <div className="tt-empty-note">
                 <span>{emptyCopy}</span>
-                {isAdmin && (
-                  <>
-                    <span aria-hidden="true"> · </span>
-                    <button type="button" className="history-link" onClick={openCreate}>시간표 생성</button>
-                  </>
-                )}
+
               </div>
             )}
 
+            {term && operating.isError && <p role="alert">게시된 운영 교시를 불러오지 못했습니다. <button type="button" onClick={() => operating.refetch()}>다시 조회</button></p>}
             {SHOW_EDIT && editing && hoverReason && <p className="tt-reject">{hoverReason}</p>}
 
             <WeeklyTimetableGrid
               timetable={shown}
               days={days}
+              closedReason={closedReason}
               detailMode={detailMode}
               selectedKey={selected ? cellSlotKey(selected.day, selected.period) : ''}
               editing={SHOW_EDIT && editing}
               dragFrom={dragFrom}
               hoverKey={hover ? cellSlotKey(hover.day, hover.period) : ''}
               hoverReason={hoverReason}
-              showFreeLabel={timetable.weekClassCount > 0}
+              showFreeLabel={timetable.weekClassCount > 0 || operating.data?.days.some((day) => day.versionId != null)}
               onSelect={(slot) => {
                 setSelected(slot)
                 setRequestMode('')
@@ -569,7 +611,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
                   shown.byDay,
                   from,
                   slot,
-                  days.find((day) => day.key === slot.day)?.holiday || '',
+                  closedReason(days.find((day) => day.key === slot.day), slot.period),
                 )
                 if (!reason && (from.day !== slot.day || from.period !== slot.period)) {
                   setMoves((list) => [...list, { from, to: slot }])
@@ -591,7 +633,8 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
 
       {query.error && failed ? <p className="sr-only">{String(query.error?.message || '')}</p> : null}
 
-      {selected && !selectedDate?.excluded && (
+      {selected && selectedDate && !selectedDate.excluded && !selectedDate.outsideTerm &&
+        selectedClosed !== '수업 제외일' && selectedClosed !== '학기 기간 밖' && (selectedCell || !selectedClosed) && (
         <Dialog title="수업 상세" onClose={clearDetail}>
           <div className="detail-lesson">
             <p className="tt-detail-kicker">
@@ -607,7 +650,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
             {selectedCrowded ? (
               <ul className="tt-lesson-list">
                 {selectedLessons.map((lesson) => {
-                  const isActive = activeLesson?.id != null && lesson.id === activeLesson.id
+                  const isActive = activeLesson && (lesson.id != null ? activeLesson.id === lesson.id : activeLesson.weeklyLessonId === lesson.weeklyLessonId)
                   return (
                     <li
                       key={lesson.id ?? `weekly-${lesson.weeklyLessonId ?? lesson.class}`}
@@ -623,7 +666,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
                           <button
                             type="button"
                             className="is-primary"
-                            disabled={lesson.id == null}
+                            disabled={!access.actions.approve || (lesson.id == null && lesson.weeklyLessonId == null)}
                             onClick={() => startLessonRequest(lesson, 'substitute')}
                           >
                             공개 보결 모집
@@ -652,12 +695,16 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
               <CreateTimetableCellForm
                 dayKey={selected.day}
                 period={selected.period}
-                academicYear={useTermFilter ? academicYear : selectedCell?.academicYear ?? academicYear}
-                semester={useTermFilter ? semester : selectedCell?.semester ?? semester}
+                academicYear={academicYear}
+                semester={semester}
                 onCreated={clearDetail}
                 onCancel={clearDetail}
               />
-            ) : actionLesson?.id != null && requestMode === 'substitute' ? (
+            ) : access.actions.approve && actionLesson?.weeklyLessonId != null && requestMode === 'substitute' ? (
+              <PublishedCoverForm key={actionDateIso + '/' + actionLesson.weeklyLessonId}
+                termId={terms.find(t => t.academicYear === actionLesson.academicYear && t.semester === actionLesson.semester)?.termId}
+                lesson={actionLesson} date={actionDateIso} periodLabel={actionPeriodLabel} />
+            ) : access.actions.approve && actionLesson?.id != null && requestMode === 'substitute' ? (
               <CreateSubstituteForm
                 key={`sub-${actionLesson.id}`}
                 timetableId={actionLesson.id}
@@ -669,7 +716,7 @@ export default function TimetableView({ navigate, userRole = 'worker' }) {
                 <button
                   type="button"
                   className="tt-secondary"
-                  disabled={selectedCell.id == null}
+                  disabled={!access.actions.approve || (selectedCell.id == null && selectedCell.weeklyLessonId == null)}
                   onClick={() => startLessonRequest(selectedCell, 'substitute')}
                 >
                   공개 보결 모집

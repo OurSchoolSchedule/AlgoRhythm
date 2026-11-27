@@ -17,6 +17,7 @@ function includesPublishedLessons(key: QueryKey, term: HomeTerm, scope: Scope, f
     owner.generation !== scope.generation
   )
     return false
+  if (key[0] === 'operating-week') return key[1] === term.termId
   if (key[0] === 'dated-lessons') {
     return key[1] === term.termId && typeof key[2] === 'string' && key[2] >= from
   }

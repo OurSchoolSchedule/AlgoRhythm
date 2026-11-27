@@ -1,0 +1,20 @@
+.candidate-quality {
+  display: grid;
+  gap: 0.5rem;
+  margin-block: 0.75rem;
+}
+.candidate-quality details {
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--color-border-light);
+  border-radius: 0.5rem;
+}
+.candidate-quality summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.candidate-quality ul {
+  padding-inline-start: 1.35rem;
+}
+.candidate-quality li + li {
+  margin-top: 0.3rem;
+}

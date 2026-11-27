@@ -5,6 +5,7 @@ import {
   respondExtraShift,
   approveExtraShift,
 } from '@/api'
+import { withdrawPublicCover } from '@/api/extraShift.js'
 import { useHomeSession, useScopedRead } from './useHomeSession'
 import { queryKeys } from './queryKeys.js'
 
@@ -60,9 +61,20 @@ export function useRespondExtraShift() {
 
 export function useApproveExtraShift() {
   const invalidate = useInvalidateAfterExtraShift()
+  const cache = useQueryClient()
   return useMutation({
     mutationFn: ({ responseId, payload }) =>
       approveExtraShift(responseId, payload),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate()
+      for (const key of ['dated-lessons', 'timetable', 'lesson-change-candidates']) {
+        cache.invalidateQueries({ queryKey: [key] })
+      }
+    },
   })
+}
+
+export function useWithdrawPublicCover() {
+  const invalidate = useInvalidateAfterExtraShift()
+  return useMutation({ mutationFn: withdrawPublicCover, onSuccess: invalidate })
 }

@@ -1,5 +1,12 @@
 import type { HomeMemberDto, HomeroomDto } from '@/types/home'
 
+export function hasTermHomerooms(member: HomeMemberDto | undefined, termId: number | null) {
+  if (!member || termId === null) return false
+  return member.homeroomAssignmentTermId === undefined
+    ? Boolean(member.termHomeroomsApplied)
+    : member.homeroomAssignmentTermId === termId
+}
+
 // undefined means the directory cannot establish an assignment for this school term.
 // An empty array means it can establish that the teacher has no homeroom.
 export function directoryHomerooms(
@@ -9,7 +16,8 @@ export function directoryHomerooms(
 ): readonly HomeroomDto[] | undefined {
   if (!member || academicYear === null) return undefined
 
-  if (termId !== null && member.termHomeroomsApplied)
+  if (member.homeroomAssignmentTermId != null && member.homeroomAssignmentTermId !== termId) return undefined
+  if (hasTermHomerooms(member, termId))
     return member.homeroomClasses?.filter((room) => room.academicYear === academicYear)
 
   if (member.rosterLinked === false ||

@@ -5,7 +5,10 @@
 /**
  * 보결 요청 생성 (POST /api/substitutes/requests).
  * @typedef {Object} SubstituteCreateRequest
- * @property {number} timetableId
+ * @property {number} [timetableId]
+ * @property {number} [termId]
+ * @property {number} [datedLessonId]
+ * @property {number} [expectedLessonRev]
  * @property {string} substituteDate "YYYY-MM-DD"
  * @property {string} [note]
  */
@@ -26,7 +29,12 @@
  * @typedef {Object} SubstituteRequestDetail
  * @property {number} id
  * @property {number} schoolId
- * @property {number} timetableId
+ * @property {number|null} timetableId
+ * @property {number|null} [termId]
+ * @property {number|null} [datedLessonId]
+ * @property {number|null} [expectedLessonRev]
+ * @property {SubstituteResponseDetail[]} [responses]
+ * @property {boolean} [canWithdraw]
  * @property {string} dayOfWeek
  * @property {number} periodNumber
  * @property {string} substituteDate

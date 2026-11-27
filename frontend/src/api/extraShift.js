@@ -54,3 +54,8 @@ export async function approveExtraShift(responseId, payload) {
   )
   return data
 }
+
+export async function withdrawPublicCover(requestId) {
+  const { data } = await client.post(`/api/substitutes/requests/${requestId}/withdraw`)
+  return data
+}
