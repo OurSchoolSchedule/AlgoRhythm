@@ -62,6 +62,7 @@ interface GenerationResult {
 }
 
 export type GenerationJob = Pick<AcceptedGeneration, 'jobId' | 'expectedPublishRev'> & {
+  estimatedProgressPercent?: number | null
   objective?: GenerationObjective
   teachingSlots?: TeachingSlot[]
   gradeLastPeriods?: GradeLastPeriods[] | null

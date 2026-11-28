@@ -374,9 +374,9 @@ it('학년 설정이 없는 과거 작업은 공통 슬롯과 주말을 보존�
     slots={[{ day: 'MON', period: 1 }, { day: 'SAT', period: 3 }]}
     registeredPeriods={[1, 3, 5]}
     placements={[]}
-    room="3"
+    target="학급"
     subjectName={String}
-    teacherName={String}
+    lessonDetail={String}
   />)
   const table = within(screen.getByRole('table', { name: '선택한 학급의 주간 배치' }))
   expect(table.getByRole('columnheader', { name: '토요일' })).toBeTruthy()
@@ -401,7 +401,7 @@ it.each([false, true])(
     const { container, rerender } = render(
       <ScheduleProgress progress={{ phase: 'uploading', percent: 43 }} />,
     )
-    expect(screen.getByRole('status').textContent).toContain('43%')
+    expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('43')
     expect(screen.queryByRole('img')).toBeNull()
     expect(container.querySelector('img')?.getAttribute('alt')).toBe('')
     expect(container.querySelector('.work-track')?.getAttribute('data-motion')).toBe(
@@ -410,17 +410,24 @@ it.each([false, true])(
     for (const progress of [
       { phase: 'uploading', percent: null },
       { phase: 'validating' },
-      { phase: 'queued', jobId: 'x' },
-      { phase: 'running', jobId: 'x' },
+      { phase: 'running', jobId: 'x', percent: null },
     ] as const) {
       rerender(<ScheduleProgress progress={progress} />)
       expect(screen.getAllByRole('status')).toHaveLength(1)
       expect(screen.getByRole('status').textContent).not.toMatch(/%/)
       expect(!!container.querySelector('[data-mode="indeterminate"]')).toBe(!reduced)
     }
+    rerender(<ScheduleProgress progress={{ phase: 'running', jobId: 'x', percent: 65 }} requestedAt={Date.now() - 90_000} />)
+    expect(screen.getByRole('timer').textContent).toBe('1분 30초')
+    expect(screen.getByRole('timer').parentElement?.textContent).toBe('1분 30초 · 예상 65%')
+    expect(screen.getByRole('progressbar', { name: '탐색 제한 시간 기준 예상 진행률' }).getAttribute('aria-valuenow')).toBe('65')
     rerender(<ScheduleProgress progress={{ phase: 'finished', jobId: 'x', outcome: 'FAILED' }} />)
+    expect(screen.queryByRole('timer')).toBeNull()
     expect(screen.getByRole('status').textContent).toContain('후보 생성 실패')
+    expect(screen.getByRole('status').textContent).not.toContain('100%')
     expect(container.querySelector('img')).toBeNull()
+    rerender(<ScheduleProgress progress={{ phase: 'finished', jobId: 'x', outcome: 'READY' }} />)
+    expect(screen.getByRole('status').textContent).toBe('후보 생성 완료 · 100%')
   },
 )
 
@@ -497,6 +504,41 @@ it('학교 총합이 같아도 초과 학급을 차단하고, 파일을 교체�
     false,
   )
   expect(submissions).toBe(0)
+})
+
+it.each(['SUBSTITUTE', 'SWAP'] as const)('홈에서 선택한 요청 유형 %s로 열고 같은 수업에서 전환한다', async (kind) => {
+  const date = '2026-11-23'
+  const teacherId = 10
+  const assignment = { teacherId, periodId: 1 }
+  const lesson = {
+    id: 51, termId: registered.termId, versionId: 1, rev: 2, date,
+    originId: 151, originDate: date, classId: 4, subjectId: 15,
+    planned: assignment, actual: assignment,
+  }
+  adapter((config) => {
+    if (config.url === '/api/v2/terms') return [200, [registered]]
+    if (config.url === '/api/school/teachers') {
+      const myself = { userId: 541000, schoolUserId: teacherId, displayName: '신청 교사', position: 'TEACHER', employmentStatus: 'HIRED' }
+      return [200, [myself]]
+    }
+    if (config.url === base + '/lessons') return [200, [lesson]]
+    return [200, []]
+  })
+  const selection = {
+    schoolId: 540001, termId: registered.termId, datedLessonId: lesson.id,
+    rev: lesson.rev, teacherId, date, kind,
+  }
+  mount('TEACHER', <LessonChangesView selection={selection} />)
+  const radios = within(await screen.findByRole('radiogroup', { name: '요청 유형' }))
+  const cover = radios.getByRole<HTMLInputElement>('radio', { name: '보결 요청' })
+  const swap = radios.getByRole<HTMLInputElement>('radio', { name: '1:1 수업 교환' })
+  expect(cover.checked).toBe(kind === 'SUBSTITUTE')
+  expect(swap.checked).toBe(kind === 'SWAP')
+  for (const mode of [cover, swap, cover]) {
+    fireEvent.click(mode)
+    expect(screen.getByRole('form', { name: mode === cover ? '보결 신청' : '교환 신청' })).toBeTruthy()
+    expect(screen.getAllByRole('form')).toHaveLength(1)
+  }
 })
 
 it.each(['lost-response', 'conflict'] as const)(
@@ -580,7 +622,7 @@ it.each(['lost-response', 'conflict'] as const)(
   },
 )
 
-it('교환 후보가 없는 날에도 다른 날짜를 열고 그날 교환 가능한 교사와 수업만 선택한다', async () => {
+it('교환 후보와 독립적으로 학교 교사를 검색하고 선택한 날짜의 허용된 수업만 신청한다', async () => {
   const sourceDate = '2026-11-23'
   const targetDate = '2026-11-24'
   const members = [
@@ -616,31 +658,47 @@ it('교환 후보가 없는 날에도 다른 날짜를 열고 그날 교환 가�
   await within(source).findByRole('option', { name: /신청 교사/ })
   fireEvent.change(source, { target: { value: '51/2' } })
 
+  fireEvent.click(screen.getByRole('radio', { name: '1:1 수업 교환' }))
   const swap = within(screen.getByRole('form', { name: '교환 신청' }))
   const teacher = swap.getByRole<HTMLSelectElement>('combobox', { name: '상대 교사' })
   const submit = swap.getByRole<HTMLButtonElement>('button', { name: '교환 신청' })
+  const search = swap.getByRole('searchbox', { name: '상대 교사 검색' })
+  const target = swap.getByRole<HTMLSelectElement>('combobox', { name: /교환할 상대 수업/ })
   await swap.findByText(/이 날짜에 교환 가능한 수업이 없습니다/)
-  expect(teacher.options).toHaveLength(1)
+  fireEvent.change(search, { target: { value: ' 교환가능 ' } })
+  const noLessons = within(teacher).getByRole('group', { name: '이 날짜에 교환 가능한 수업 없음' })
+  expect(within(noLessons).getByRole('option', { name: '교환 가능 교사' })).toBeTruthy()
+  expect(within(teacher).queryByRole('option', { name: '교환 불가 교사' })).toBeNull()
+  fireEvent.change(teacher, { target: { value: '11' } })
+  await swap.findByText(/선택한 교사가 이 날짜에 교환할 수 있는 수업이 없습니다/)
+  expect(target.disabled).toBe(true)
+  expect(submit.disabled).toBe(true)
+
   fireEvent.click(swap.getByLabelText('다른 날짜의 수업 선택'))
   const date = swap.getByLabelText('교환 상대 수업 날짜')
   fireEvent.change(date, { target: { value: targetDate } })
-  await within(teacher).findByRole('option', { name: '교환 가능 교사' })
-  expect(within(teacher).queryByRole('option', { name: '교환 불가 교사' })).toBeNull()
-  fireEvent.change(teacher, { target: { value: '11' } })
-  const target = swap.getByRole<HTMLSelectElement>('combobox', { name: /교환할 상대 수업/ })
+  await within(target).findByRole('option', { name: /교환 가능 교사/ })
+  const hasLessons = within(teacher).getByRole('group', { name: '이 날짜에 교환 가능한 수업 있음' })
+  expect(within(hasLessons).getByRole('option', { name: '교환 가능 교사' })).toBeTruthy()
+  expect(teacher.value).toBe('11')
   expect(Array.from(target.options, (option) => option.value)).toEqual(['', '52/2'])
   fireEvent.change(target, { target: { value: '52/2' } })
   expect(submit.disabled).toBe(false)
   expect(swap.getByLabelText('교환 미리보기').textContent).toContain(targetDate)
 
   fireEvent.change(date, { target: { value: sourceDate } })
-  await swap.findByText(/이 날짜에 교환 가능한 수업이 없습니다/)
-  expect(teacher.value).toBe('')
+  await swap.findByText(/선택한 교사가 이 날짜에 교환할 수 있는 수업이 없습니다/)
+  expect(teacher.value).toBe('11')
   expect(target.options).toHaveLength(1)
   expect(submit.disabled).toBe(true)
   fireEvent.change(date, { target: { value: targetDate } })
-  await within(teacher).findByRole('option', { name: '교환 가능 교사' })
-  expect(teacher.value).toBe('')
+  await within(target).findByRole('option', { name: /교환 가능 교사/ })
   expect(target.value).toBe('')
   expect(swap.queryByLabelText('교환 미리보기')).toBeNull()
+  fireEvent.change(search, { target: { value: '교환 불가' } })
+  fireEvent.change(teacher, { target: { value: '12' } })
+  await swap.findByText(/선택한 교사가 이 날짜에 교환할 수 있는 수업이 없습니다/)
+  expect(submit.disabled).toBe(true)
+  fireEvent.change(search, { target: { value: '없는 교사' } })
+  await swap.findByText(/검색과 일치하는 상대 교사가 없습니다/)
 })

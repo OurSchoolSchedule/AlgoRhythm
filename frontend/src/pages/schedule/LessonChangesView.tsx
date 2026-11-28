@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { isAxiosError } from 'axios'
+import type { DirectoryMember } from '@/api/home'
 import type { HomeTerm, DatedLessonDto, HomeLessonSelection } from '@/types/datedLesson'
 import type { ChangeResult, LessonChange } from '@/types/lessonChange'
 import { useChangeCandidates, useChangeDetails, useLessonChanges } from '@/hooks/useLessonChanges'
@@ -26,6 +27,9 @@ const conflictActions: Record<string, string> = {
   STALE_REQUEST: '신청 목록에서 최신 상태를 확인한 뒤 가능한 동작을 선택하세요.',
 }
 const stamp = (lesson: DatedLessonDto) => lesson.id + '/' + lesson.rev
+const teacherName = (member: DirectoryMember) =>
+  member.displayName?.trim() || member.username?.trim() || '교사 #' + member.schoolUserId
+const nameSearchKey = (value: string) => value.normalize('NFC').replace(/\s+/g, '').toLowerCase()
 const readLabel: Record<string, string> = {
   loading: '조회 중',
   empty: '조회된 항목이 없습니다.',
@@ -52,6 +56,9 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
   const [detailId, setDetailId] = useState<number | null>(null)
   const details = useChangeDetails(term, detailId)
   const [firstKey, setFirst] = useState('')
+  const [requestKind, setRequestKind] = useState<HomeLessonSelection['kind']>(
+    selection?.kind ?? 'SUBSTITUTE',
+  )
   const [secondKey, setSecond] = useState('')
   const [teacher, setTeacher] = useState('')
   const [coverTargets, setCoverTargets] = useState<number[]>([])
@@ -80,11 +87,14 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
           (selection.kind === 'SWAP' ? mine : changes.canRequestSubstitute),
       )
     : firstRows.find((r) => stamp(r) === firstKey)
-  const coverCandidates = useChangeCandidates(term, first, 'SUBSTITUTE')
-  const swapCandidates = useChangeCandidates(term, first, 'SWAP', targetDate)
+  const canSwitchKind = changes.canRequestSubstitute && mine
+  const showSwap = mine && (!changes.canRequestSubstitute || requestKind === 'SWAP')
+  const showCover = changes.canRequestSubstitute && !showSwap
+  const coverCandidates = useChangeCandidates(term, showCover ? first : undefined, 'SUBSTITUTE')
+  const swapCandidates = useChangeCandidates(term, showSwap ? first : undefined, 'SWAP', targetDate)
   const name = (id: number) => {
     const person = members.find((m) => m.schoolUserId === id)
-    return person?.displayName ?? person?.username ?? '교사 #' + id
+    return person ? teacherName(person) : '교사 #' + id
   }
   const teachers = members.filter(
     (m) =>
@@ -113,16 +123,27 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
           row.actual.teacherId !== first.actual.teacherId &&
           !(row.date === first.date && row.actual.periodId === first.actual.periodId),
       )
-  const eligibleTeachers = new Set(eligibleLessons.map((row) => row.actual.teacherId))
-  const matchingTeachers = teachers.filter(
-    (t) => eligibleTeachers.has(t.schoolUserId) && name(t.schoolUserId).includes(search.trim()),
-  )
+  const searchKey = nameSearchKey(search)
+  const matchingTeachers = teachers.filter((t) => nameSearchKey(teacherName(t)).includes(searchKey))
   const validTeacher = matchingTeachers.some((t) => String(t.schoolUserId) === teacher)
   const secondRows = validTeacher
     ? eligibleLessons.filter((row) => row.actual.teacherId === Number(teacher))
     : []
   const second = secondRows.find((row) => stamp(row) === secondKey)
   const swapLoading = swapCandidates.isPending || targetDay.state === 'loading'
+  const teachersWithLessons = new Set(eligibleLessons.map((row) => row.actual.teacherId))
+  const teacherGroups = swapLoading || swapReadError
+    ? [{ label: '학교 교사', members: matchingTeachers }]
+    : [
+        {
+          label: '이 날짜에 교환 가능한 수업 있음',
+          members: matchingTeachers.filter((t) => teachersWithLessons.has(t.schoolUserId)),
+        },
+        {
+          label: '이 날짜에 교환 가능한 수업 없음',
+          members: matchingTeachers.filter((t) => !teachersWithLessons.has(t.schoolUserId)),
+        },
+      ]
   function clearTarget() {
     setSecond('')
     setCoverTargets([])
@@ -246,7 +267,25 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
             )}
           </div>
         )}
-        {changes.canRequestSubstitute ? (
+        {first && canSwitchKind && (
+          <div className="lesson-change-switch" role="radiogroup" aria-label="요청 유형" data-kind={requestKind}>
+            {(['SUBSTITUTE', 'SWAP'] as const).map((kind) => (
+              <label key={kind}>
+                <input
+                  className="sr-only"
+                  type="radio"
+                  name="lesson-change-kind"
+                  value={kind}
+                  checked={requestKind === kind}
+                  disabled={locked || !!retry}
+                  onChange={() => setRequestKind(kind)}
+                />
+                <span>{kind === 'SUBSTITUTE' ? '보결 요청' : '1:1 수업 교환'}</span>
+              </label>
+            ))}
+          </div>
+        )}
+        {first && showCover && (
           <form
             aria-label="보결 신청"
             onSubmit={(e) => {
@@ -256,7 +295,7 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
             }}
           >
             <fieldset disabled={locked || !!retry}>
-              <legend>보결 요청</legend>
+              <legend className={canSwitchKind ? 'sr-only' : undefined}>보결 요청</legend>
               {first && coverCandidates.isPending && <p>공강 교사를 확인하고 있습니다.</p>}
               {coverCandidates.isError && (
                 <p role="alert">
@@ -281,10 +320,8 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
               </button>
             </fieldset>
           </form>
-        ) : (
-          <p>학교 재직 상태를 확인하세요.</p>
         )}
-        {mine ? (
+        {first && showSwap && (
           <form
             aria-label="교환 신청"
             onSubmit={(e) => {
@@ -293,7 +330,7 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
             }}
           >
             <fieldset disabled={locked || !!retry}>
-              <legend>1:1 수업 교환</legend>
+              <legend className={canSwitchKind ? 'sr-only' : undefined}>1:1 수업 교환</legend>
               <label className="change-date-toggle">
                 <input
                   type="checkbox"
@@ -301,7 +338,6 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
                   checked={otherDate !== null}
                   onChange={(e) => {
                     setOtherDate(e.target.checked ? date : null)
-                    setTeacher('')
                     setSecond('')
                   }}
                 />
@@ -316,7 +352,6 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
                     onChange={(e) => {
                       if (e.target.value) {
                         setOtherDate(e.target.value)
-                        setTeacher('')
                         setSecond('')
                       }
                     }}
@@ -341,7 +376,7 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
                   상대 교사
                   <select
                     required
-                    disabled={!matchingTeachers.length}
+                    disabled={!first || !matchingTeachers.length}
                     value={validTeacher ? teacher : ''}
                     onChange={(e) => {
                       setTeacher(e.target.value)
@@ -349,10 +384,14 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
                     }}
                   >
                     <option value="">상대 교사 선택</option>
-                    {matchingTeachers.map((t) => (
-                      <option key={t.schoolUserId} value={t.schoolUserId}>
-                        {name(t.schoolUserId)}
-                      </option>
+                    {teacherGroups.filter((group) => group.members.length).map((group) => (
+                      <optgroup key={group.label} label={group.label}>
+                        {group.members.map((t) => (
+                          <option key={t.schoolUserId} value={t.schoolUserId}>
+                            {teacherName(t)}
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
                   </select>
                 </label>
@@ -361,7 +400,7 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
                 교환할 상대 수업 · {targetDate}
                 <select
                   required
-                  disabled={!first || !validTeacher}
+                  disabled={!secondRows.length}
                   value={second ? secondKey : ''}
                   onChange={(e) => setSecond(e.target.value)}
                 >
@@ -373,6 +412,9 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
                   ))}
                 </select>
               </label>
+              {first && changes.directory.state === 'ready' && searchKey && !matchingTeachers.length && (
+                <p role="status">검색과 일치하는 상대 교사가 없습니다.</p>
+              )}
               {first &&
                 (swapReadError ? (
                   <p role="alert">
@@ -383,12 +425,14 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
                   </p>
                 ) : swapLoading ? (
                   <p role="status">교환 가능한 수업을 조회하고 있습니다.</p>
-                ) : !eligibleLessons.length ? (
+                ) : validTeacher && !secondRows.length ? (
+                  <p role="status">
+                    선택한 교사가 이 날짜에 교환할 수 있는 수업이 없습니다. 다른 날짜를 선택하세요.
+                  </p>
+                ) : !eligibleLessons.length && !searchKey ? (
                   <p role="status">
                     이 날짜에 교환 가능한 수업이 없습니다. 다른 날짜를 선택하세요.
                   </p>
-                ) : !matchingTeachers.length && search.trim() ? (
-                  <p role="status">검색과 일치하는 상대 교사가 없습니다.</p>
                 ) : null)}
               {first && second && (
                 <div className="change-preview" aria-label="교환 미리보기">
@@ -414,9 +458,8 @@ function LessonDesk({ term, initialDate, selection, onHome }: Props & { term: Ho
               </button>
             </fieldset>
           </form>
-        ) : (
-          <p>교환은 재직 교사가 본인 담당 수업에서 신청할 수 있습니다.</p>
         )}
+        {!changes.canRequestSubstitute && !mine && <p>학교 재직 상태를 확인하세요.</p>}
         {changes.directory.state !== 'ready' && (
           <p>학교 명부 · {readLabel[changes.directory.state]}</p>
         )}

@@ -122,11 +122,11 @@ export default function SelectedLesson({ home, term, cell, weeklyRows, roomId, o
       {home.slotLessons.refreshError || home.slotLessons.state === 'error' ? (
         <button onClick={home.retryDated}>다시 조회</button>
       ) : null}
-      <button disabled={!!blocked || !coverAllowed} onClick={() => open('SUBSTITUTE')}>
+      <button className="desk-primary" disabled={!!blocked || !coverAllowed} onClick={() => open('SUBSTITUTE')}>
         보결 요청하기
       </button>
       {!coverAllowed && <small>관리자 또는 이 수업의 실제 담당자가 신청할 수 있습니다.</small>}
-      <button disabled={!!blocked || !!swapReason} onClick={() => open('SWAP')}>
+      <button className="desk-primary" disabled={!!blocked || !!swapReason} onClick={() => open('SWAP')}>
         교환 요청하기
       </button>
       {swapReason && <small>{swapReason}</small>}

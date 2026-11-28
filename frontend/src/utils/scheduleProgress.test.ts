@@ -53,27 +53,19 @@ describe('실제 전송량과 서버 검증', () => {
 })
 
 describe('편성 및 마스코트 표시 상태', () => {
-  it.each([
-    ['QUEUED', 'queued', '편성 대기 중'],
-    ['RUNNING', 'running', '후보 생성 중'],
-  ] as const)(
-    '%s일 때 진행률을 추측하지 않으며 동작 감소 시 같은 문구와 정지 이미지를 쓴다',
-    (state, phase, label) => {
-      const progress = generationProgress({ jobId: '00042', state })
-      expect(progress).toEqual({ phase, jobId: '00042' })
-      const asset = '살금살금 걷는 노란 병아리-1.png'
-      expect(loadingPresentation(progress, false)).toEqual({
-        label,
-        bar: { kind: 'indeterminate' },
-        mascot: { asset, motion: 'walk-right' },
-      })
-      expect(loadingPresentation(progress, true)).toEqual({
-        label,
-        bar: { kind: 'none' },
-        mascot: { asset, motion: 'still' },
-      })
-    },
-  )
+  it('대기 상태는 0%, 탐색 중에는 서버의 예상 진행률만 표시한다', () => {
+    const queued = generationProgress({ jobId: '00042', state: 'QUEUED' })
+    expect(loadingPresentation(queued, false).bar).toEqual({ kind: 'determinate', percent: 0 })
+    const running = { jobId: '00042', state: 'RUNNING' as const }
+    const progress = generationProgress({ ...running, estimatedProgressPercent: 65 })
+    expect(loadingPresentation(progress, false).bar).toEqual({ kind: 'determinate', percent: 65 })
+    expect(loadingPresentation(progress, true).mascot?.motion).toBe('still')
+    for (const invalid of [undefined, null, 100, -1, NaN, 1.2]) {
+      const unknown = generationProgress({ ...running, estimatedProgressPercent: invalid })
+      expect(loadingPresentation(unknown, false).bar.kind).toBe('indeterminate')
+      expect(loadingPresentation(unknown, true).bar.kind).toBe('none')
+    }
+  })
   it.each(['READY', 'INFEASIBLE', 'TIME_LIMIT_NO_SOLUTION', 'FAILED'] as const)(
     '%s 종료 사유를 보존하고 진행 표시를 끝낸다',
     (state) => {
