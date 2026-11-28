@@ -3,13 +3,15 @@ type TerminalState = 'READY' | 'INFEASIBLE' | 'TIME_LIMIT_NO_SOLUTION' | 'FAILED
 export interface GenerationProgressDto {
   jobId: string
   state: 'QUEUED' | 'RUNNING' | TerminalState
+  estimatedProgressPercent?: number | null
 }
 
 export type ScheduleProgress =
   | { phase: 'uploading'; percent: number | null }
   | { phase: 'validating' }
   | { phase: 'validated'; validatedLoadId: string | null }
-  | { phase: 'queued' | 'running'; jobId: string }
+  | { phase: 'submitting' }
+  | { phase: 'queued' | 'running'; jobId: string; percent: number | null }
   | { phase: 'finished'; outcome: TerminalState; jobId: string }
   | { phase: 'validation-error'; error: unknown }
 
@@ -36,12 +38,26 @@ export function validatedProgress(dto: { validatedLoadId?: string | null }): Sch
   return { phase: 'validated', validatedLoadId: dto.validatedLoadId ?? null }
 }
 
-export function generationProgress({ jobId, state }: GenerationProgressDto): ScheduleProgress {
+export function generationProgress({
+  jobId,
+  state,
+  estimatedProgressPercent,
+}: GenerationProgressDto): ScheduleProgress {
   switch (state) {
     case 'QUEUED':
-      return { phase: 'queued', jobId }
+      return { phase: 'queued', jobId, percent: 0 }
     case 'RUNNING':
-      return { phase: 'running', jobId }
+      return {
+        phase: 'running',
+        jobId,
+        percent:
+          typeof estimatedProgressPercent === 'number' &&
+          Number.isInteger(estimatedProgressPercent) &&
+          estimatedProgressPercent >= 0 &&
+          estimatedProgressPercent < 100
+            ? estimatedProgressPercent
+            : null,
+      }
     default:
       return { phase: 'finished', outcome: state, jobId }
   }
@@ -55,6 +71,7 @@ const terminalLabels: Record<TerminalState, string> = {
 }
 
 const phaseLabels = {
+  submitting: '편성 요청 접수 중',
   uploading: '시수표 업로드 중',
   validating: '시수표 검증 중',
   validated: '시수표 검증 완료',
@@ -87,9 +104,11 @@ export function loadingPresentation(
     return { label, bar: { kind: 'none' }, mascot: null }
   }
   const bar: ProgressBar =
-    progress.phase === 'uploading' && progress.percent !== null
-      ? { kind: 'determinate', percent: progress.percent }
-      : { kind: reducedMotion ? 'none' : 'indeterminate' }
+    progress.phase === 'submitting'
+      ? { kind: 'determinate', percent: 0 }
+      : 'percent' in progress && progress.percent !== null
+        ? { kind: 'determinate', percent: progress.percent }
+        : { kind: reducedMotion ? 'none' : 'indeterminate' }
   return {
     label,
     bar,

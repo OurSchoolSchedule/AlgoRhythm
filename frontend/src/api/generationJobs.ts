@@ -13,6 +13,17 @@ function checkStatusUrl(termId: number, job: AcceptedGeneration) {
   }
 }
 
+export function checkGenerationReceipt(termId: number, receipt: AcceptedGeneration) {
+  if (
+    receipt?.state !== 'QUEUED' ||
+    !Number.isSafeInteger(receipt.expectedPublishRev) ||
+    receipt.expectedPublishRev < 0
+  ) {
+    throw new Error('편성 작업 접수 응답을 확인할 수 없습니다.')
+  }
+  checkStatusUrl(termId, receipt)
+}
+
 export async function submitGeneration(
   termId: number,
   request: GenerationRequest,
@@ -22,15 +33,10 @@ export async function submitGeneration(
   const { data, status } = await http.post<AcceptedGeneration>(generationsUrl(termId), request, {
     signal,
   })
-  if (
-    status !== 202 ||
-    data?.state !== 'QUEUED' ||
-    !Number.isSafeInteger(data.expectedPublishRev) ||
-    data.expectedPublishRev < 0
-  ) {
+  if (status !== 202) {
     throw new Error('편성 작업 접수 응답을 확인할 수 없습니다.')
   }
-  checkStatusUrl(termId, data)
+  checkGenerationReceipt(termId, data)
   return data
 }
 

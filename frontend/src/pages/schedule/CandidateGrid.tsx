@@ -8,9 +8,9 @@ interface Props {
   limits?: GradeLastPeriods['lastPeriods']
   registeredPeriods?: number[]
   placements: ScheduleCandidate['placements']
-  room: string
+  target: '학급' | '교사'
   subjectName: (id: string) => string
-  teacherName: (id: string) => string
+  lessonDetail: (lesson: ScheduleCandidate['placements'][number]) => string
 }
 const cellKey = ({ day, period }: TeachingSlot) => day + '/' + period
 
@@ -19,9 +19,9 @@ export default function CandidateGrid({
   limits,
   registeredPeriods,
   placements,
-  room,
+  target,
   subjectName,
-  teacherName,
+  lessonDetail,
 }: Props) {
   const [expanded, setExpanded] = useState('')
   const columns = days.filter((d) => !['SAT', 'SUN'].includes(d) || slots.some((s) => s.day === d))
@@ -35,13 +35,17 @@ export default function CandidateGrid({
       )
       .map(cellKey),
   )
-  const cells = new Map(
-    placements.filter((p) => p.classId === room).map((p) => [cellKey(p.slot), p]),
-  )
+  const cells = new Map<string, ScheduleCandidate['placements']>()
+  for (const lesson of placements) {
+    const key = cellKey(lesson.slot)
+    const group = cells.get(key)
+    if (group) group.push(lesson)
+    else cells.set(key, [lesson])
+  }
   return (
-    <TableScroll label="학급별 배치">
+    <TableScroll label={target + '별 배치'}>
       <table className="candidate-grid">
-        <caption className="desk-sr">선택한 학급의 주간 배치</caption>
+        <caption className="desk-sr">선택한 {target}의 주간 배치</caption>
         <thead>
           <tr>
             <th scope="col">교시</th>
@@ -58,18 +62,23 @@ export default function CandidateGrid({
               <th scope="row">{p}교시</th>
               {columns.map((day) => {
                 const key = cellKey({ day, period: p })
-                const lesson = cells.get(key)
+                const lessons = cells.get(key)
                 return (
                   <td key={day}>
-                    {lesson ? (
+                    {lessons ? (
                       <button
                         className="candidate-lesson"
                         type="button"
                         aria-expanded={expanded === key}
                         onClick={() => setExpanded(expanded === key ? '' : key)}
                       >
-                        <span>{subjectName(lesson.subjectId)}</span>
-                        <small>{teacherName(lesson.teacherId)}</small>
+                        {lessons.length > 1 && <strong>중복 배정 {lessons.length}건</strong>}
+                        {lessons.map((lesson, index) => (
+                          <span key={index}>
+                            <span>{subjectName(lesson.subjectId)}</span>{' '}
+                            <small>{lessonDetail(lesson)}</small>
+                          </span>
+                        ))}
                       </button>
                     ) : (
                       <span className={open.has(key) ? 'candidate-free' : 'candidate-closed'}>

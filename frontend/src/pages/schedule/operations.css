@@ -124,6 +124,12 @@
   border-radius: 9px;
   object-fit: contain;
 }
+.work-progress-metrics {
+  margin-inline-start: auto;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
 .work-rail {
   height: 6px;
   border-radius: 8px;

@@ -1,4 +1,4 @@
-import CandidateGrid from './CandidateGrid'
+import CandidateTimetable from './CandidateTimetable'
 import CandidateQualityDetails from './CandidateQualityDetails'
 import { candidateQuality } from './candidateQuality'
 import { objectives } from './generationOptions'
@@ -35,7 +35,6 @@ export default function CandidatePublication({
   onRestart,
 }: Props) {
   const [id, setId] = useState('')
-  const [room, setRoom] = useState('')
   const [sortBy, setSortBy] = useState<'rank' | 'concentrated' | 'longDays'>('rank')
   const [date, setDate] = useState(() => {
     const today = schoolDate(new Date())
@@ -47,7 +46,7 @@ export default function CandidatePublication({
   const subjects = useSubjects(),
     classes = useSchoolClasses(term.academicYear)
   const members = useHomeDirectory(useHomeSession(), true, term.termId)
-  const { teachingSlots: slots, objective, gradeLastPeriods, classGrades } = job ?? {}
+  const { objective, classGrades } = job ?? {}
   const candidate = candidates.find((c) => c.candidateId === id)
   const className = (id: string) => {
     const r = classes.data?.find((c) => String(c.id) === id)
@@ -57,8 +56,10 @@ export default function CandidatePublication({
   }
   const subjectName = (id: string) =>
     subjects.data?.find((s) => String(s.id) === id)?.name ?? '과목 #' + id
-  const teacherName = (id: string) =>
-    members.data?.find((m) => String(m.schoolUserId) === id)?.username ?? '교사 #' + id
+  const teacherName = (id: string) => {
+    const member = members.data?.find((m) => String(m.schoolUserId) === id)
+    return member?.displayName || member?.username || '교사 #' + id
+  }
   const comparisons = useMemo(
     () =>
       candidates.map((candidate, rank) => ({
@@ -79,14 +80,6 @@ export default function CandidatePublication({
   const mustRestart =
     state.phase === 'conflict' &&
     (state.recovery === 'regenerate' || state.recovery === 'revalidate-load')
-  const rooms = [
-    ...new Set([
-      ...Object.keys(classGrades ?? {}),
-      ...(candidate?.placements.map((p) => p.classId) ?? []),
-    ]),
-  ].sort((a, b) => className(a).localeCompare(className(b), 'ko', { numeric: true }))
-  const selectedRoom = rooms.includes(room) ? room : rooms[0]
-  const limits = gradeLastPeriods?.find((g) => g.grade === classGrades?.[selectedRoom])?.lastPeriods
   return (
     <section className="work-card">
       <h2>후보 비교 및 게시</h2>
@@ -148,37 +141,16 @@ export default function CandidatePublication({
               teacherName={teacherName}
             />
           )}
-          <h3>선택한 후보의 학급별 배치</h3>
-          <label>
-            학급{' '}
-            <select
-              aria-label="학급"
-              value={selectedRoom}
-              onChange={(e) => setRoom(e.target.value)}
-            >
-              {rooms.map((r) => (
-                <option key={r} value={r}>
-                  {className(r)}
-                </option>
-              ))}
-            </select>
-          </label>
-          {gradeLastPeriods && !limits ? (
-            <p role="alert">이 작업에서 선택한 학급의 학년별 편성 조건을 확인할 수 없습니다.</p>
-          ) : slots?.length ? (
-            <CandidateGrid
-              key={candidate.candidateId + '/' + selectedRoom}
-              slots={slots}
-              limits={limits}
-              registeredPeriods={job?.registeredPeriods}
-              placements={candidate.placements}
-              room={selectedRoom}
-              subjectName={subjectName}
-              teacherName={teacherName}
-            />
-          ) : (
-            <p role="status">이 작업의 운영 교시를 확인할 수 없습니다.</p>
-          )}
+          <CandidateTimetable
+            candidate={candidate}
+            job={job}
+            rosterTeacherIds={(members.data ?? [])
+              .filter((m) => m.position === 'TEACHER' && m.employmentStatus === 'HIRED')
+              .map((m) => String(m.schoolUserId))}
+            className={className}
+            subjectName={subjectName}
+            teacherName={teacherName}
+          />
         </section>
       )}
       <form
