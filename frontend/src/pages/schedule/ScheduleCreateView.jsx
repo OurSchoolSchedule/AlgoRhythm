@@ -114,9 +114,10 @@ function Generation({ term }) {
         ) : (
           <p>시수표를 검증하면 운영 교시와 편성 조건을 선택할 수 있습니다.</p>
         )}
-        {gen.submitting && <p role="status">편성 요청 접수 중</p>}
-        {showJob && gen.progress && !gen.statusError && (
-          <ScheduleProgress progress={gen.progress} />
+        {gen.submitting ? (
+          <ScheduleProgress progress={{ phase: 'submitting' }} requestedAt={gen.requestedAt} />
+        ) : showJob && gen.progress && !gen.statusError && (
+          <ScheduleProgress progress={gen.progress} requestedAt={gen.requestedAt} />
         )}
         {gen.statusError && (
           <div className="work-error" role="alert">

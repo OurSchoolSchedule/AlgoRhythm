@@ -866,6 +866,14 @@
 .desk-lesson-selection label { display: grid; gap: 4px; min-width: 0; }
 .desk-lesson-selection select { width: 100%; }
 .desk-lesson-selection button { padding: 7px; }
+.desk-lesson-selection .desk-primary {
+  min-height: 44px;
+  font-weight: 650;
+}
+.desk-lesson-selection .desk-primary:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
 @media (max-width: 719px) {
   .desk-selection-layout { grid-template-columns: minmax(0, 1fr); }
 }

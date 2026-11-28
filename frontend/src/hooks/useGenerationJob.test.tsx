@@ -125,6 +125,7 @@ function httpError(status: number, data: unknown, config: InternalAxiosRequestCo
 
 beforeEach(() => {
   vi.useFakeTimers()
+  sessionStorage.clear()
   cache = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   })
@@ -172,14 +173,14 @@ describe('비동기 편성 작업', () => {
     expect(JSON.parse(posts[0].data)).toEqual(request)
     expect(request.preferences?.map((p) => p.kind)).toEqual(['WANT', 'WANT', 'AVOID'])
     expect(request.teachingSlots).toHaveLength(32)
-    expect(result.current.accepted).toEqual(accepted)
+    expect(result.current.accepted).toMatchObject(accepted)
     expect(result.current.job?.state).toBe('QUEUED')
-    expect(result.current.progress).toEqual({ phase: 'queued', jobId })
+    expect(result.current.progress).toEqual({ phase: 'queued', jobId, percent: 0 })
     expect(result.current.canStart).toBe(false)
     await tick(1900)
     expect(gets).toHaveLength(1)
     await tick(100)
-    expect(result.current.progress).toEqual({ phase: 'running', jobId })
+    expect(result.current.progress).toEqual({ phase: 'running', jobId, percent: null })
     await tick(1900)
     expect(gets).toHaveLength(2)
     await tick(100)
@@ -233,7 +234,7 @@ describe('비동기 편성 작업', () => {
       await started
     })
     await tick()
-    expect(second.result.current.accepted).toEqual(accepted)
+    expect(second.result.current.accepted).toMatchObject(accepted)
     await expect(first.result.current.start(minimal)).rejects.toThrow('진행 중')
     expect(gets).toHaveLength(1)
     getBody = () => ready(1)
@@ -244,7 +245,7 @@ describe('비동기 편성 작업', () => {
     getBody = () => ({ ...poll('QUEUED'), jobId: nextJobId })
     await start(second.result)
     expect(posts).toHaveLength(2)
-    expect(first.result.current.progress).toEqual({ phase: 'queued', jobId: nextJobId })
+    expect(first.result.current.progress).toEqual({ phase: 'queued', jobId: nextJobId, percent: 0 })
     expect(first.result.current.candidates).toEqual([])
   })
 
@@ -265,6 +266,42 @@ describe('비동기 편성 작업', () => {
     await tick(10_000)
     expect(gets).toHaveLength(2)
     expect(posts).toHaveLength(1)
+  })
+
+  it('새로고침 후에도 요청 시각을 유지하고 서버의 예상 진행률을 쓰며 종료된 작업을 정리한다', async () => {
+    const first = mount()
+    getBody = () => ({ ...poll('RUNNING'), estimatedProgressPercent: 65 })
+    const sentAt = Date.now()
+    await start(first.result)
+    expect(first.result.current.requestedAt).toBe(sentAt)
+    first.unmount()
+    cache.clear()
+    setSchool(admin)
+    await tick(5000)
+    const resumed = mount()
+    await tick()
+    expect(resumed.result.current.requestedAt).toEqual(sentAt)
+    expect(resumed.result.current.progress).toEqual({ phase: 'running', jobId, percent: 65 })
+    expect(posts).toHaveLength(1)
+    getBody = () => ready(1)
+    await tick(2000)
+    expect(resumed.result.current.job?.state).toBe('READY')
+    expect(sessionStorage.length).toEqual(0)
+  })
+
+  it('초기화로 서버에서 사라진 작업은 복구 목록과 생성 잠금에서 해제한다', async () => {
+    const first = mount()
+    await start(first.result)
+    first.unmount()
+    cache.clear()
+    setSchool(admin)
+    getBody = (config) => {
+      throw httpError(404, {}, config)
+    }
+    const reloaded = mount()
+    await tick()
+    expect(reloaded.result.current.canStart).toBe(true)
+    expect(sessionStorage.length).toBe(0)
   })
 
   it.each([
